@@ -36,7 +36,7 @@
 - Workflow permissions: `read` default, allowed_actions `selected`, SHA pinning required.
 - README rewrite: 5-entry badges, Fork & Deploy guide explicando layout sub-projeto, AGPL §13 source-offer.
 - Community files: `CODE_OF_CONDUCT.md` + `CONTRIBUTING.md` + `.github/CODEOWNERS` (criados na raiz do repo).
-- gh-pages branch + Pages live em https://lcv-leo.github.io/astrologo-app/ + FUNDING.yml self-URL.
+- gh-pages branch + Pages live em https://example-beneficiary.github.io/astrologo-app/ + FUNDING.yml self-URL.
 - History scrub via `git-filter-repo` (literal D1 ID gone from blobs).
 ### Validação
 - `npm run lint` + `npm run build`: GREEN.
@@ -225,11 +225,11 @@
 
 ## [v02.16.00] — 2026-03-24
 ### Alterado
-- Migração de D1 para `bigdata_db` com tabelas prefixadas (`astrologo_mapas`, `astrologo_api_rate_limits`, `astrologo_rate_limit_policies`)
+- Migração de D1 para `example_db` com tabelas prefixadas (`astrologo_mapas`, `astrologo_api_rate_limits`, `astrologo_rate_limit_policies`)
 - Rotas de rate limit migradas para namespace contextual (`astrologo/calcular`, `astrologo/analisar`, `astrologo/enviar-email`)
 
 ### Infra
-- `wrangler.json` atualizado para `bigdata_db` (binding `BIGDATA_DB`)
+- `wrangler.json` atualizado para `example_db` (binding `BIGDATA_DB`)
 - Versionamento consolidado para `APP v02.16.00` + `package.json` 2.16.0
 
 ## [v02.15.01] — 2026-03-24

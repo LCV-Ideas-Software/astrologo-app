@@ -3,14 +3,14 @@
   "version": "2.17.25",
   "description": "Astrólogo — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.",
   "license": "AGPL-3.0-or-later",
-  "author": "Leonardo Cardozo Vargas (lcv-leo)",
+  "author": "LCV Ideas & Software",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lcv-leo/astrologo-app.git"
+    "url": "git+https://github.com/LCV-Ideas-Software/astrologo-app.git"
   },
-  "homepage": "https://github.com/lcv-leo/astrologo-app#readme",
+  "homepage": "https://github.com/LCV-Ideas-Software/astrologo-app#readme",
   "bugs": {
-    "url": "https://github.com/lcv-leo/astrologo-app/issues"
+    "url": "https://github.com/LCV-Ideas-Software/astrologo-app/issues"
   },
   "type": "module",
   "engines": {

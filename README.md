@@ -20,7 +20,7 @@ The version history at a glance:
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`v02.17.24`**                      | **Site sponsor card iteration.** `site/index.html` GitHub Sponsors iframe (caixa branca cross-origin) substituído por link card dark navy com ❤ pink + meta cyan + seta animada; card movido para DEPOIS dos botões (lcv.dev/sponsor primário, GitHub Sponsors alternativa). Companion ship Phase 3 (12 repos).                                                   |
 | **`v02.17.23`**                      | **Site visual identity refresh.** `site/index.html` (GitHub Pages) reskinneada para a nova identidade dark-first navy/cyan da org LCV (`#050b18`/`#38bdf8`/`#34d399`, gradientes radiais, glow shadows, gradient text no h1). Coordinated Phase 2 companion ship (calculadora, oraculo, astrologo, admin, mainsite, maestro, mtasts). Sem mudança no app runtime. |
-| **`v02.17.22`**                      | **README organizational standardization.** Adopted the shared repository README opening pattern, corrected public release and clone links to the organization, surfaced the top-level version-history table, and kept the GitHub Sponsors link on `lcv-leo` by explicit beneficiary decision.                                                                     |
+| **`v02.17.22`**                      | **README organizational standardization.** Adopted the shared repository README opening pattern, corrected public release and clone links to the organization, surfaced the top-level version-history table, and kept the GitHub Sponsors link on `example-beneficiary` by explicit beneficiary decision.                                                                     |
 | **`v02.17.21`**                      | **Pages modernization.** Migrated fully to the current GitHub Pages artifact-deployment model and enabled idempotent Pages setup for fresh clones/forks.                                                                                                                                                                                                          |
 | **`v02.17.20`**                      | **Pre-public stabilization.** Baseline immediately before the Pages modernization and organization-wide publication parity sweep.                                                                                                                                                                                                                                 |
 | **`Security Publication Hardening`** | **Public repo hygiene.** Hardened ignores and packaging boundaries so agent memories, secrets, and local artifacts stay out of GitHub and npm surfaces.                                                                                                                                                                                                           |
@@ -80,7 +80,7 @@ npm ci
 ### 2. Create your D1 database
 
 ```bash
-npx wrangler d1 create bigdata_db
+npx wrangler d1 create example_db
 # wrangler outputs:
 #   database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 ```
@@ -94,7 +94,7 @@ npx wrangler d1 create bigdata_db
   "d1_databases": [
     {
       "binding": "BIGDATA_DB",
-      "database_name": "bigdata_db",
+      "database_name": "example_db",
       "database_id": "<your-d1-id-from-step-2>",
     },
   ],
@@ -144,7 +144,7 @@ Triggers on push to `main`. Steps: setup-node 24 → npm install + build (in `as
 
 ## License
 
-Copyright (C) 2026 Leonardo Cardozo Vargas.
+Copyright (C) 2026 LCV Ideas & Software
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
