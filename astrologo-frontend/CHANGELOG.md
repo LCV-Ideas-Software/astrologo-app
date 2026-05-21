@@ -60,7 +60,6 @@
 ### Motivação
 - Padronizar logs de invocação e traces do Cloudflare no `astrologo-app` sem perder campos já existentes de observability.
 
-
 ## [v02.17.17] - 2026-04-17
 ### Alterado
 - **Origem e rate limiting fail-closed**: `calcular.ts`, `analisar.ts`, `contato.ts`, `enviar-email.ts` e `astrologo-auth.ts` migraram do limiter ausente/implícito para enforcement real baseado em D1, com rejeição de `Origin` ausente ou fora de `https://*.lcv.app.br`.
@@ -73,14 +72,14 @@
 ## [v02.17.16] - 2026-04-16
 ### Alterado — limpeza de classes Tailwind
 - **33 warnings** de classes não-canônicas e conflito de CSS resolvidos em `src/App.tsx` (todos pré-existentes, expostos pelo plugin IDE do Tailwind 4). Substituições canônicas:
-  * `z-[99999]` → `z-99999` (4 ocorrências), `z-[100]` → `z-100` (1)
-  * `bg-gradient-to-r` → `bg-linear-to-r` (6)
-  * `flex-shrink-0` → `shrink-0` (6), `flex-grow` → `grow` (2)
-  * `rounded-[2rem]` → `rounded-4xl` (6)
-  * `min-w-[140px]` → `min-w-35` (3), `max-w-[200px]` → `max-w-50` (3)
-  * `[color-scheme:light]` → `scheme-light` (2)
-  * `bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))]` → `bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))]` (1, remove whitespace após vírgula conforme canonical)
-  * Linha 600: `cssConflict` (`absolute` + `fixed` aplicando `position`): removido `absolute`, mantido `fixed` (background decorativo full-viewport com `-z-10`).
+  - `z-[99999]` → `z-99999` (4 ocorrências), `z-[100]` → `z-100` (1)
+  - `bg-gradient-to-r` → `bg-linear-to-r` (6)
+  - `flex-shrink-0` → `shrink-0` (6), `flex-grow` → `grow` (2)
+  - `rounded-[2rem]` → `rounded-4xl` (6)
+  - `min-w-[140px]` → `min-w-35` (3), `max-w-[200px]` → `max-w-50` (3)
+  - `[color-scheme:light]` → `scheme-light` (2)
+  - `bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))]` → `bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))]` (1, remove whitespace após vírgula conforme canonical)
+  - Linha 600: `cssConflict` (`absolute` + `fixed` aplicando `position`): removido `absolute`, mantido `fixed` (background decorativo full-viewport com `-z-10`).
 ### Motivação
 - Política de qualidade: corrigir todos os diagnósticos detectados (errors + warnings, pré-existentes incluídos).
 - Bundle sem regressão (275.45 vs 275.58 KB — ganho mínimo pelo uso de classes canônicas).
@@ -98,7 +97,7 @@
 - **vite**: 8.0.7 → 8.0.8
 - **vitest**: 4.1.2 → 4.1.4
 - **lucide-react**: 1.7.0 → 1.8.0
-- **Dependabot groups**: @vitest/* e @biomejs/* adicionados
+- **Dependabot groups**: @vitest/*e @biomejs/* adicionados
 
 ## [v02.17.13] - 2026-04-08
 ### Atualização Tecnológica
