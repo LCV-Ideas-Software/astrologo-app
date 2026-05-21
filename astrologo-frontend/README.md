@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../.github/assets/lcv-ideas-software-logo.svg" alt="LCV Ideas &amp; Software" width="520" />
+</p>
+
 # React + TypeScript + Vite
 
 [![release](https://img.shields.io/github/v/release/LCV-Ideas-Software/astrologo-app?sort=semver)](https://github.com/LCV-Ideas-Software/astrologo-app/releases)
