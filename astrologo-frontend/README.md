@@ -19,6 +19,8 @@ Currently, two official plugins are available:
 
 ## Change History
 
+**Status.** Stable. Current release: **v02.17.25**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
+
 The version history at a glance:
 
 | Release     | Notes                                                                                                                                      |
