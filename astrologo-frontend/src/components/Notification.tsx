@@ -54,6 +54,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         const next = [...prev, newNotification];
         if (next.length <= maxNotifications) return next;
         const [oldest, ...rest] = next;
+        if (!oldest) return rest;
         const oldTimeout = timeoutMap.current.get(oldest.id);
         if (oldTimeout) {
           clearTimeout(oldTimeout);

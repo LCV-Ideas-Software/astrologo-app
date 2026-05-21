@@ -32,7 +32,7 @@ export async function onRequestOptions(context: Context) {
 function generateOTP(): string {
   const array = new Uint32Array(1);
   crypto.getRandomValues(array);
-  return String(array[0] % 1000000).padStart(6, '0');
+  return String((array[0] ?? 0) % 1000000).padStart(6, '0');
 }
 
 const SESSION_TTL_MS = 60 * 60 * 1000; // 60 minutos

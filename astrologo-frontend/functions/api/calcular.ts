@@ -120,8 +120,8 @@ export async function onRequestPost(context: Context) {
       console.warn('Usando Fallback Geográfico (RJ).');
     }
 
-    const [ano, mes, dia] = dataNascimento.split('-').map(Number);
-    const [hLocal, mLocal] = horaNascimento.split(':').map(Number);
+    const [ano = 0, mes = 1, dia = 1] = dataNascimento.split('-').map(Number);
+    const [hLocal = 0, mLocal = 0] = horaNascimento.split(':').map(Number);
 
     let utcHour = hLocal - tz;
     let utcDay = dia;
@@ -177,7 +177,7 @@ export async function onRequestPost(context: Context) {
     const getTropicalInfo = (lonVal: number): AstroInfo => {
       const idx = Math.floor(wrapDegrees(lonVal) / 30);
       const decanato = Math.floor((wrapDegrees(lonVal) % 30) / 10);
-      return { nome: signosTropicais[idx], decanato: decanato > 2 ? 2 : decanato };
+      return { nome: signosTropicais[idx] ?? 'Áries', decanato: decanato > 2 ? 2 : decanato };
     };
 
     const IAU_BORDERS = [
@@ -198,7 +198,7 @@ export async function onRequestPost(context: Context) {
     const getIauInfo = (tLon: number): AstroInfo => {
       const shift = (ano - 2000) * (50.29 / 3600);
       const j2000Lon = wrapDegrees(tLon - shift);
-      let found = IAU_BORDERS[0];
+      let found = IAU_BORDERS[0] ?? { nome: 'Peixes', inicio: 351.5, fim: 29.3 };
       for (const b of IAU_BORDERS) {
         if (b.inicio > b.fim) {
           if (j2000Lon >= b.inicio || j2000Lon < b.fim) {
@@ -249,7 +249,7 @@ export async function onRequestPost(context: Context) {
     const dataLocalObj = new Date(Date.UTC(ano, mes - 1, dia, 12, 0, 0));
     const diaDaSemanaIdx = dataLocalObj.getUTCDay();
     const orixasVibracaoMap = ['Orixalá', 'Yemanjá', 'Ogum', 'Yori', 'Xangô', 'Oxossi', 'Yorimá'];
-    const orixaDia = orixasVibracaoMap[diaDaSemanaIdx];
+    const orixaDia = orixasVibracaoMap[diaDaSemanaIdx] ?? 'Orixalá';
     const orixaHora = getOrixaHora(hLocal + mLocal / 60);
 
     const getPlanetaryHour = () => {
@@ -282,11 +282,11 @@ export async function onRequestPost(context: Context) {
       const chaldean = ['Saturno', 'Júpiter', 'Marte', 'Sol', 'Vênus', 'Mercúrio', 'Lua'];
       const dayRulerPlanets = ['Sol', 'Lua', 'Marte', 'Mercúrio', 'Júpiter', 'Vênus', 'Saturno'];
 
-      const rulerOfDay = dayRulerPlanets[dayOfWeekAstrological];
-      const startIndex = chaldean.indexOf(rulerOfDay);
+      const rulerOfDay = dayRulerPlanets[dayOfWeekAstrological] ?? 'Sol';
+      const startIndex = Math.max(0, chaldean.indexOf(rulerOfDay));
       const totalHoursPassed = isDay ? hourIndex : 12 + hourIndex;
 
-      return chaldean[(startIndex + totalHoursPassed) % 7];
+      return chaldean[(startIndex + totalHoursPassed) % 7] ?? 'Sol';
     };
 
     const planetaRegenteHora = getPlanetaryHour();
@@ -331,7 +331,7 @@ export async function onRequestPost(context: Context) {
           {
             posicao: `HORA PLANETÁRIA (${planetaRegenteHora.toUpperCase()})`,
             orixa: orixaHoraPlanetaria.toUpperCase(),
-            simbolo: planetaSimbolos[planetaRegenteHora],
+            simbolo: planetaSimbolos[planetaRegenteHora] ?? '🪐',
           },
         ],
       };

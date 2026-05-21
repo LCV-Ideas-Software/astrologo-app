@@ -140,8 +140,9 @@ const sanitizeGeneratedHtml = (input: string): string => {
       if (isClosing) return `</${tag}>`;
       // Parse style attribute if present
       const styleMatch = attrs.match(/style\s*=\s*"([^"]*)"/i);
-      if (styleMatch && isSafeStyle(styleMatch[1])) {
-        return `<${tag} style="${styleMatch[1]}">`;
+      const styleValue = styleMatch?.[1];
+      if (styleValue && isSafeStyle(styleValue)) {
+        return `<${tag} style="${styleValue}">`;
       }
       return `<${tag}>`;
     },

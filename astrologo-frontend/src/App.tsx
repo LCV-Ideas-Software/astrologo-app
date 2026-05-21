@@ -145,7 +145,7 @@ const formatPosicaoLabel = (pos: string): string => {
   if (p.startsWith('HORA PLANETÁRIA')) return p;
   if (p.includes('ASTRO')) {
     const match = p.match(/\((.*?)\)/);
-    return match ? `HORA PLANETÁRIA (${match[1].trim()})` : 'HORA PLANETÁRIA (ASTRO)';
+    return match?.[1] ? `HORA PLANETÁRIA (${match[1].trim()})` : 'HORA PLANETÁRIA (ASTRO)';
   }
   return p;
 };
@@ -297,7 +297,7 @@ const LocationAutocomplete: React.FC<AutocompleteProps> = ({ value, onChange }) 
       return;
     }
     setLoading(true);
-    const searchQuery = val.split(',')[0].trim();
+    const searchQuery = (val.split(',')[0] ?? val).trim();
     fetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(searchQuery)}&count=5&language=pt&format=json`,
     )
@@ -488,17 +488,17 @@ export const ResultView: React.FC<ResultViewProps> = ({
 
     const blocoTexto = (dados: DadosSistema) => {
       let texto = `\n*Astrologia:*\n`;
-      texto += `  • ☀️ Sol: *${dados.astrologia[0].signo}*\n`;
-      texto += `  • ⬆️ Ascendente: *${dados.astrologia[1].signo}*\n`;
-      texto += `  • 🌙 Lua: *${dados.astrologia[2].signo}*\n`;
-      texto += `  • 🔭 Meio do Céu: *${dados.astrologia[3].signo}*\n\n`;
+      texto += `  • ☀️ Sol: *${dados.astrologia[0]?.signo ?? 'N/D'}*\n`;
+      texto += `  • ⬆️ Ascendente: *${dados.astrologia[1]?.signo ?? 'N/D'}*\n`;
+      texto += `  • 🌙 Lua: *${dados.astrologia[2]?.signo ?? 'N/D'}*\n`;
+      texto += `  • 🔭 Meio do Céu: *${dados.astrologia[3]?.signo ?? 'N/D'}*\n\n`;
       texto += `*Umbanda:*\n`;
-      texto += `  • 👑 Coroa (Orixá Ancestral): *${dados.umbanda[0].orixa}*\n`;
-      texto += `  • 🌊 Adjuntó (Orixá de Frente): *${dados.umbanda[1].orixa}*\n`;
-      texto += `  • 🏹 Frente (Orixá de Trabalho): *${dados.umbanda[2].orixa}*\n`;
-      texto += `  • 🌟 Decanato (Regente Secundário): *${dados.umbanda[3].orixa}*\n`;
-      texto += `  • ⏳ Faixa Horária (Regente da Hora): *${dados.umbanda[4].orixa}*\n`;
-      texto += `  • 🪐 ${formatPosicaoLabel(dados.umbanda[5].posicao)}: *${dados.umbanda[5].orixa}*\n`;
+      texto += `  • 👑 Coroa (Orixá Ancestral): *${dados.umbanda[0]?.orixa ?? 'N/D'}*\n`;
+      texto += `  • 🌊 Adjuntó (Orixá de Frente): *${dados.umbanda[1]?.orixa ?? 'N/D'}*\n`;
+      texto += `  • 🏹 Frente (Orixá de Trabalho): *${dados.umbanda[2]?.orixa ?? 'N/D'}*\n`;
+      texto += `  • 🌟 Decanato (Regente Secundário): *${dados.umbanda[3]?.orixa ?? 'N/D'}*\n`;
+      texto += `  • ⏳ Faixa Horária (Regente da Hora): *${dados.umbanda[4]?.orixa ?? 'N/D'}*\n`;
+      texto += `  • 🪐 ${formatPosicaoLabel(dados.umbanda[5]?.posicao ?? '')}: *${dados.umbanda[5]?.orixa ?? 'N/D'}*\n`;
       return texto;
     };
 

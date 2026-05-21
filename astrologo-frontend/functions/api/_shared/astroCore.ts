@@ -14,7 +14,7 @@ export interface TatwaResult {
 
 export const isValidDateString = (value: string): boolean => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const [y, m, d] = value.split('-').map(Number);
+  const [y = 0, m = 0, d = 0] = value.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
   return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
 };
@@ -24,7 +24,7 @@ export const isValidTimeString = (value: string): boolean => /^([01]\d|2[0-3]):(
 export const toHourMinute = (value: string, fallbackH: number, fallbackM: number): [number, number] => {
   const match = value.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
   if (!match) return [fallbackH, fallbackM];
-  return [Number(match[1]), Number(match[2])];
+  return [Number(match[1] ?? fallbackH), Number(match[2] ?? fallbackM)];
 };
 
 export const wrapDegrees = (deg: number): number => ((deg % 360) + 360) % 360;
@@ -121,8 +121,8 @@ export const getTatwaAtMoment = (
   const subIndex = (principalIndex + subOffset) % 5;
 
   return {
-    principal: TATWA_ORDER[principalIndex],
-    sub: TATWA_ORDER[subIndex],
+    principal: TATWA_ORDER[principalIndex] ?? 'Akasha (Éter)',
+    sub: TATWA_ORDER[subIndex] ?? 'Akasha (Éter)',
     principalIndex,
     subIndex,
   };
