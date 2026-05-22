@@ -27,7 +27,7 @@
     "format": "biome format --write src"
   },
   "dependencies": {
-    "@google/genai": "^2.5.0",
+    "@google/genai": "^2.6.0",
     "@tailwindcss/vite": "^4.3.0",
     "dompurify": "^3.4.5",
     "lucide-react": "^1.16.0",
