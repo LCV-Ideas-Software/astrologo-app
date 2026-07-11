@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { lstat, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, unlink, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -20,11 +20,8 @@ if (bytes.byteLength !== EXPECTED_SIZE || sha256 !== EXPECTED_SHA256) {
 
 await mkdir(dirname(target), { recursive: true });
 try {
-  const targetStats = await lstat(target);
-  if (targetStats.isSymbolicLink()) {
-    throw new Error(`O destino Swiss Ephemeris não pode ser um link simbólico: ${target}`);
-  }
-  await rm(target, { force: true });
+  // unlink removes a symbolic link itself instead of following it, avoiding a check/use race.
+  await unlink(target);
 } catch (error) {
   if (!(error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT')) throw error;
 }

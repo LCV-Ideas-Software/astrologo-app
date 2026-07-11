@@ -1,5 +1,15 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.18.02] - 2026-07-11
+
+### Segurança
+
+- Corrigido o alerta CodeQL `js/file-system-race` (CWE-367): o destino do WASM é removido por `unlink`, sem checagem prévia e sem seguir links simbólicos, antes da publicação da cópia temporária validada.
+
+### Preservado
+
+- Verificações de tamanho/SHA-256, gravação exclusiva, `rename`, rehash final, testes Placidus e bytecode Swiss Ephemeris `2.10.03` permanecem inalterados.
+
 ## [v02.18.01] - 2026-07-11
 
 ### Segurança

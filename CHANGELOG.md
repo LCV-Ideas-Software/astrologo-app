@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [v02.18.02] - 2026-07-11
+
+### Segurança
+
+- **CodeQL `js/file-system-race` / CWE-367** — removida a sequência `lstat(path)` seguida de operações pelo mesmo caminho na materialização do Swiss Ephemeris. O destino agora é eliminado diretamente com `unlink`, que não segue links simbólicos, antes do `rename` da cópia temporária criada com exclusividade e já verificada.
+
+### Preservado
+
+- O script continua validando tamanho e SHA-256 na origem, na cópia temporária e no destino final; o WASM permanece fora do Git e byte a byte idêntico ao módulo publicado por `@fusionstrings/swiss-eph@0.1.1`.
+
 ## [v02.18.01] - 2026-07-11
 
 ### Segurança
