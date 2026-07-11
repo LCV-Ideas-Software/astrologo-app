@@ -7,6 +7,7 @@
       "src/**/*.js",
       "src/**/*.jsx",
       "functions/**/*.ts",
+      "scripts/**/*.mjs",
       "!dist",
       "!build",
       "!.wrangler",

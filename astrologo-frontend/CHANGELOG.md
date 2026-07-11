@@ -1,5 +1,19 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.18.01] - 2026-07-11
+
+### Segurança
+
+- O Swiss Ephemeris WASM não é mais versionado no repositório: comandos controlados de desenvolvimento, teste e build o materializam sob demanda a partir de `@fusionstrings/swiss-eph@0.1.1`, com conferência de tamanho e SHA-256 antes e depois da gravação.
+- PR e deploy rejeitam artefatos binários executáveis no commit imutável; o Scorecard oficial agora roda em todo push para `main`, e o caminho materializado também foi excluído da publicação npm.
+- CI endurecido com lifecycle scripts de dependências desativados, 81 testes obrigatórios, build prévio de Pages Functions e Wrangler `4.110.0` fixado no lockfile.
+- A release automática só é criada depois que Deploy, Scorecard, Public Format e CodeQL do mesmo commit concluem com sucesso.
+- Documentação de proveniência atualizada para distinguir identidade criptográfica do tarball, assinatura do registro e ausência de atestado de build reproduzível do upstream.
+
+### Preservado
+
+- O módulo permanece byte a byte idêntico, reporta Swiss Ephemeris `2.10.03` e conserva os mesmos resultados no fixture Placidus.
+
 ## [v02.18.00] - 2026-07-11
 
 ### Adicionado

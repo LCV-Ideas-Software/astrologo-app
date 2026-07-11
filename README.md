@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.18.00**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.18.01**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.18.01`**                      | **Hardening da cadeia de suprimentos.** O Swiss Ephemeris WASM deixa de ser versionado no Git e passa a ser materializado localmente sob demanda a partir da dependência exata, com verificação de tamanho/SHA-256; CI, Wrangler e Scorecard bloqueiam recorrências antes do deploy. |
 | **`v02.18.00`**                      | **Dados posicionais e angelologia v2.** Dez planetas com graus, Casas Placidus, cúspides, constelações IAU e quinários dos 72 anjos; Anjo Regente do Consulente derivado do Sol tropical; UI, relatórios, e-mail, prompt de IA e admin integralmente adaptados para apresentação em pt-BR. |
 | **`v02.17.25`**                      | **4-gate quality directive compliance.** Added Biome gate and deploy workflow coverage for eslint, biome, prettier, and cross-review; synchronized package metadata and aligned the public release train with the published v02.17.25 tag.                                                                                  |
 | **`v02.17.24`**                      | **Site sponsor card iteration.** `site/index.html` GitHub Sponsors iframe (caixa branca cross-origin) substituído por link card dark navy com ❤ pink + meta cyan + seta animada; card movido para DEPOIS dos botões (lcv.dev/sponsor primário, GitHub Sponsors alternativa). Companion ship Phase 3 (12 repos).                                                   |

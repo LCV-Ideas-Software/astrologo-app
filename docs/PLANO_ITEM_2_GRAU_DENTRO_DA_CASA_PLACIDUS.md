@@ -44,7 +44,7 @@ Regras numéricas:
 1. **Especificação e corpus de referência**
 
    - Fixar a nomenclatura pública em português: “grau mundano dentro da Casa Placidus”.
-   - Gerar fixtures com o wrapper upstream e o WASM vendorizado para casas 1, 6, 12 e para posições imediatamente antes/depois de uma cúspide.
+   - Gerar fixtures com o wrapper upstream e o WASM fixado pelo lockfile, validado e materializado localmente sob demanda, para casas 1, 6, 12 e para posições imediatamente antes/depois de uma cúspide.
    - Documentar a diferença entre longitude tropical, arco eclíptico desde a cúspide e coordenada mundana normalizada.
 
 2. **Testes vermelhos antes do código**

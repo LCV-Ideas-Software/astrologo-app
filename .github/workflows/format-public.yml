@@ -26,19 +26,24 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             astrologo-frontend/package-lock.json
+      - name: Reject tracked executable artifacts
+        working-directory: astrologo-frontend
+        run: node scripts/check-tracked-executables.mjs
       - name: Install dependencies
         run: npm ci --registry=https://registry.npmjs.org/ --ignore-scripts --no-audit --no-fund
       - name: Check public page formatting
         run: npm run format:public:check
       - name: Install frontend dependencies
         working-directory: astrologo-frontend
-        run: npm ci --registry=https://registry.npmjs.org/ --no-audit --no-fund
+        run: npm ci --registry=https://registry.npmjs.org/ --ignore-scripts --no-audit --no-fund
       - name: Validate frontend
         working-directory: astrologo-frontend
         run: |
           npm run lint
           npm run biome
+          npm test
           npm run build
+          npm run build:functions
     timeout-minutes: 15
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

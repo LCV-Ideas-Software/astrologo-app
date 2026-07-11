@@ -2,11 +2,8 @@ name: OpenSSF Scorecard
 on:
   push:
     branches: ["main"]
-    paths:
-      - ".github/workflows/**"
-      - ".github/dependabot.yml"
-      - "socketsecurity-requirements.txt"
-      - "SECURITY.md"
+  pull_request:
+    branches: ["main"]
   schedule:
     - cron: "37 8 * * 1"
   workflow_dispatch:
@@ -38,7 +35,7 @@ jobs:
         with:
           results_file: scorecard-results.sarif
           results_format: sarif
-          publish_results: true
+          publish_results: ${{ github.event_name != 'pull_request' }}
       - name: Upload SARIF artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -46,6 +43,24 @@ jobs:
           path: scorecard-results.sarif
           retention-days: 5
       - name: Upload SARIF to code-scanning
+        if: github.event_name != 'pull_request'
         uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
         with:
           sarif_file: scorecard-results.sarif
+      - name: Reject unverified binary artifacts
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+
+          const sarif = JSON.parse(readFileSync('scorecard-results.sarif', 'utf8'));
+          const findings = sarif.runs.flatMap((run) => run.results ?? []).filter((result) => result.ruleId === 'BinaryArtifactsID');
+          if (findings.length > 0) {
+            for (const finding of findings) {
+              const location = finding.locations?.[0]?.physicalLocation?.artifactLocation?.uri ?? 'local desconhecido';
+              console.error(`::error file=${location}::OpenSSF Scorecard detectou artefato binário não verificado.`);
+            }
+            process.exit(1);
+          }
+          console.log('OpenSSF Scorecard não detectou artefatos binários não verificados.');
+          NODE

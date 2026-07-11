@@ -7,8 +7,11 @@ Esta distribuição incorpora astronomy-engine 2.1.19 (MIT),
 (Apache-2.0) e um binário WebAssembly derivado da Swiss Ephemeris. Os textos,
 versões, fontes exatas e hashes estão documentados em THIRDPARTY.md.
 
-O arquivo functions/api/_shared/swiss_eph.wasm é uma cópia byte a byte do
-artefato wasm/swiss-eph-wasi.wasm publicado em @fusionstrings/swiss-eph@0.1.1:
+O executável WASM não é rastreado no repositório. Os comandos controlados de
+desenvolvimento, teste e build executam scripts/prepare-swiss-wasm.mjs, que
+resolve o export `./wasm-wasi` publicado em @fusionstrings/swiss-eph@0.1.1,
+valida tamanho e SHA-256 antes e depois da gravação e só então materializa
+functions/api/_shared/swiss_eph.wasm para o empacotamento do Cloudflare Pages:
 
 SHA-256: 31d3406560fd39b91bc9dbfdff6c9111f170fde2db62ebe92581ae14e878744c
 SHA-512: f0929366006f037e45eb7085234623ec5fdc73f68cea7bf0c2696a038df979e3d346375a3b8123065863666801c234864a61d9042c6af961b7acdb455bad6de3
@@ -73,8 +76,8 @@ OFERTA DE CÓDIGO-FONTE — GNU AGPL v3, SEÇÕES 6 E 13
 O código-fonte da versão do Astrologo oferecida pela interface de rede está em:
 https://github.com/LCV-Ideas-Software/astrologo-app
 
-O Corresponding Source exato do WASM, incluindo scripts de build e o submódulo
-C fixado, está em:
+O Corresponding Source declarado pelo upstream para o WASM, incluindo scripts
+de build e o submódulo C fixado, está em:
 https://github.com/fusionstrings/swiss-eph/tree/e7a7a9311d3058f337b73b72f45ea6d80cffa5f0
 https://github.com/aloistr/swisseph/tree/5ae0bce00dbc66c6315c86da20518e3dd138255b
 

@@ -24,7 +24,7 @@
 | astronomy-engine | 2.1.19 | MIT | Não | https://github.com/cosinekitty/astronomy/tree/v2.1.19 |
 | @js-temporal/polyfill | 0.5.1 | ISC | Não | https://github.com/js-temporal/temporal-polyfill/tree/v0.5.1 |
 | jsbi (dependência transitiva de runtime de @js-temporal/polyfill) | 4.3.2 | Apache-2.0 | Não | https://github.com/GoogleChromeLabs/jsbi/tree/5382367c7e3199858d36bb620977e1f90605bcb9 |
-| @fusionstrings/swiss-eph (origem de build do WASM copiado) | 0.1.1 | AGPL-3.0-only (manifesto upstream: `AGPL-3.0`) | Não; o binário foi copiado sem alteração | https://github.com/fusionstrings/swiss-eph/tree/e7a7a9311d3058f337b73b72f45ea6d80cffa5f0 |
+| @fusionstrings/swiss-eph (dependência de build e origem do módulo WASM) | 0.1.1 | AGPL-3.0-only (manifesto upstream: `AGPL-3.0`) | Não; o módulo é consumido sem alteração | https://github.com/fusionstrings/swiss-eph/tree/e7a7a9311d3058f337b73b72f45ea6d80cffa5f0 |
 | Swiss Ephemeris incorporada no WASM | `swe_version() = 2.10.03`; fonte `5ae0bce00dbc66c6315c86da20518e3dd138255b` | AGPL-3.0-only, conforme a opção AGPL da licença dual | Não pelo projeto Astrologo | https://github.com/aloistr/swisseph/tree/5ae0bce00dbc66c6315c86da20518e3dd138255b |
 
 ## Integridade e proveniência dos novos artefatos
@@ -46,15 +46,17 @@ Arquivos de distribuição efetivamente usados:
 | `astronomy-engine/esm/astronomy.js` (entrypoint ESM importado e referenciado pelos metadados de cálculo) | 412025 bytes | `068f1445ed0c636c94818fe6d20d7d125120e605e0bab9fc4675c3d531be5ad7` | `a898baa9deb4c3ae8e80a961155126039ae3eac6a14a9dac9cd8a39a6cddd7adba5975fe0cbf58cfea40fe99dee8c7df5302ea69c3e1477d89c38a4be4caff65` |
 | `@js-temporal/polyfill/dist/index.esm.js` | 128868 bytes | `21f067c54fa5f532f20a8e85e3d2401a3ae1cf60d85fafea6502f621dc93b167` | `1805d1e0da3844a1972b0e14d45d65ebceefde523e056b7bb235f41a84eff442752b75ddd9e0c558e06ef962e8d26ecc8f2f486322f5a22739c4ce0d736fb501` |
 | `jsbi/dist/jsbi.mjs` | 29207 bytes | `c0d70fb47e0818e31bdf964805a530d9a0fb4ee5bdadb442a13f3691a5f15583` | `66327d5ea608de8dfb8d91125c5bed76d9c93fe865deebd957e97911cb1ff44e4fbaefa704340df2cd5c67f7a7684457f299c37e927d021840cb55c796a3b2d7` |
-| `functions/api/_shared/swiss_eph.wasm` | 1275365 bytes | `31d3406560fd39b91bc9dbfdff6c9111f170fde2db62ebe92581ae14e878744c` | `f0929366006f037e45eb7085234623ec5fdc73f68cea7bf0c2696a038df979e3d346375a3b8123065863666801c234864a61d9042c6af961b7acdb455bad6de3` |
+| `@fusionstrings/swiss-eph/wasm/swiss-eph-wasi.wasm` (materializado localmente sob demanda) | 1275365 bytes | `31d3406560fd39b91bc9dbfdff6c9111f170fde2db62ebe92581ae14e878744c` | `f0929366006f037e45eb7085234623ec5fdc73f68cea7bf0c2696a038df979e3d346375a3b8123065863666801c234864a61d9042c6af961b7acdb455bad6de3` |
 
-O arquivo `functions/api/_shared/swiss_eph.wasm` é byte a byte idêntico a `wasm/swiss-eph-wasi.wasm` e `wasm/swiss_eph.wasm` do tarball npm `@fusionstrings/swiss-eph@0.1.1`. A carga real do binário retorna `2.10.03` em `swe_version()`.
+O repositório não rastreia o executável. `scripts/prepare-swiss-wasm.mjs` resolve o export público `./wasm-wasi` de `@fusionstrings/swiss-eph@0.1.1`, confere tamanho e SHA-256 antes e depois da gravação e materializa uma cópia ignorada somente sob demanda para desenvolvimento, testes ou empacotamento do Cloudflare Pages. Os arquivos `wasm/swiss-eph-wasi.wasm` e `wasm/swiss_eph.wasm` do tarball npm são byte a byte idênticos; a carga real retorna `2.10.03` em `swe_version()`.
+
+O tarball é protegido pela integridade SRI do lockfile e tem assinatura do registro npm. O pacote não publica um atestado npm/Sigstore de proveniência; portanto, os hashes provam identidade com o tarball adquirido, não uma correspondência source-to-binary reproduzida independentemente. Os testes do Astrologo validam a versão carregada e um fixture Placidus conhecido.
 
 ## Corresponding Source do WASM e obrigações AGPL
 
 Esta distribuição adota a opção AGPL da licença dual da Swiss Ephemeris; ela não pressupõe uma licença profissional. O projeto Astrologo é licenciado como `AGPL-3.0-or-later`; para a obra combinada que incorpora este componente identificado pelo upstream como `AGPL-3.0`, a versão 3 da AGPL é a base compatível aplicável.
 
-O Corresponding Source auditado do binário está fixado em:
+O Corresponding Source declarado pelo upstream e fixado pelos metadados do pacote está em:
 
 - wrapper, bindings, scripts e instruções de build: https://github.com/fusionstrings/swiss-eph/tree/e7a7a9311d3058f337b73b72f45ea6d80cffa5f0;
 - submódulo C exato usado por esse commit: https://github.com/aloistr/swisseph/tree/5ae0bce00dbc66c6315c86da20518e3dd138255b;

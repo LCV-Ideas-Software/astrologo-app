@@ -5,7 +5,6 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   NODE_OPTIONS: "--no-deprecation"
-  WRANGLER_VERSION: "latest"
 concurrency:
   group: deploy-main
   cancel-in-progress: true
@@ -30,13 +29,18 @@ jobs:
           cache: npm
           cache-dependency-path: |
             ./astrologo-frontend/package-lock.json
+      - name: Reject tracked executable artifacts
+        working-directory: ./astrologo-frontend
+        run: node scripts/check-tracked-executables.mjs
       - name: Install + Build Frontend
         working-directory: ./astrologo-frontend
         run: |
-          npm ci --no-audit --no-fund
+          npm ci --ignore-scripts --no-audit --no-fund
           npm run lint
           npm run biome
+          npm test
           npm run build
+          npm run build:functions
       - name: Inject D1 database_id from secret
         working-directory: ./astrologo-frontend
         run: |
@@ -56,7 +60,8 @@ jobs:
       - name: Deploy Frontend
         working-directory: ./astrologo-frontend
         run: |
-          npx --registry=https://registry.npmjs.org/ wrangler@${WRANGLER_VERSION} pages deploy dist --project-name=astrologo-frontend --branch=main --commit-dirty=true
+          npm run prepare:swiss-wasm
+          npx --no-install wrangler pages deploy dist --project-name=astrologo-frontend --branch=main --commit-dirty=true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

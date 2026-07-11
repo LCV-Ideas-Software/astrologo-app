@@ -29,6 +29,7 @@ _cf_functions_build/
 coverage/
 playwright-report/
 test-results/
+functions/api/_shared/*.wasm
 
 # Local AI/agent memories and editor context: keep on disk, never publish
 .ai/

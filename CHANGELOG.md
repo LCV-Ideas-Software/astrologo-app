@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [v02.18.01] - 2026-07-11
+
+### Segurança
+
+- **OpenSSF Scorecard `Binary-Artifacts`** — removido do índice Git o executável `swiss_eph.wasm`; comandos controlados do projeto o materializam localmente sob demanda a partir de `@fusionstrings/swiss-eph@0.1.1`, fixado no lockfile, depois de validar tamanho e SHA-256 antes e depois da gravação.
+- **Prevenção de recorrência** — PR e deploy inspecionam o commit imutável, de forma case-insensitive e por extensão/magic bytes; o Scorecard oficial passou a executar e bloquear em todo push para `main`, enquanto o caminho gerado permanece excluído do Git e do pacote npm.
+- **Build controlado do Worker** — o CI usa `npm ci --ignore-scripts`, executa os 81 testes, compila Pages Functions antes do deploy e fixa Wrangler em `4.110.0` no lockfile.
+- **Publicação fail-closed** — a release automática agora aguarda Deploy, Scorecard, Public Format e CodeQL concluírem com sucesso para o mesmo SHA antes de criar tag ou GitHub Release.
+- **Proveniência sem sobredeclaração** — os avisos legais distinguem integridade do tarball, assinatura do registro e ausência de atestado de proveniência/reprodutibilidade do upstream.
+
+### Preservado
+
+- O bytecode carregado continua com SHA-256 `31d3406560fd39b91bc9dbfdff6c9111f170fde2db62ebe92581ae14e878744c` e `swe_version() = 2.10.03`; o fixture Placidus e todo o contrato posicional permanecem inalterados.
+
 ## [astrologo-frontend v02.18.00] - 2026-07-11
 
 ### Adicionado
