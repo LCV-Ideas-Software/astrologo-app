@@ -8,6 +8,11 @@ import {
   reduceNum,
   wrapDegrees,
 } from './_shared/astroCore';
+import { type BirthTimeDisambiguation, resolveBirthCivilTime } from './_shared/birthTime';
+import { fetchWithTimeout } from './_shared/externalFetch';
+import { resolveBirthPlace } from './_shared/location';
+import { calculateDadosPosicionaisV2 } from './_shared/positionV2';
+import { validateDadosPosicionaisV2 } from './_shared/positionV2Schema';
 import {
   type D1DatabaseLike,
   enforceRateLimit,
@@ -16,6 +21,8 @@ import {
   jsonResponse,
   securityHeaders,
 } from './_shared/requestSecurity';
+import { calculateLocalSolarTimes } from './_shared/solarTimes';
+import { swissEphemeris } from './_shared/swissRuntime';
 
 interface EnvBindings {
   GEMINI_API_KEY: string;
@@ -55,11 +62,16 @@ export async function onRequestPost(context: Context) {
   }
 
   try {
-    const payload = (await request.json()) as Record<string, string>;
+    const payload = (await request.json()) as Record<string, unknown>;
     const nome = String(payload.nome ?? '').trim();
     const dataNascimento = String(payload.dataNascimento ?? '').trim();
     const horaNascimento = String(payload.horaNascimento ?? '').trim();
     const localNascimento = String(payload.localNascimento ?? '').trim();
+    const localNascimentoIdRaw = Number(payload.localNascimentoId);
+    const localNascimentoId = Number.isSafeInteger(localNascimentoIdRaw) ? localNascimentoIdRaw : undefined;
+    const timeDisambiguationRaw = String(payload.timeDisambiguation ?? '').trim();
+    const timeDisambiguation: BirthTimeDisambiguation | undefined =
+      timeDisambiguationRaw === 'earlier' || timeDisambiguationRaw === 'later' ? timeDisambiguationRaw : undefined;
 
     if (!nome || nome.length < 2 || nome.length > 120) {
       return new Response(JSON.stringify({ success: false, error: 'Nome inválido.' }), {
@@ -86,44 +98,130 @@ export async function onRequestPost(context: Context) {
       });
     }
 
-    const tz = -3;
+    const placeResolution = await resolveBirthPlace(localNascimento, localNascimentoId);
+    if (placeResolution.status === 'provider-unavailable') {
+      return jsonResponse(
+        { success: false, code: 'GEOCODER_UNAVAILABLE', error: 'O serviço de localidades está indisponível.' },
+        503,
+        corsHeaders,
+      );
+    }
+    if (placeResolution.status === 'not-found') {
+      return jsonResponse(
+        { success: false, code: 'BIRTHPLACE_NOT_FOUND', error: 'Local de nascimento não encontrado.' },
+        422,
+        corsHeaders,
+      );
+    }
+    if (placeResolution.status === 'selection-required') {
+      return jsonResponse(
+        {
+          success: false,
+          code: 'BIRTHPLACE_SELECTION_REQUIRED',
+          error: 'Selecione uma localidade específica na lista.',
+          candidates: placeResolution.candidates,
+        },
+        422,
+        corsHeaders,
+      );
+    }
 
-    let lat = -22.9068;
-    let lon = -43.1729;
+    const place = placeResolution.place;
+    const timeResolution = resolveBirthCivilTime({
+      date: dataNascimento,
+      time: horaNascimento,
+      timeZoneIana: place.timeZoneIana,
+      ...(timeDisambiguation ? { disambiguation: timeDisambiguation } : {}),
+    });
+    if (timeResolution.status === 'blocked') {
+      return jsonResponse(
+        {
+          success: false,
+          code: timeResolution.reasonCode,
+          error: 'Datas anteriores a 1900 ainda não possuem base histórica certificada neste serviço.',
+        },
+        422,
+        corsHeaders,
+      );
+    }
+    if (timeResolution.status === 'nonexistent') {
+      return jsonResponse(
+        {
+          success: false,
+          code: timeResolution.reasonCode,
+          error: 'Esse horário local não existiu devido a uma mudança histórica de horário.',
+        },
+        422,
+        corsHeaders,
+      );
+    }
+    if (timeResolution.status === 'ambiguous') {
+      return jsonResponse(
+        {
+          success: false,
+          code: 'LOCAL_TIME_AMBIGUOUS',
+          error: 'Esse horário local ocorreu duas vezes. Escolha qual ocorrência consta no registro de nascimento.',
+          timeZoneIana: timeResolution.timeZoneIana,
+          candidates: timeResolution.candidates,
+        },
+        422,
+        corsHeaders,
+      );
+    }
+
+    const lat = place.latitudeDeg;
+    const lon = place.longitudeDeg;
     let srH = 6;
     let srM = 0;
     let ssH = 18;
     let ssM = 0;
 
     try {
-      const encodedName = encodeURIComponent(localNascimento);
-      const geocodeRes = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodedName}&count=1&language=pt&format=json`,
-      );
-      if (geocodeRes.ok) {
-        const geocodeData = (await geocodeRes.json()) as { results?: Array<{ latitude: number; longitude: number }> };
-        const top = geocodeData.results?.[0];
-        if (top) {
-          lat = Number(top.latitude) || lat;
-          lon = Number(top.longitude) || lon;
-        }
-      }
-      const archiveRes = await fetch(
-        `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${dataNascimento}&end_date=${dataNascimento}&daily=sunrise,sunset&timezone=America%2FSao_Paulo`,
+      const archiveRes = await fetchWithTimeout(
+        `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${dataNascimento}&end_date=${dataNascimento}&daily=sunrise,sunset&timezone=${encodeURIComponent(place.timeZoneIana)}`,
       );
       if (archiveRes.ok) {
         const archiveData = (await archiveRes.json()) as { daily?: { sunrise?: string[]; sunset?: string[] } };
-        [srH, srM] = parseIsoTime(archiveData.daily?.sunrise?.[0], 6, 0);
-        [ssH, ssM] = parseIsoTime(archiveData.daily?.sunset?.[0], 18, 0);
+        const sunriseRaw = archiveData.daily?.sunrise?.[0];
+        const sunsetRaw = archiveData.daily?.sunset?.[0];
+        if (!sunriseRaw?.match(/T\d{2}:\d{2}/) || !sunsetRaw?.match(/T\d{2}:\d{2}/)) {
+          throw new Error('Solar archive returned incomplete data');
+        }
+        [srH, srM] = parseIsoTime(sunriseRaw, 6, 0);
+        [ssH, ssM] = parseIsoTime(sunsetRaw, 18, 0);
+      } else {
+        throw new Error('Solar archive unavailable');
       }
     } catch {
-      console.warn('Usando Fallback Geográfico (RJ).');
+      const solarTimes = calculateLocalSolarTimes({
+        date: dataNascimento,
+        timeZoneIana: place.timeZoneIana,
+        latitudeDeg: lat,
+        longitudeDeg: lon,
+        elevationMeters: place.elevationMeters,
+      });
+      if (!solarTimes) {
+        return jsonResponse(
+          {
+            success: false,
+            code: 'SOLAR_TIMES_UNAVAILABLE',
+            error: 'Não foi possível determinar nascer e pôr do Sol para esse local e data.',
+          },
+          422,
+          corsHeaders,
+        );
+      }
+      srH = solarTimes.sunrise.hour;
+      srM = solarTimes.sunrise.minute;
+      ssH = solarTimes.sunset.hour;
+      ssM = solarTimes.sunset.minute;
     }
 
     const [ano = 0, mes = 1, dia = 1] = dataNascimento.split('-').map(Number);
     const [hLocal = 0, mLocal = 0] = horaNascimento.split(':').map(Number);
 
-    let utcHour = hLocal - tz;
+    const legacyTimezoneOffsetHours = -3;
+    let utcHour = hLocal - legacyTimezoneOffsetHours;
     let utcDay = dia;
     if (utcHour >= 24) {
       utcHour -= 24;
@@ -361,10 +459,42 @@ export async function onRequestPost(context: Context) {
     );
 
     const idUnico = crypto.randomUUID();
+    const calculatedAtUtc = new Date().toISOString();
+    const dadosPosicionaisV2 = calculateDadosPosicionaisV2(
+      {
+        calculationId: idUnico,
+        calculatedAtUtc,
+        instantUtc: timeResolution.instantUtc,
+        date: dataNascimento,
+        time: horaNascimento,
+        timeResolution,
+        place: {
+          sourceLabel: place.displayLabel,
+          latitudeDeg: place.latitudeDeg,
+          longitudeDeg: place.longitudeDeg,
+          elevationMeters: place.elevationMeters,
+          providerResultId: place.providerResultId,
+        },
+      },
+      swissEphemeris,
+    );
+    const positionalValidation = validateDadosPosicionaisV2(dadosPosicionaisV2);
+    if (!positionalValidation.valid) {
+      console.error('Contrato posicional v2 inválido.', positionalValidation.errors);
+      return jsonResponse(
+        {
+          success: false,
+          code: 'POSITIONAL_SCHEMA_VALIDATION_FAILED',
+          error: 'O cálculo posicional não passou pelos invariantes de segurança.',
+        },
+        500,
+        corsHeaders,
+      );
+    }
     try {
       if (env.BIGDATA_DB) {
         await env.BIGDATA_DB.prepare(
-          `INSERT INTO astrologo_mapas (id, nome, data_nascimento, hora_nascimento, local_nascimento, dados_astronomica, dados_tropical, dados_globais) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO astrologo_mapas (id, nome, data_nascimento, hora_nascimento, local_nascimento, dados_astronomica, dados_tropical, dados_globais, dados_posicionais_v2) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
           .bind(
             idUnico,
@@ -375,11 +505,22 @@ export async function onRequestPost(context: Context) {
             JSON.stringify(dadosAstronomica),
             JSON.stringify(dadosTropical),
             JSON.stringify(dadosGlobais),
+            JSON.stringify(dadosPosicionaisV2),
           )
           .run();
       }
-    } catch {
+    } catch (error) {
       console.error('Falha ao gravar no BD.');
+      return jsonResponse(
+        {
+          success: false,
+          code: 'POSITIONAL_PERSISTENCE_FAILED',
+          error: 'O mapa foi calculado, mas não pôde ser persistido com segurança.',
+          detail: error instanceof Error ? error.message : undefined,
+        },
+        503,
+        corsHeaders,
+      );
     }
 
     return new Response(
@@ -389,6 +530,7 @@ export async function onRequestPost(context: Context) {
         dadosGlobais,
         dadosAstronomica,
         dadosTropical,
+        dadosPosicionaisV2,
         query: { nome, dataNascimento, horaNascimento, localNascimento },
       }),
       { headers: { 'Content-Type': 'application/json', ...corsHeaders, ...securityHeaders } },

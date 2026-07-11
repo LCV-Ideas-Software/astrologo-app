@@ -36,6 +36,13 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
+import {
+  type DadosPosicionaisV2,
+  formatDegreePtBrTruncated,
+  formatInstantInBrasilia,
+  renderPositionalV2EmailHtml,
+  renderPositionalV2Text,
+} from './astrologyV2';
 import { ComplianceBanner } from './components/ComplianceBanner';
 import { useNotification } from './components/Notification';
 import { LicencasModule } from './modules/compliance/LicencasModule';
@@ -92,6 +99,7 @@ interface ResultData {
   dadosGlobais: DadosGlobais;
   dadosAstronomica: DadosSistema;
   dadosTropical: DadosSistema;
+  dadosPosicionaisV2?: DadosPosicionaisV2;
   analiseIa?: string;
 }
 interface ModalProps {
@@ -106,7 +114,7 @@ interface EmailModalProps {
 }
 interface AutocompleteProps {
   value: string;
-  onChange: (v: string) => void;
+  onChange: (value: string, providerResultId?: number) => void;
 }
 interface BlocoProps {
   titulo: string;
@@ -124,9 +132,25 @@ interface ResultViewProps {
   openInfoModal: (t: 'astronomica' | 'tropical') => void;
 }
 interface GeoResult {
+  id?: number;
   name?: string;
   admin1?: string;
   country?: string;
+}
+
+interface CalculationFormData {
+  nome: string;
+  dataNascimento: string;
+  horaNascimento: string;
+  localNascimento: string;
+  localNascimentoId?: number;
+  timeDisambiguation?: 'earlier' | 'later';
+}
+
+interface AmbiguousTimeCandidate {
+  disambiguation: 'earlier' | 'later';
+  instantUtc: string;
+  offsetAtBirth: string;
 }
 
 type AuthMode = 'save' | 'retrieve' | 'delete' | null;
@@ -137,6 +161,34 @@ const formatarData = (dataStr: string): string => {
   const p = dataStr.split('-');
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : dataStr;
 };
+
+const maskBrazilianDate = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+};
+
+const brazilianDateToIso = (value: string): string => {
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return '';
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return '';
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
+const maskBrazilianTime = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+  return digits.length <= 2 ? digits : `${digits.slice(0, 2)}:${digits.slice(2)}`;
+};
+
+const formatBirthForDisplay = (result: ResultData): string =>
+  result.dadosPosicionaisV2
+    ? `${formatInstantInBrasilia(result.dadosPosicionaisV2.birthContext.timeResolution.instantUtc)} — Hora oficial de Brasília`
+    : `${formatarData(result.query.dataNascimento)} — horário legado sem fuso verificável`;
 
 // Conversor visual para garantir a exibição estética tanto de mapas antigos quanto dos recém-calculados
 const formatPosicaoLabel = (pos: string): string => {
@@ -290,7 +342,7 @@ const LocationAutocomplete: React.FC<AutocompleteProps> = ({ value, onChange }) 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuery(val);
-    onChange(val);
+    onChange(val, undefined);
     if (val.length < 3) {
       setSuggestions([]);
       setIsOpen(false);
@@ -313,7 +365,7 @@ const LocationAutocomplete: React.FC<AutocompleteProps> = ({ value, onChange }) 
   const handleSelect = (s: GeoResult) => {
     const locName = [s.name, s.admin1, s.country].filter(Boolean).join(', ');
     setQuery(locName);
-    onChange(locName);
+    onChange(locName, s.id);
     setIsOpen(false);
   };
 
@@ -339,7 +391,7 @@ const LocationAutocomplete: React.FC<AutocompleteProps> = ({ value, onChange }) 
         <ul className="absolute z-100 w-full bg-white/95 backdrop-blur-xl border border-slate-200 mt-2 rounded-xl shadow-2xl overflow-hidden divide-y divide-slate-100 max-h-60 overflow-y-auto">
           {suggestions.map((s, i) => (
             <li
-              key={i}
+              key={s.id ?? i}
               onMouseDown={(e) => {
                 e.preventDefault();
                 handleSelect(s);
@@ -455,6 +507,117 @@ export const RenderBlocoAstrologico: React.FC<BlocoProps> = ({
   );
 };
 
+const PositionalV2Panel: React.FC<{ data: DadosPosicionaisV2 }> = ({ data }) => {
+  const angelName = (angelId: number) =>
+    data.positions.find((position) => position.angelicQuinary.angel.id === angelId)?.angelicQuinary.angel
+      .canonicalName ?? `Anjo #${angelId}`;
+
+  return (
+    <section className="mt-12 w-full max-w-5xl mx-auto bg-white/80 backdrop-blur-2xl rounded-[2.5rem] border border-violet-100 shadow-[0_8px_32px_rgba(109,40,217,0.12)] p-5 md:p-9">
+      <header className="mb-6 border-b border-violet-100 pb-5">
+        <h3 className="text-xl md:text-2xl font-black text-violet-700">
+          📐 Posições, Casas Placidus e Falange Angelical
+        </h3>
+        <p className="mt-2 text-sm text-slate-600">
+          Nascimento convertido: {formatInstantInBrasilia(data.birthContext.timeResolution.instantUtc)} —{' '}
+          <strong>Hora oficial de Brasília</strong>
+        </p>
+        {data.birthContext.timeResolution.historicalConfidence === 'best-effort-1900-1969' && (
+          <p className="mt-2 text-sm font-semibold text-amber-700">
+            Fuso histórico de 1900–1969: melhor esforço conforme a base IANA disponível no runtime.
+          </p>
+        )}
+      </header>
+
+      <div className="overflow-x-auto rounded-2xl border border-slate-200">
+        <table className="min-w-215 w-full text-left text-sm">
+          <thead className="bg-violet-50 text-violet-900">
+            <tr>
+              <th className="p-3">Planeta</th>
+              <th className="p-3">Signo e grau tropical</th>
+              <th className="p-3">Casa</th>
+              <th className="p-3">Constelação IAU do céu real</th>
+              <th className="p-3">Quinário e anjo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.positions.map((planet) => (
+              <tr key={planet.bodyId} className="border-t border-slate-100 align-top">
+                <td className="p-3 font-bold text-slate-900">
+                  {planet.symbol} {planet.displayNamePtBr}
+                </td>
+                <td className="p-3 text-slate-700">
+                  {formatDegreePtBrTruncated(planet.tropical.degreeWithinSignDeg)} de{' '}
+                  <strong>{planet.tropical.sign.namePtBr}</strong> · {planet.tropical.decan.index1}º decanato
+                </td>
+                <td className="p-3 text-slate-700">
+                  {planet.housePlacement.status === 'available'
+                    ? `Casa ${planet.housePlacement.houseIndex1}`
+                    : 'Indisponível pelo método Placidus'}
+                </td>
+                <td className="p-3 text-slate-700">
+                  {planet.astronomicalReal.status === 'available' && planet.astronomicalReal.constellation
+                    ? `${planet.astronomicalReal.constellation.namePtBr} (${planet.astronomicalReal.constellation.iauCode})`
+                    : 'Indisponível junto a limite IAU'}
+                </td>
+                <td className="p-3 text-slate-700">
+                  <strong>
+                    #{planet.angelicQuinary.angel.id} {planet.angelicQuinary.angel.canonicalName}
+                  </strong>{' '}
+                  <bdi lang="he" dir="rtl" className="font-serif text-base">
+                    {planet.angelicQuinary.angel.hebrewTriplet}
+                  </bdi>
+                  <br />
+                  <span className="text-xs">
+                    {planet.angelicQuinary.angel.choir} · {planet.angelicQuinary.angel.prince} · quinário{' '}
+                    {formatDegreePtBrTruncated(planet.angelicQuinary.quinary.globalStartLongitudeDeg, 0)}–
+                    {formatDegreePtBrTruncated(planet.angelicQuinary.quinary.globalEndLongitudeDegExclusive, 0)}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="mt-4 text-xs leading-relaxed text-slate-500">
+        A classificação IAU usa áreas bidimensionais no céu e não define “grau dentro da constelação”. A correspondência
+        angelical é simbólica e deriva exclusivamente da longitude tropical em quinários de 5°.
+      </p>
+
+      {data.houses.status === 'available' && data.houses.cusps && (
+        <div className="mt-7">
+          <h4 className="font-black text-slate-800">Cúspides das 12 Casas Placidus</h4>
+          <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
+            {data.houses.cusps.map((cusp) => (
+              <div key={cusp.houseIndex1} className="rounded-xl bg-slate-50 border border-slate-100 p-3 text-sm">
+                <strong>Casa {cusp.houseIndex1}</strong>
+                <br />
+                {formatDegreePtBrTruncated(cusp.tropical.degreeWithinSignDeg)} de {cusp.tropical.signNamePtBr}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-7 rounded-2xl bg-violet-50 border border-violet-100 p-4">
+        <h4 className="font-black text-violet-900">👼 Falange Angelical do Mapa</h4>
+        <ul className="mt-2 space-y-1 text-sm text-violet-950">
+          {data.aggregates.angelicFalange.map((group) => (
+            <li key={group.angelId}>
+              <strong>
+                #{group.angelId} {angelName(group.angelId)}
+              </strong>
+              : {group.memberBodyIds.join(', ')}
+              {group.occurrenceCount > 1 ? ` · ${group.occurrenceCount} correspondências` : ''}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+};
+
 export const ResultView: React.FC<ResultViewProps> = ({
   result,
   analiseIa,
@@ -474,7 +637,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
     let t = `*🌌 MAPEAMENTO ASTROLÓGICO E ESOTÉRICO 🌌*\n\n`;
     t += `*Consulente:* ${result.query.nome}\n`;
     t += `*Local:* ${result.query.localNascimento}\n`;
-    t += `*Nascimento:* ${formatarData(result.query.dataNascimento)} às ${result.query.horaNascimento}\n`;
+    t += `*Nascimento:* ${formatBirthForDisplay(result)}\n`;
 
     t += divider;
     t += `*🌬️ FORÇAS GLOBAIS*\n\n`;
@@ -513,6 +676,11 @@ export const ResultView: React.FC<ResultViewProps> = ({
 
     t += `*⭐ MÓDULO II: ASTRONÔMICO CONSTELACIONAL (A ALMA)*\n`;
     t += blocoTexto(result.dadosAstronomica);
+
+    if (result.dadosPosicionaisV2) {
+      t += divider;
+      t += `${renderPositionalV2Text(result.dadosPosicionaisV2)}\n`;
+    }
 
     if (analiseIa) {
       const iaTxt = htmlToPlainText(analiseIa);
@@ -620,7 +788,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
             <div style="background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 32px; border-radius: 24px; border: 1px solid #ffffff; ${boxShadow} text-align: center; margin-bottom: 40px;">
                 <h2 style="font-size: 24px; font-weight: 800; color: #1e293b; margin: 0 0 8px 0;">${result.query.nome}</h2>
                 <p style="font-size: 16px; color: #475569; margin: 0;">${result.query.localNascimento}</p>
-                <p style="font-size: 16px; color: #475569; margin: 0;">${formatarData(result.query.dataNascimento)} às ${result.query.horaNascimento}</p>
+                <p style="font-size: 16px; color: #475569; margin: 0;">${formatBirthForDisplay(result)}</p>
             </div>
 
             <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px;">
@@ -654,6 +822,8 @@ export const ResultView: React.FC<ResultViewProps> = ({
 
             ${renderBlocoAstrologicoEmail('Módulo II: Astronômico Constelacional', result.dadosAstronomica.astrologia, result.dadosAstronomica.umbanda, false)}
 
+            ${result.dadosPosicionaisV2 ? renderPositionalV2EmailHtml(result.dadosPosicionaisV2) : ''}
+
             ${
               analiseSanitizada
                 ? `
@@ -667,6 +837,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
 
             <footer style="text-align: center; margin-top: 60px; padding-top: 20px; border-top: 1px solid #dde4ee;">
                 <p style="font-size: 12px; color: #64748b; margin: 0;">Gerado via Oráculo Celestial ${APP_VERSION}</p>
+                <p style="font-size: 12px; color: #64748b; margin: 6px 0 0;">Todos os instantes exibidos usam a hora oficial de Brasília (America/Sao_Paulo).</p>
             </footer>
 
         </div>
@@ -826,6 +997,15 @@ export const ResultView: React.FC<ResultViewProps> = ({
         onInfoClick={() => openInfoModal('astronomica')}
       />
 
+      {result.dadosPosicionaisV2 ? (
+        <PositionalV2Panel data={result.dadosPosicionaisV2} />
+      ) : (
+        <p className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+          Mapa legado: graus, Casas Placidus e falange angelical não estão disponíveis. O horário legado não possui fuso
+          verificável e não será relabelado como horário de Brasília.
+        </p>
+      )}
+
       {!analiseIa && onSolicitarAnalise && (
         <div className="flex justify-center mt-14 mb-10 w-full border-t border-slate-200 pt-12">
           <button
@@ -863,7 +1043,14 @@ export const ResultView: React.FC<ResultViewProps> = ({
 };
 
 export default function App() {
-  const [formData, setFormData] = useState({ nome: '', dataNascimento: '', horaNascimento: '', localNascimento: '' });
+  const [formData, setFormData] = useState<CalculationFormData>({
+    nome: '',
+    dataNascimento: '',
+    horaNascimento: '',
+    localNascimento: '',
+  });
+  const [dataNascimentoDisplay, setDataNascimentoDisplay] = useState('');
+  const [ambiguousTimeCandidates, setAmbiguousTimeCandidates] = useState<AmbiguousTimeCandidate[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingAi, setLoadingAi] = useState(false);
   const [result, setResult] = useState<ResultData | null>(null);
@@ -1017,10 +1204,19 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      const data = (await res.json()) as { success: boolean; error?: string } & ResultData;
+      const data = (await res.json()) as {
+        success: boolean;
+        error?: string;
+        code?: string;
+        candidates?: AmbiguousTimeCandidate[];
+      } & ResultData;
       if (data.success) {
+        setAmbiguousTimeCandidates([]);
         setResult(data);
       } else {
+        if (data.code === 'LOCAL_TIME_AMBIGUOUS' && Array.isArray(data.candidates)) {
+          setAmbiguousTimeCandidates(data.candidates);
+        }
         showNotification(String(data.error), 'error');
       }
     } catch {
@@ -1055,6 +1251,8 @@ export default function App() {
   const handleNovaConsulta = () => {
     setResult(null);
     setAnaliseIa('');
+    setAmbiguousTimeCandidates([]);
+    setDataNascimentoDisplay('');
     setFormData({ nome: '', dataNascimento: '', horaNascimento: '', localNascimento: '' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -1116,7 +1314,19 @@ export default function App() {
               </label>
               <LocationAutocomplete
                 value={formData.localNascimento}
-                onChange={(val) => setFormData({ ...formData, localNascimento: val })}
+                onChange={(value, providerResultId) => {
+                  setAmbiguousTimeCandidates([]);
+                  setFormData((current) => {
+                    const next: CalculationFormData = { ...current, localNascimento: value };
+                    delete next.timeDisambiguation;
+                    if (providerResultId === undefined) {
+                      delete next.localNascimentoId;
+                      return next;
+                    }
+                    next.localNascimentoId = providerResultId;
+                    return next;
+                  });
+                }}
               />
             </div>
             <div className="flex flex-col gap-2 w-full">
@@ -1130,13 +1340,25 @@ export default function App() {
                 id="dataNascimento"
                 name="birthDate"
                 required
-                type="date"
-                autoComplete="on"
+                type="text"
+                inputMode="numeric"
+                autoComplete="bday"
+                placeholder="DD/MM/AAAA"
+                pattern="\d{2}/\d{2}/\d{4}"
                 aria-label="Data de Nascimento"
                 title="Data de Nascimento"
                 className="w-full p-4 pl-5 text-base bg-white/80 text-slate-800 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:bg-white outline-none transition shadow-sm font-medium scheme-light"
-                value={formData.dataNascimento}
-                onChange={(e) => setFormData({ ...formData, dataNascimento: e.target.value })}
+                value={dataNascimentoDisplay}
+                onChange={(e) => {
+                  setAmbiguousTimeCandidates([]);
+                  const display = maskBrazilianDate(e.target.value);
+                  setDataNascimentoDisplay(display);
+                  setFormData((current) => {
+                    const next: CalculationFormData = { ...current, dataNascimento: brazilianDateToIso(display) };
+                    delete next.timeDisambiguation;
+                    return next;
+                  });
+                }}
               />
             </div>
             <div className="flex flex-col gap-2 w-full">
@@ -1144,21 +1366,57 @@ export default function App() {
                 htmlFor="horaNascimento"
                 className="flex items-center gap-2 text-[11px] md:text-xs font-bold text-slate-500 uppercase tracking-widest ml-2"
               >
-                <Clock className="w-4 h-4 text-blue-500" /> HORÁRIO DE NASCIMENTO{' '}
+                <Clock className="w-4 h-4 text-blue-500" /> HORÁRIO LOCAL NO LOCAL DE NASCIMENTO{' '}
                 <span className="normal-case text-slate-400 font-medium tracking-normal">(HH:mm)</span>
               </label>
               <input
                 id="horaNascimento"
                 name="birthTime"
                 required
-                type="time"
+                type="text"
+                inputMode="numeric"
+                pattern="(?:[01]\d|2[0-3]):[0-5]\d"
+                placeholder="HH:mm"
                 autoComplete="off"
                 aria-label="Horário de Nascimento"
                 title="Horário de Nascimento"
                 className="w-full p-4 pl-5 text-base bg-white/80 text-slate-800 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:bg-white outline-none transition shadow-sm font-medium scheme-light"
                 value={formData.horaNascimento}
-                onChange={(e) => setFormData({ ...formData, horaNascimento: e.target.value })}
+                onChange={(e) => {
+                  setAmbiguousTimeCandidates([]);
+                  setFormData((current) => {
+                    const next: CalculationFormData = { ...current, horaNascimento: maskBrazilianTime(e.target.value) };
+                    delete next.timeDisambiguation;
+                    return next;
+                  });
+                }}
               />
+              {ambiguousTimeCandidates.length === 2 && (
+                <fieldset className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <legend className="px-1 text-xs font-bold text-amber-900">
+                    Horário repetido por mudança histórica
+                  </legend>
+                  <p className="mb-2 text-xs text-amber-800">
+                    Escolha a ocorrência do registro. As opções abaixo já estão convertidas para Brasília.
+                  </p>
+                  {ambiguousTimeCandidates.map((candidate) => (
+                    <label
+                      key={candidate.disambiguation}
+                      className="flex items-center gap-2 py-1 text-sm text-amber-950"
+                    >
+                      <input
+                        type="radio"
+                        name="timeDisambiguation"
+                        value={candidate.disambiguation}
+                        checked={formData.timeDisambiguation === candidate.disambiguation}
+                        onChange={() => setFormData({ ...formData, timeDisambiguation: candidate.disambiguation })}
+                      />
+                      {candidate.disambiguation === 'earlier' ? 'Primeira ocorrência' : 'Segunda ocorrência'} —{' '}
+                      {formatInstantInBrasilia(candidate.instantUtc)} (Hora oficial de Brasília)
+                    </label>
+                  ))}
+                </fieldset>
+              )}
             </div>
 
             <div className="md:col-span-2 mt-4 flex flex-col md:flex-row gap-4 w-full">
@@ -1244,9 +1502,7 @@ export default function App() {
                     }}
                   >
                     <strong className="text-slate-800 truncate block text-base">{m.query.nome}</strong>
-                    <span className="text-xs text-slate-500">
-                      {formatarData(m.query.dataNascimento)} às {m.query.horaNascimento}
-                    </span>
+                    <span className="text-xs text-slate-500">{formatBirthForDisplay(m)}</span>
                   </div>
                 ))}
               </div>

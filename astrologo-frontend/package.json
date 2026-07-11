@@ -28,7 +28,9 @@
   },
   "dependencies": {
     "@google/genai": "^2.11.0",
+    "@js-temporal/polyfill": "0.5.1",
     "@tailwindcss/vite": "^4.3.2",
+    "astronomy-engine": "2.1.19",
     "dompurify": "^3.4.11",
     "lucide-react": "^1.24.0",
     "react": "^19.2.7",
@@ -39,6 +41,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.3",
     "@eslint/js": "^10.0.1",
+    "@fusionstrings/swiss-eph": "0.1.1",
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

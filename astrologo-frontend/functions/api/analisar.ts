@@ -3,6 +3,7 @@
 // Descrição: API de análise astrológica via Gemini v1beta com token counting, structured outputs, e caching otimizado.
 
 import { GoogleGenAI, HarmBlockThreshold, HarmCategory } from '@google/genai';
+import { buildAnalysisPrompt, loadCanonicalAnalysisV2, V2_SYSTEM_INSTRUCTION } from './_shared/analysisPrompt';
 import {
   type D1DatabaseLike,
   enforceRateLimit,
@@ -203,22 +204,10 @@ export async function onRequestPost(context: Context) {
     }
 
     const dadosAnalise = `Sistema Tropical: ${JSON.stringify(dadosTropical)} | Sistema Astronômico Constelacional: ${JSON.stringify(dadosAstronomica)} | Globais (Tatwas e Numerologia): ${JSON.stringify(dadosGlobais)}`;
-
-    const prompt = `Atue como um Mestre Iniciador da Investigue as Influências Astrológicas e Psicanalista Junguiano.
-Dados calculados astrologicamente: ${dadosAnalise} do consulente: ${JSON.stringify(query)}
-
-O aplicativo exibe ao usuário uma jornada narrativa de choque de realidade: PRIMEIRO apresentamos a Astrologia Tropical (12 signos) como a máscara terrena/Ego, e DEPOIS a Astrologia Astronômica Constelacional (13 signos) como a verdade estelar oculta/Alma.
-Siga EXATAMENTE esta mesma ordem! Faça DUAS análises profundas e separadas:
-1º. Astrologia Tropical (A Persona)
-2º. Astrologia Astronômica (A Essência da Alma)
-Integre a Astrologia, a Investigue as Influências Astrológicas de W. W. da Matta e Silva, os Tatwas e a Psicologia Analítica de C. G. Jung. Ao final, efetue uma síntese conjunta comparativa.
-
-ATENÇÃO RIGOROSA 1: Analise a influência do "Astro" (o 6º card da Umbanda, que representa a Hora Planetária do minuto exato baseada na Sequência dos Caldeus) e sua sinergia com o Orixá regente.
-ATENÇÃO RIGOROSA 2: Inclua de forma explícita e obrigatória a informação de que a Coroa calculada via data de nascimento serve para revelar a Vibração Original "Teórica/Magnética". Informe claramente que, por necessidades e cobranças cármicas de encarnação, a entidade que atua "de frente" pode pertencer a outra Linha, e que a verdadeira coroa e guias de frente só podem ser atestados de forma inequívoca e prática no terreiro através da "Lei de Pemba" e pelo Mestre de Iniciação.
-
-Retorne APENAS HTML formatado em <p>, <strong>, <ul>, <li>. Sem marcações markdown ou blocos de código e com os títulos alinhados à esquerda e os textos dos parágrafos justificados e com recuo de primeira linha de cada parágrafo.
-
-USE OBRIGATORIAMENTE emojis e símbolos pictóricos Unicode ao longo de todo o texto: símbolos dos astros e planetas (☀️🌙⭐✨🪐💫🌟), dos signos do zodíaco (♈♉♊♋♌♍♎♏♐♑♒♓⛎), dos Orixás e entidades (⚔️🌊🔥🌿🌪️⚡🏹🌹🕯️💀🌺), de elementos esotéricos e místicos (🔮🧿📿☯️🌀🗝️🌑🌕), além de outros símbolos de reforço narrativo (🧠💡⚖️🌐🔗💎🛡️). Coloque-os no início dos títulos e seções, e intercale-os nos parágrafos para enriquecer a leitura e destacar conceitos-chave.`;
+    // O navegador nunca é autoridade para fatos v2. O servidor reidrata pelo id;
+    // mapas legados sem o bloco persistido continuam naturalmente no prompt v1.
+    const canonicalV2 = await loadCanonicalAnalysisV2(env.BIGDATA_DB, id);
+    const prompt = buildAnalysisPrompt(dadosAnalise, query, canonicalV2);
 
     // ==== DYNAMIC MODEL CONFIGURATION VIA BIGDATA_DB ====
     let selectedModel = GEMINI_CONFIG_DEFAULTS.model;
@@ -278,6 +267,7 @@ USE OBRIGATORIAMENTE emojis e símbolos pictóricos Unicode ao longo de todo o t
           model: selectedModel,
           contents: prompt,
           config: {
+            ...(canonicalV2 ? { systemInstruction: V2_SYSTEM_INSTRUCTION } : {}),
             maxOutputTokens: GEMINI_CONFIG_DEFAULTS.maxOutputTokens, // Limite robusto (docs: importante)
             temperature: 1.0, // Recomendado para Gemini Flash (docs: evita looping)
             // ==== IMPROVED SAFETY SETTINGS (docs: best practice v1beta) ====

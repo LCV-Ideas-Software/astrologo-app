@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Adicionado
+
+- **Dados posicionais v2** — cálculo server-authoritative dos dez planetas com longitude tropical, signo/grau/decanato, 12 casas e cúspides Placidus, Ascendente/MC, constelação IAU com política fail-closed e os 72 anjos em quinários tropicais de 5°. O resultado agrega uma falange por planeta, sem eleger “anjo principal” ou “regente natal”.
+- **Contrato, persistência e superfícies v2** — schema estrito versionado, coluna D1 própria, reidratação do prompt de IA pelo ID do mapa, painel público, relatórios/e-mail e suporte correspondente no `admin-app/Astrologo`.
+- **Runtime astronômico auditável** — Astronomy Engine 2.1.19, Swiss Ephemeris WASM 2.10.03 vendorizado, hashes dos artefatos, teste real do contrato WASI e documentação de licenças/proveniência.
+
+### Corrigido
+
+- Subrequisições Open-Meteo agora têm prazo máximo abortável de 8 segundos; a resolução de uma localidade selecionada usa o endpoint oficial por ID, sem confiar em coordenadas ou timezone enviados pelo navegador.
+- Datas e horários de apresentação usam explicitamente `pt-BR` e `America/Sao_Paulo`; o horário de nascimento continua sendo interpretado no fuso do local, com gap/fold de DST explícitos e sem inventar fuso para mapas legados.
+
+### Preservado
+
+- Os quatro planetas e seis regentes dos dois sistemas legados mantêm forma e caminho compatíveis. O corpo histórico do prompt de IA permanece integral e recebe apenas um adendo v2.
+
 ## [astrologo-frontend v02.17.25] - 2026-05-15
 ### Alterado
 - **4-gate quality directive compliance** — frontend package and deploy workflow aligned with eslint, biome, prettier, and cross-review gates; package metadata synchronized with `APP_VERSION` and the published v02.17.25 release.
