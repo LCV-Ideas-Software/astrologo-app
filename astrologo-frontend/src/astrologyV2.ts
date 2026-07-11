@@ -40,6 +40,31 @@ export interface PositionalV2Planet {
   };
 }
 
+export interface PlanetPresentationPtBr {
+  readonly label: string;
+  readonly symbol: string;
+}
+
+const PLANET_PRESENTATION_PT_BR: Readonly<Record<string, PlanetPresentationPtBr>> = Object.freeze({
+  sun: { label: 'Sol', symbol: '☉' },
+  moon: { label: 'Lua', symbol: '☽' },
+  mercury: { label: 'Mercúrio', symbol: '☿' },
+  venus: { label: 'Vênus', symbol: '♀' },
+  mars: { label: 'Marte', symbol: '♂' },
+  jupiter: { label: 'Júpiter', symbol: '♃' },
+  saturn: { label: 'Saturno', symbol: '♄' },
+  uranus: { label: 'Urano', symbol: '♅' },
+  neptune: { label: 'Netuno', symbol: '♆' },
+  pluto: { label: 'Plutão', symbol: '♇' },
+});
+
+export const getPlanetPresentationPtBr = (bodyId: string): PlanetPresentationPtBr =>
+  PLANET_PRESENTATION_PT_BR[bodyId] ?? { label: 'Corpo celeste', symbol: '✦' };
+
+export const findConsultantRulingPosition = (
+  positions: readonly PositionalV2Planet[],
+): PositionalV2Planet | undefined => positions.find((position) => position.bodyId === 'sun');
+
 export interface DadosPosicionaisV2 {
   readonly schemaId: 'urn:astrologo:dados-posicionais';
   readonly schemaVersion: '2.0.0';
@@ -139,7 +164,17 @@ const houseLabel = (planet: PositionalV2Planet): string =>
     ? `Casa ${planet.housePlacement.houseIndex1}`
     : 'Casa Placidus indisponível';
 
+const angelForFalangeGroup = (
+  data: DadosPosicionaisV2,
+  angelId: number,
+): PositionalV2Planet['angelicQuinary']['angel'] | undefined =>
+  data.positions.find((planet) => planet.angelicQuinary.angel.id === angelId)?.angelicQuinary.angel;
+
+const falangeMemberLabelsPtBr = (memberBodyIds: readonly string[]): string =>
+  memberBodyIds.map((bodyId) => getPlanetPresentationPtBr(bodyId).label).join(', ');
+
 export function renderPositionalV2Text(data: DadosPosicionaisV2): string {
+  const rulingPosition = findConsultantRulingPosition(data.positions);
   const lines = [
     '*📐 POSIÇÕES, CASAS E FALANGE ANGELICAL*',
     '',
@@ -147,42 +182,90 @@ export function renderPositionalV2Text(data: DadosPosicionaisV2): string {
     `*Mapa calculado:* ${formatInstantInBrasilia(data.calculatedAtUtc)} (Hora oficial de Brasília)`,
     '',
   ];
-  for (const planet of data.positions) {
+  if (rulingPosition) {
+    const presentation = getPlanetPresentationPtBr(rulingPosition.bodyId);
+    const { angel, quinary } = rulingPosition.angelicQuinary;
     lines.push(
-      `• ${planet.symbol} *${planet.displayNamePtBr}:* ${formatDegreePtBrTruncated(planet.tropical.degreeWithinSignDeg)} de ${planet.tropical.sign.namePtBr}; ${houseLabel(planet)}; céu real: ${constellationLabel(planet)}; anjo #${planet.angelicQuinary.angel.id} ${planet.angelicQuinary.angel.canonicalName} (${planet.angelicQuinary.angel.choir}, ${planet.angelicQuinary.angel.prince}).`,
+      '*👼 ANJO REGENTE DO CONSULENTE*',
+      `• ${presentation.symbol} *#${angel.id} ${angel.canonicalName}* — ${angel.hebrewTriplet}`,
+      `• *Base do cálculo:* posição tropical natal do Sol em ${formatDegreePtBrTruncated(rulingPosition.tropical.degreeWithinSignDeg)} de ${rulingPosition.tropical.sign.namePtBr}; quinário tropical ${formatDegreePtBrTruncated(quinary.globalStartLongitudeDeg, 0)}–${formatDegreePtBrTruncated(quinary.globalEndLongitudeDegExclusive, 0)}.`,
+      `• *Coro e príncipe:* ${angel.choir}; ${angel.prince}.`,
+      `• *Síntese tradicional:* ${angel.qualitySummaryPtBr}`,
+      '_O Anjo Regente do Consulente é uma correspondência simbólica da tradição hermético-cabalística, derivada exclusivamente do quinário tropical do Sol._',
+      '',
     );
   }
-  lines.push('', '*👼 Falange do mapa:*');
+  for (const planet of data.positions) {
+    const presentation = getPlanetPresentationPtBr(planet.bodyId);
+    lines.push(
+      `• ${presentation.symbol} *${presentation.label}:* ${formatDegreePtBrTruncated(planet.tropical.degreeWithinSignDeg)} de ${planet.tropical.sign.namePtBr}; ${houseLabel(planet)}; céu real: ${constellationLabel(planet)}; anjo #${planet.angelicQuinary.angel.id} ${planet.angelicQuinary.angel.canonicalName} (${planet.angelicQuinary.angel.choir}, ${planet.angelicQuinary.angel.prince}).`,
+    );
+  }
+  lines.push('', '*👼 Falange Angelical do Mapa:*');
   for (const group of data.aggregates.angelicFalange) {
-    const angel = data.positions.find((planet) => planet.angelicQuinary.angel.id === group.angelId)?.angelicQuinary
-      .angel;
-    if (angel) lines.push(`• #${angel.id} ${angel.canonicalName}: ${group.memberBodyIds.join(', ')}.`);
+    const angel = angelForFalangeGroup(data, group.angelId);
+    if (angel) lines.push(`• #${angel.id} ${angel.canonicalName}: ${falangeMemberLabelsPtBr(group.memberBodyIds)}.`);
   }
   lines.push('', '_Constelações IAU são áreas bidimensionais; não existe grau interno de constelação neste método._');
   return lines.join('\n');
 }
 
 export function renderPositionalV2EmailHtml(data: DadosPosicionaisV2): string {
+  const rulingPosition = findConsultantRulingPosition(data.positions);
+  const rulingAngelHtml = rulingPosition
+    ? (() => {
+        const presentation = getPlanetPresentationPtBr(rulingPosition.bodyId);
+        const { angel, quinary } = rulingPosition.angelicQuinary;
+        return `
+      <div style="margin:22px 0;padding:22px;border:2px solid #a78bfa;border-radius:16px;background:#f5f3ff;box-shadow:0 8px 24px rgba(109,40,217,0.10);">
+        <h3 style="font-size:21px;color:#5b21b6;margin:0 0 12px 0;">👼 Anjo Regente do Consulente</h3>
+        <p style="font-size:18px;color:#312e81;margin:0 0 10px 0;"><strong>${escapeHtml(presentation.symbol)} #${angel.id} ${escapeHtml(angel.canonicalName)}</strong> <bdi lang="he" dir="rtl" style="font-size:20px;">${escapeHtml(angel.hebrewTriplet)}</bdi></p>
+        <p style="color:#475569;margin:6px 0;"><strong>Base do cálculo:</strong> posição tropical natal do Sol em ${escapeHtml(formatDegreePtBrTruncated(rulingPosition.tropical.degreeWithinSignDeg))} de ${escapeHtml(rulingPosition.tropical.sign.namePtBr)}; quinário tropical ${escapeHtml(formatDegreePtBrTruncated(quinary.globalStartLongitudeDeg, 0))}–${escapeHtml(formatDegreePtBrTruncated(quinary.globalEndLongitudeDegExclusive, 0))}.</p>
+        <p style="color:#475569;margin:6px 0;"><strong>Coro e príncipe:</strong> ${escapeHtml(angel.choir)}; ${escapeHtml(angel.prince)}.</p>
+        <p style="color:#475569;margin:6px 0;"><strong>Síntese tradicional:</strong> ${escapeHtml(angel.qualitySummaryPtBr)}</p>
+        <p style="font-size:12px;color:#6b7280;margin:12px 0 0 0;">O Anjo Regente do Consulente é uma correspondência simbólica da tradição hermético-cabalística, derivada exclusivamente do quinário tropical do Sol.</p>
+      </div>`;
+      })()
+    : '';
   const rows = data.positions
-    .map(
-      (planet) => `
+    .map((planet) => {
+      const presentation = getPlanetPresentationPtBr(planet.bodyId);
+      return `
         <tr>
-          <td style="padding:10px;border-bottom:1px solid #e2e8f0;font-weight:700;">${escapeHtml(planet.symbol)} ${escapeHtml(planet.displayNamePtBr)}</td>
+          <td style="padding:10px;border-bottom:1px solid #e2e8f0;font-weight:700;">${escapeHtml(presentation.symbol)} ${escapeHtml(presentation.label)}</td>
           <td style="padding:10px;border-bottom:1px solid #e2e8f0;">${escapeHtml(formatDegreePtBrTruncated(planet.tropical.degreeWithinSignDeg))} de ${escapeHtml(planet.tropical.sign.namePtBr)}</td>
           <td style="padding:10px;border-bottom:1px solid #e2e8f0;">${escapeHtml(houseLabel(planet))}</td>
           <td style="padding:10px;border-bottom:1px solid #e2e8f0;">${escapeHtml(constellationLabel(planet))}</td>
           <td style="padding:10px;border-bottom:1px solid #e2e8f0;">#${planet.angelicQuinary.angel.id} ${escapeHtml(planet.angelicQuinary.angel.canonicalName)} <bdi lang="he" dir="rtl">${escapeHtml(planet.angelicQuinary.angel.hebrewTriplet)}</bdi></td>
-        </tr>`,
-    )
+        </tr>`;
+    })
+    .join('');
+  const falangeRows = data.aggregates.angelicFalange
+    .map((group) => {
+      const angel = angelForFalangeGroup(data, group.angelId);
+      if (!angel) return '';
+      return `
+        <tr>
+          <td style="padding:10px;border-bottom:1px solid #e2e8f0;font-weight:700;">#${angel.id} ${escapeHtml(angel.canonicalName)}</td>
+          <td style="padding:10px;border-bottom:1px solid #e2e8f0;">${escapeHtml(falangeMemberLabelsPtBr(group.memberBodyIds))}</td>
+          <td style="padding:10px;border-bottom:1px solid #e2e8f0;text-align:center;">${group.occurrenceCount}</td>
+        </tr>`;
+    })
     .join('');
   return `
-    <section style="margin-top:40px;padding-top:40px;border-top:1px solid #7c3aed;">
+    <div style="margin-top:40px;padding-top:40px;border-top:1px solid #7c3aed;">
       <h2 style="font-size:26px;color:#6d28d9;margin:0 0 18px 0;">📐 Posições, Casas Placidus e Falange Angelical</h2>
       <p style="color:#475569;">Nascimento convertido: <strong>${escapeHtml(formatInstantInBrasilia(data.birthContext.timeResolution.instantUtc))}</strong> — Hora oficial de Brasília.</p>
+      ${rulingAngelHtml}
       <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;">
         <thead><tr><th style="padding:10px;text-align:left;">Planeta</th><th style="padding:10px;text-align:left;">Tropical</th><th style="padding:10px;text-align:left;">Casa</th><th style="padding:10px;text-align:left;">Constelação IAU</th><th style="padding:10px;text-align:left;">Correspondência angelical tropical</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
+      <h3 style="font-size:21px;color:#5b21b6;margin:24px 0 12px 0;">👼 Falange Angelical do Mapa</h3>
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;">
+        <thead><tr><th style="padding:10px;text-align:left;">Anjo</th><th style="padding:10px;text-align:left;">Planetas correspondentes</th><th style="padding:10px;text-align:center;">Ocorrências</th></tr></thead>
+        <tbody>${falangeRows}</tbody>
+      </table></div>
       <p style="font-size:12px;color:#64748b;">Constelações IAU são áreas bidimensionais; o método não define grau interno de constelação. As correspondências angelicais derivam exclusivamente dos quinários tropicais de 5°.</p>
-    </section>`;
+    </div>`;
 }

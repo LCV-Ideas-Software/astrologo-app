@@ -89,6 +89,6 @@ Regras numéricas:
 ## Fora do escopo
 
 - Criar um “grau dentro da constelação IAU”; regiões IAU são áreas bidimensionais e não fornecem essa coordenada.
-- Eleger anjo principal, anjo natal ou ranking na falange.
+- Alterar o catálogo angelical, criar ranking de dominância na falange ou persistir um campo redundante de regente. O Anjo Regente do Consulente permanece derivado do quinário tropical do Sol, conforme decisão metodológica própria.
 - Trocar Placidus por outro sistema em latitudes onde ele é indisponível.
 - Reinterpretar ou migrar destrutivamente mapas `2.0.0`.

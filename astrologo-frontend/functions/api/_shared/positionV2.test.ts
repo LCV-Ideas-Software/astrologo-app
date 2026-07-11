@@ -85,7 +85,7 @@ describe('motor posicional v2', () => {
     }
   });
 
-  it('forma uma falange sem eleger anjo principal ou dominante', () => {
+  it('forma a falange sem persistir um campo redundante de regente ou dominância', () => {
     const result = calculateFixture();
     expect(result.aggregates.angelicFalange.reduce((sum, group) => sum + group.occurrenceCount, 0)).toBe(10);
     expect(JSON.stringify(result)).not.toMatch(/primaryAngel|regenteNatal|dominantAngel/i);

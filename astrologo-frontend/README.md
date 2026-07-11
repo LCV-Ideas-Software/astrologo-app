@@ -19,12 +19,13 @@ Currently, two official plugins are available:
 
 ## Change History
 
-**Status.** Stable. Current release: **v02.17.25**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.18.00**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release     | Notes                                                                                                                                      |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `v02.18.00` | Dados posicionais dos dez planetas, Casas Placidus, constelações IAU, falange dos 72 anjos e Anjo Regente solar, com todas as superfícies humanas em pt-BR. |
 | `v02.17.25` | 4-gate quality directive compliance for eslint, biome, prettier, and cross-review in the Astrologo frontend package and deploy workflow. |
 
 ## React Compiler

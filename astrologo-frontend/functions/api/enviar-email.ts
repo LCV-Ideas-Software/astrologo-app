@@ -18,7 +18,7 @@ interface Context {
 }
 
 const isValidEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-const sanitizeRichEmailHtml = (input: string): string =>
+export const sanitizeRichEmailHtml = (input: string): string =>
   sanitizeHtml(String(input ?? '').slice(0, 120000), {
     allowedTags: [
       'p',
@@ -47,12 +47,14 @@ const sanitizeRichEmailHtml = (input: string): string =>
       'tr',
       'th',
       'td',
+      'bdi',
       'a',
       'img',
     ],
     allowedAttributes: {
       '*': ['style', 'class'],
       a: ['href', 'target', 'rel'],
+      bdi: ['lang', 'dir'],
       img: ['src', 'alt', 'width', 'height'],
     },
     allowedSchemes: ['http', 'https', 'mailto'],

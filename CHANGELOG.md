@@ -2,16 +2,20 @@
 
 ## [Unreleased]
 
+## [astrologo-frontend v02.18.00] - 2026-07-11
+
 ### Adicionado
 
-- **Dados posicionais v2** — cálculo server-authoritative dos dez planetas com longitude tropical, signo/grau/decanato, 12 casas e cúspides Placidus, Ascendente/MC, constelação IAU com política fail-closed e os 72 anjos em quinários tropicais de 5°. O resultado agrega uma falange por planeta, sem eleger “anjo principal” ou “regente natal”.
+- **Dados posicionais v2** — cálculo server-authoritative dos dez planetas com longitude tropical, signo/grau/decanato, 12 casas e cúspides Placidus, Ascendente/MC, constelação IAU com política fail-closed e os 72 anjos em quinários tropicais de 5°. O resultado agrega a falange por planeta e deriva o Anjo Regente do Consulente exclusivamente do quinário ocupado pelo Sol tropical natal, sem duplicar esse dado no contrato ou no banco.
 - **Contrato, persistência e superfícies v2** — schema estrito versionado, coluna D1 própria, reidratação do prompt de IA pelo ID do mapa, painel público, relatórios/e-mail e suporte correspondente no `admin-app/Astrologo`.
+- **Apresentação angelical em pt-BR** — os três novos quadros usam nomes planetários em português, capitalização brasileira, ícones maiores e coloridos e um destaque próprio para o Anjo Regente do Consulente; IDs internos em inglês permanecem restritos ao domínio técnico.
 - **Runtime astronômico auditável** — Astronomy Engine 2.1.19, Swiss Ephemeris WASM 2.10.03 vendorizado, hashes dos artefatos, teste real do contrato WASI e documentação de licenças/proveniência.
 
 ### Corrigido
 
 - Subrequisições Open-Meteo agora têm prazo máximo abortável de 8 segundos; a resolução de uma localidade selecionada usa o endpoint oficial por ID, sem confiar em coordenadas ou timezone enviados pelo navegador.
 - Datas e horários de apresentação usam explicitamente `pt-BR` e `America/Sao_Paulo`; o horário de nascimento continua sendo interpretado no fuso do local, com gap/fold de DST explícitos e sem inventar fuso para mapas legados.
+- O sanitizador do e-mail preserva com segurança idioma e direção dos tripletes hebraicos, e os rótulos pequenos dos novos quadros atendem ao contraste visual esperado sem alterar a paleta do projeto.
 
 ### Preservado
 

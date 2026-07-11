@@ -1,5 +1,23 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.18.00] - 2026-07-11
+
+### Adicionado
+
+- Dados posicionais v2 dos dez planetas: graus tropicais, decanatos, Casas Placidus, 12 cúspides, Ascendente, Meio do Céu, classificação de constelações IAU e correspondências dos 72 anjos em quinários de 5 graus.
+- Anjo Regente do Consulente derivado exclusivamente do quinário tropical do Sol natal, sem campo redundante no schema ou no D1; falange dos demais corpos preservada.
+- Novos quadros responsivos de posições, cúspides e falange, com nomes em português brasileiro, ícones planetários e zodiacais maiores e coloridos, sem exposição de IDs internos.
+- Relatórios de texto, HTML/e-mail e adendo acumulativo do agente de IA atualizados para os novos cálculos; prompt legado preservado byte a byte.
+
+### Corrigido
+
+- Toda data e hora apresentada usa explicitamente `pt-BR` e `America/Sao_Paulo`, enquanto o nascimento continua sendo interpretado no fuso real do local.
+- Sanitização de e-mail preserva com segurança idioma e direção dos tripletes hebraicos; contraste e responsividade dos novos componentes foram validados em desktop e dispositivo móvel.
+
+### Documentado
+
+- Regra matemática e base metodológica do regente solar em `docs/DECISAO_ANJO_REGENTE_DO_CONSULENTE.md`, incluindo o registro explícito de sequências angelicais concorrentes.
+
 ## [v02.17.25] - 2026-05-15
 
 **Patch — 4-gate quality directive compliance (eslint + biome + prettier + cross-review).** Workspace directive 2026-05-15: every code change must pass eslint + biome + prettier + cross-review before Commit & Sync / tag / release / deploy / publish.

@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.17.25**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.18.00**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.18.00`**                      | **Dados posicionais e angelologia v2.** Dez planetas com graus, Casas Placidus, cúspides, constelações IAU e quinários dos 72 anjos; Anjo Regente do Consulente derivado do Sol tropical; UI, relatórios, e-mail, prompt de IA e admin integralmente adaptados para apresentação em pt-BR. |
 | **`v02.17.25`**                      | **4-gate quality directive compliance.** Added Biome gate and deploy workflow coverage for eslint, biome, prettier, and cross-review; synchronized package metadata and aligned the public release train with the published v02.17.25 tag.                                                                                  |
 | **`v02.17.24`**                      | **Site sponsor card iteration.** `site/index.html` GitHub Sponsors iframe (caixa branca cross-origin) substituído por link card dark navy com ❤ pink + meta cyan + seta animada; card movido para DEPOIS dos botões (lcv.dev/sponsor primário, GitHub Sponsors alternativa). Companion ship Phase 3 (12 repos).                                                   |
 | **`v02.17.23`**                      | **Site visual identity refresh.** `site/index.html` (GitHub Pages) reskinneada para a nova identidade dark-first navy/cyan da org LCV (`#050b18`/`#38bdf8`/`#34d399`, gradientes radiais, glow shadows, gradient text no h1). Coordinated Phase 2 companion ship (calculadora, oraculo, astrologo, admin, mainsite, maestro, mtasts). Sem mudança no app runtime. |

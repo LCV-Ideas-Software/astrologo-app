@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 // Módulo: astrologo-frontend/src/App.tsx
-// Versão: v02.17.03
+// Versão: v02.18.00
 // Descrição: Frontend principal do Oráculo Celestial com análise astrológica via Gemini.
 
 import DOMPurify from 'dompurify';
@@ -38,8 +38,10 @@ import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import {
   type DadosPosicionaisV2,
+  findConsultantRulingPosition,
   formatDegreePtBrTruncated,
   formatInstantInBrasilia,
+  getPlanetPresentationPtBr,
   renderPositionalV2EmailHtml,
   renderPositionalV2Text,
 } from './astrologyV2';
@@ -47,7 +49,7 @@ import { ComplianceBanner } from './components/ComplianceBanner';
 import { useNotification } from './components/Notification';
 import { LicencasModule } from './modules/compliance/LicencasModule';
 
-const APP_VERSION = 'APP v02.17.25';
+const APP_VERSION = 'APP v02.18.00';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (value: string): boolean => emailRegex.test(value.trim());
@@ -507,113 +509,422 @@ export const RenderBlocoAstrologico: React.FC<BlocoProps> = ({
   );
 };
 
+interface AstrologicalGlyphPresentation {
+  readonly symbol: string;
+  readonly badgeClassName: string;
+}
+
+const PLANET_BADGE_CLASS_NAMES: Readonly<Record<string, string>> = Object.freeze({
+  sun: 'from-amber-300 via-yellow-300 to-orange-400 text-amber-950 ring-amber-200',
+  moon: 'from-slate-200 via-blue-100 to-indigo-300 text-indigo-950 ring-indigo-200',
+  mercury: 'from-cyan-200 via-sky-200 to-blue-400 text-sky-950 ring-sky-200',
+  venus: 'from-rose-200 via-pink-200 to-fuchsia-400 text-rose-950 ring-rose-200',
+  mars: 'from-orange-300 via-red-300 to-rose-500 text-red-950 ring-red-200',
+  jupiter: 'from-violet-200 via-purple-300 to-indigo-500 text-violet-950 ring-violet-200',
+  saturn: 'from-stone-200 via-amber-200 to-yellow-500 text-stone-950 ring-amber-200',
+  uranus: 'from-teal-200 via-cyan-300 to-sky-500 text-teal-950 ring-cyan-200',
+  neptune: 'from-sky-300 via-blue-400 to-indigo-600 text-white ring-blue-200',
+  pluto: 'from-fuchsia-300 via-purple-400 to-violet-700 text-white ring-purple-200',
+});
+
+const ZODIAC_PRESENTATIONS: Readonly<Record<string, AstrologicalGlyphPresentation>> = Object.freeze({
+  aries: {
+    symbol: '♈',
+    badgeClassName: 'from-orange-300 via-red-300 to-rose-500 text-red-950 ring-red-200',
+  },
+  taurus: {
+    symbol: '♉',
+    badgeClassName: 'from-lime-200 via-emerald-300 to-green-500 text-emerald-950 ring-emerald-200',
+  },
+  gemini: {
+    symbol: '♊',
+    badgeClassName: 'from-yellow-200 via-amber-300 to-orange-400 text-amber-950 ring-amber-200',
+  },
+  cancer: {
+    symbol: '♋',
+    badgeClassName: 'from-sky-200 via-blue-300 to-indigo-500 text-blue-950 ring-blue-200',
+  },
+  leo: {
+    symbol: '♌',
+    badgeClassName: 'from-amber-200 via-orange-300 to-red-500 text-orange-950 ring-orange-200',
+  },
+  virgo: {
+    symbol: '♍',
+    badgeClassName: 'from-emerald-200 via-teal-300 to-cyan-500 text-emerald-950 ring-teal-200',
+  },
+  libra: {
+    symbol: '♎',
+    badgeClassName: 'from-pink-200 via-rose-300 to-fuchsia-500 text-rose-950 ring-rose-200',
+  },
+  scorpio: {
+    symbol: '♏',
+    badgeClassName: 'from-fuchsia-300 via-purple-400 to-violet-700 text-white ring-purple-200',
+  },
+  sagittarius: {
+    symbol: '♐',
+    badgeClassName: 'from-violet-200 via-indigo-300 to-blue-500 text-indigo-950 ring-indigo-200',
+  },
+  capricorn: {
+    symbol: '♑',
+    badgeClassName: 'from-stone-200 via-amber-200 to-lime-500 text-stone-950 ring-stone-200',
+  },
+  aquarius: {
+    symbol: '♒',
+    badgeClassName: 'from-cyan-200 via-sky-300 to-blue-500 text-sky-950 ring-sky-200',
+  },
+  pisces: {
+    symbol: '♓',
+    badgeClassName: 'from-blue-200 via-indigo-300 to-violet-500 text-indigo-950 ring-indigo-200',
+  },
+});
+
+const FALLBACK_BADGE_CLASS_NAME = 'from-slate-200 via-violet-200 to-purple-400 text-slate-950 ring-violet-200';
+
+const getPlanetBadgeClassName = (bodyId: string): string =>
+  PLANET_BADGE_CLASS_NAMES[bodyId] ?? FALLBACK_BADGE_CLASS_NAME;
+
+const getZodiacPresentation = (signId: string): AstrologicalGlyphPresentation =>
+  ZODIAC_PRESENTATIONS[signId] ?? { symbol: '✦', badgeClassName: FALLBACK_BADGE_CLASS_NAME };
+
 const PositionalV2Panel: React.FC<{ data: DadosPosicionaisV2 }> = ({ data }) => {
-  const angelName = (angelId: number) =>
-    data.positions.find((position) => position.angelicQuinary.angel.id === angelId)?.angelicQuinary.angel
-      .canonicalName ?? `Anjo #${angelId}`;
+  const rulingPosition = findConsultantRulingPosition(data.positions);
+  const rulingZodiac = rulingPosition ? getZodiacPresentation(rulingPosition.tropical.sign.id) : undefined;
+  const angelForId = (angelId: number) =>
+    data.positions.find((position) => position.angelicQuinary.angel.id === angelId)?.angelicQuinary.angel;
 
   return (
-    <section className="mt-12 w-full max-w-5xl mx-auto bg-white/80 backdrop-blur-2xl rounded-[2.5rem] border border-violet-100 shadow-[0_8px_32px_rgba(109,40,217,0.12)] p-5 md:p-9">
-      <header className="mb-6 border-b border-violet-100 pb-5">
-        <h3 className="text-xl md:text-2xl font-black text-violet-700">
-          📐 Posições, Casas Placidus e Falange Angelical
-        </h3>
-        <p className="mt-2 text-sm text-slate-600">
-          Nascimento convertido: {formatInstantInBrasilia(data.birthContext.timeResolution.instantUtc)} —{' '}
-          <strong>Hora oficial de Brasília</strong>
-        </p>
-        {data.birthContext.timeResolution.historicalConfidence === 'best-effort-1900-1969' && (
-          <p className="mt-2 text-sm font-semibold text-amber-700">
-            Fuso histórico de 1900–1969: melhor esforço conforme a base IANA disponível no runtime.
+    <section aria-labelledby="posicoes-astrologicas-titulo" className="mt-12 w-full max-w-6xl mx-auto space-y-7">
+      <div className="overflow-hidden rounded-[2.25rem] border border-violet-100 bg-white/85 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl">
+        <header className="relative isolate overflow-hidden border-b border-violet-100 bg-linear-to-br from-white via-violet-50/80 to-fuchsia-50/70 px-5 py-7 md:px-9 md:py-9">
+          <div
+            aria-hidden="true"
+            className="absolute -right-16 -top-20 -z-10 h-64 w-64 rounded-full bg-violet-200/40 blur-3xl"
+          />
+          <div className="flex items-start gap-4">
+            <span
+              aria-hidden="true"
+              className="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500 to-fuchsia-600 text-white shadow-lg shadow-violet-200 ring-4 ring-white"
+            >
+              <Compass className="h-7 w-7" />
+            </span>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-700">Leitura detalhada do mapa</p>
+              <h3 id="posicoes-astrologicas-titulo" className="mt-1 text-xl font-black text-slate-900 md:text-3xl">
+                Posições, Casas Placidus e Falange Angelical
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                Nascimento convertido: {formatInstantInBrasilia(data.birthContext.timeResolution.instantUtc)} —{' '}
+                <strong className="text-violet-800">Hora oficial de Brasília</strong>
+              </p>
+            </div>
+          </div>
+          {data.birthContext.timeResolution.historicalConfidence === 'best-effort-1900-1969' && (
+            <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm font-semibold leading-relaxed text-amber-900">
+              Fuso histórico de 1900–1969: melhor esforço conforme a base histórica de fusos disponível no sistema.
+            </p>
+          )}
+        </header>
+
+        {rulingPosition && rulingZodiac && (
+          <article
+            aria-labelledby="anjo-regente-titulo"
+            className="relative mx-4 mt-6 overflow-hidden rounded-[2rem] border border-amber-200 bg-linear-to-br from-amber-50 via-white to-violet-50 p-5 shadow-[0_14px_40px_rgba(217,119,6,0.12)] md:mx-8 md:mt-8 md:p-7"
+          >
+            <div
+              aria-hidden="true"
+              className="absolute -right-8 -top-10 h-36 w-36 rounded-full bg-amber-200/40 blur-3xl"
+            />
+            <div className="relative grid gap-5 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+              <span
+                aria-hidden="true"
+                className={`flex h-20 w-20 items-center justify-center rounded-[1.6rem] bg-linear-to-br text-5xl shadow-xl ring-4 ring-white ${getPlanetBadgeClassName(rulingPosition.bodyId)}`}
+              >
+                {getPlanetPresentationPtBr(rulingPosition.bodyId).symbol}
+              </span>
+              <div>
+                <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-amber-700">
+                  <Sparkles aria-hidden="true" className="h-4 w-4" /> Destaque pessoal do mapa
+                </p>
+                <h4 id="anjo-regente-titulo" className="mt-1 text-xl font-black text-slate-900 md:text-2xl">
+                  Anjo Regente do Consulente
+                </h4>
+                <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <strong className="text-2xl text-violet-900 md:text-3xl">
+                    #{rulingPosition.angelicQuinary.angel.id} {rulingPosition.angelicQuinary.angel.canonicalName}
+                  </strong>
+                  <bdi lang="he" dir="rtl" className="font-serif text-2xl text-violet-700">
+                    {rulingPosition.angelicQuinary.angel.hebrewTriplet}
+                  </bdi>
+                </div>
+                <p className="mt-2 text-sm font-semibold text-slate-700">
+                  {rulingPosition.angelicQuinary.angel.choir} · Príncipe {rulingPosition.angelicQuinary.angel.prince}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  {rulingPosition.angelicQuinary.angel.qualitySummaryPtBr}.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 rounded-2xl border border-white/90 bg-white/75 p-3 shadow-sm lg:max-w-58">
+                <span
+                  aria-hidden="true"
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-3xl shadow-md ring-2 ring-white ${rulingZodiac.badgeClassName}`}
+                >
+                  {rulingZodiac.symbol}
+                </span>
+                <p className="text-sm leading-snug text-slate-700">
+                  Sol a <strong>{formatDegreePtBrTruncated(rulingPosition.tropical.degreeWithinSignDeg)}</strong> de{' '}
+                  <strong>{rulingPosition.tropical.sign.namePtBr}</strong>
+                </p>
+              </div>
+            </div>
+            <p className="relative mt-5 border-t border-amber-200/70 pt-4 text-xs leading-relaxed text-slate-600 md:text-sm">
+              <strong className="text-amber-800">Base do cálculo:</strong> o anjo regente do consulente corresponde ao
+              quinário de 5° que contém a longitude tropical do Sol natal. Esta é uma correspondência simbólica da
+              Cabala Hermética aplicada ao mapa.
+            </p>
+          </article>
+        )}
+
+        <div className="px-4 py-6 md:px-8 md:py-8">
+          <div className="mb-5 flex items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700"
+            >
+              <Star className="h-5 w-5" />
+            </span>
+            <div>
+              <h4 className="font-black text-slate-900 md:text-lg">Posições dos Planetas</h4>
+              <p className="text-xs text-slate-500 md:text-sm">
+                Graus tropicais, casas, céu astronômico e correspondências angelicais.
+              </p>
+            </div>
+          </div>
+
+          <ul className="grid gap-4 md:grid-cols-2" aria-label="Posições dos planetas no mapa">
+            {data.positions.map((planet) => {
+              const planetPresentation = getPlanetPresentationPtBr(planet.bodyId);
+              const zodiacPresentation = getZodiacPresentation(planet.tropical.sign.id);
+
+              return (
+                <li
+                  key={planet.bodyId}
+                  aria-label={`Posição de ${planetPresentation.label}`}
+                  className="group rounded-[1.6rem] border border-slate-200/80 bg-linear-to-br from-white to-slate-50/70 p-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg motion-reduce:transform-none md:p-5"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      aria-hidden="true"
+                      className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-4xl shadow-md ring-2 ring-white ${getPlanetBadgeClassName(planet.bodyId)}`}
+                    >
+                      {planetPresentation.symbol}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h5 className="text-lg font-black text-slate-900">{planetPresentation.label}</h5>
+                      <p className="text-xs font-semibold text-slate-500">
+                        {planet.housePlacement.status === 'available'
+                          ? `Casa ${planet.housePlacement.houseIndex1}`
+                          : 'Casa indisponível pelo método Placidus'}
+                      </p>
+                    </div>
+                    <span
+                      aria-hidden="true"
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-3xl shadow-md ring-2 ring-white ${zodiacPresentation.badgeClassName}`}
+                    >
+                      {zodiacPresentation.symbol}
+                    </span>
+                  </div>
+
+                  <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                    <div className="rounded-xl bg-violet-50/80 p-3">
+                      <dt className="text-[0.68rem] font-black uppercase tracking-wider text-violet-600">
+                        Posição tropical
+                      </dt>
+                      <dd className="mt-1 font-semibold leading-snug text-slate-800">
+                        {formatDegreePtBrTruncated(planet.tropical.degreeWithinSignDeg)} de{' '}
+                        {planet.tropical.sign.namePtBr} · {planet.tropical.decan.index1}º decanato
+                      </dd>
+                    </div>
+                    <div className="rounded-xl bg-sky-50/80 p-3">
+                      <dt className="text-[0.68rem] font-black uppercase tracking-wider text-sky-700">
+                        Céu astronômico
+                      </dt>
+                      <dd className="mt-1 font-semibold leading-snug text-slate-800">
+                        {planet.astronomicalReal.status === 'available' && planet.astronomicalReal.constellation
+                          ? `${planet.astronomicalReal.constellation.namePtBr} (${planet.astronomicalReal.constellation.iauCode})`
+                          : 'Indisponível junto ao limite da constelação'}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50/70 p-3 text-sm text-slate-700">
+                    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <Sparkles aria-hidden="true" className="h-4 w-4 text-amber-600" />
+                      <strong className="text-violet-900">
+                        #{planet.angelicQuinary.angel.id} {planet.angelicQuinary.angel.canonicalName}
+                      </strong>
+                      <bdi lang="he" dir="rtl" className="font-serif text-lg text-violet-700">
+                        {planet.angelicQuinary.angel.hebrewTriplet}
+                      </bdi>
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                      {planet.angelicQuinary.angel.choir} · Príncipe {planet.angelicQuinary.angel.prince} · Quinário{' '}
+                      {formatDegreePtBrTruncated(planet.angelicQuinary.quinary.globalStartLongitudeDeg, 0)}–
+                      {formatDegreePtBrTruncated(planet.angelicQuinary.quinary.globalEndLongitudeDegExclusive, 0)}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          <p className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600">
+            A classificação da União Astronômica Internacional usa áreas bidimensionais no céu e não define “grau dentro
+            da constelação”. A correspondência angelical é simbólica e deriva exclusivamente da longitude tropical em
+            quinários de 5°.
+          </p>
+        </div>
+      </div>
+
+      <section
+        aria-labelledby="cuspides-casas-titulo"
+        className="rounded-[2.25rem] border border-emerald-100 bg-white/85 p-5 shadow-[0_16px_45px_rgba(5,150,105,0.09)] backdrop-blur-2xl md:p-8"
+      >
+        <header className="flex items-start gap-4">
+          <span
+            aria-hidden="true"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-400 to-teal-600 text-white shadow-lg shadow-emerald-100"
+          >
+            <Hash className="h-6 w-6" />
+          </span>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-800">Distribuição celeste</p>
+            <h4 id="cuspides-casas-titulo" className="mt-1 text-xl font-black text-slate-900 md:text-2xl">
+              Cúspides das 12 Casas Placidus
+            </h4>
+            <p className="mt-1 text-sm text-slate-600">O signo e o grau exato que iniciam cada casa astrológica.</p>
+          </div>
+        </header>
+
+        {data.houses.status === 'available' && data.houses.cusps ? (
+          <ol
+            className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+            aria-label="Cúspides das doze casas"
+          >
+            {data.houses.cusps.map((cusp) => {
+              const zodiacPresentation = getZodiacPresentation(cusp.tropical.signId);
+
+              return (
+                <li
+                  key={cusp.houseIndex1}
+                  className="flex min-w-0 items-center gap-3 rounded-2xl border border-emerald-100 bg-linear-to-br from-white to-emerald-50/60 p-3 shadow-sm md:p-4"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-3xl shadow-md ring-2 ring-white ${zodiacPresentation.badgeClassName}`}
+                  >
+                    {zodiacPresentation.symbol}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-black uppercase tracking-wider text-emerald-700">
+                      Casa {cusp.houseIndex1}
+                    </p>
+                    <p className="mt-1 text-sm font-bold leading-snug text-slate-800">
+                      {formatDegreePtBrTruncated(cusp.tropical.degreeWithinSignDeg)} de {cusp.tropical.signNamePtBr}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <p className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
+            As cúspides não estão disponíveis para este mapa pelo método Placidus.
           </p>
         )}
-      </header>
+      </section>
 
-      <div className="overflow-x-auto rounded-2xl border border-slate-200">
-        <table className="min-w-215 w-full text-left text-sm">
-          <thead className="bg-violet-50 text-violet-900">
-            <tr>
-              <th className="p-3">Planeta</th>
-              <th className="p-3">Signo e grau tropical</th>
-              <th className="p-3">Casa</th>
-              <th className="p-3">Constelação IAU do céu real</th>
-              <th className="p-3">Quinário e anjo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.positions.map((planet) => (
-              <tr key={planet.bodyId} className="border-t border-slate-100 align-top">
-                <td className="p-3 font-bold text-slate-900">
-                  {planet.symbol} {planet.displayNamePtBr}
-                </td>
-                <td className="p-3 text-slate-700">
-                  {formatDegreePtBrTruncated(planet.tropical.degreeWithinSignDeg)} de{' '}
-                  <strong>{planet.tropical.sign.namePtBr}</strong> · {planet.tropical.decan.index1}º decanato
-                </td>
-                <td className="p-3 text-slate-700">
-                  {planet.housePlacement.status === 'available'
-                    ? `Casa ${planet.housePlacement.houseIndex1}`
-                    : 'Indisponível pelo método Placidus'}
-                </td>
-                <td className="p-3 text-slate-700">
-                  {planet.astronomicalReal.status === 'available' && planet.astronomicalReal.constellation
-                    ? `${planet.astronomicalReal.constellation.namePtBr} (${planet.astronomicalReal.constellation.iauCode})`
-                    : 'Indisponível junto a limite IAU'}
-                </td>
-                <td className="p-3 text-slate-700">
-                  <strong>
-                    #{planet.angelicQuinary.angel.id} {planet.angelicQuinary.angel.canonicalName}
-                  </strong>{' '}
-                  <bdi lang="he" dir="rtl" className="font-serif text-base">
-                    {planet.angelicQuinary.angel.hebrewTriplet}
-                  </bdi>
-                  <br />
-                  <span className="text-xs">
-                    {planet.angelicQuinary.angel.choir} · {planet.angelicQuinary.angel.prince} · quinário{' '}
-                    {formatDegreePtBrTruncated(planet.angelicQuinary.quinary.globalStartLongitudeDeg, 0)}–
-                    {formatDegreePtBrTruncated(planet.angelicQuinary.quinary.globalEndLongitudeDegExclusive, 0)}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <p className="mt-4 text-xs leading-relaxed text-slate-500">
-        A classificação IAU usa áreas bidimensionais no céu e não define “grau dentro da constelação”. A correspondência
-        angelical é simbólica e deriva exclusivamente da longitude tropical em quinários de 5°.
-      </p>
-
-      {data.houses.status === 'available' && data.houses.cusps && (
-        <div className="mt-7">
-          <h4 className="font-black text-slate-800">Cúspides das 12 Casas Placidus</h4>
-          <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
-            {data.houses.cusps.map((cusp) => (
-              <div key={cusp.houseIndex1} className="rounded-xl bg-slate-50 border border-slate-100 p-3 text-sm">
-                <strong>Casa {cusp.houseIndex1}</strong>
-                <br />
-                {formatDegreePtBrTruncated(cusp.tropical.degreeWithinSignDeg)} de {cusp.tropical.signNamePtBr}
-              </div>
-            ))}
+      <section
+        aria-labelledby="falange-angelical-titulo"
+        className="relative overflow-hidden rounded-[2.25rem] border border-fuchsia-100 bg-linear-to-br from-white via-violet-50/65 to-fuchsia-50/70 p-5 shadow-[0_16px_45px_rgba(147,51,234,0.11)] md:p-8"
+      >
+        <div
+          aria-hidden="true"
+          className="absolute -bottom-16 -right-16 h-56 w-56 rounded-full bg-fuchsia-200/30 blur-3xl"
+        />
+        <header className="relative flex items-start gap-4">
+          <span
+            aria-hidden="true"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500 to-fuchsia-600 text-white shadow-lg shadow-violet-200"
+          >
+            <Sparkles className="h-6 w-6" />
+          </span>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-fuchsia-600">Correspondências do mapa</p>
+            <h4 id="falange-angelical-titulo" className="mt-1 text-xl font-black text-slate-900 md:text-2xl">
+              Falange Angelical do Mapa
+            </h4>
+            <p className="mt-1 text-sm text-slate-600">
+              Os anjos associados aos quinários tropicais ocupados pelos planetas.
+            </p>
           </div>
-        </div>
-      )}
+        </header>
 
-      <div className="mt-7 rounded-2xl bg-violet-50 border border-violet-100 p-4">
-        <h4 className="font-black text-violet-900">👼 Falange Angelical do Mapa</h4>
-        <ul className="mt-2 space-y-1 text-sm text-violet-950">
-          {data.aggregates.angelicFalange.map((group) => (
-            <li key={group.angelId}>
-              <strong>
-                #{group.angelId} {angelName(group.angelId)}
-              </strong>
-              : {group.memberBodyIds.join(', ')}
-              {group.occurrenceCount > 1 ? ` · ${group.occurrenceCount} correspondências` : ''}
-            </li>
-          ))}
+        <ul className="relative mt-6 grid gap-4 md:grid-cols-2" aria-label="Anjos e planetas da falange angelical">
+          {data.aggregates.angelicFalange.map((group) => {
+            const angel = angelForId(group.angelId);
+
+            return (
+              <li
+                key={group.angelId}
+                className="rounded-[1.6rem] border border-violet-100 bg-white/85 p-4 shadow-sm md:p-5"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wider text-violet-700">Anjo #{group.angelId}</p>
+                    <p className="mt-1 flex flex-wrap items-baseline gap-2 text-lg font-black text-violet-950">
+                      {angel?.canonicalName ?? `Anjo ${group.angelId}`}
+                      {angel && (
+                        <bdi lang="he" dir="rtl" className="font-serif text-xl font-normal text-violet-700">
+                          {angel.hebrewTriplet}
+                        </bdi>
+                      )}
+                    </p>
+                    {angel && (
+                      <p className="mt-1 text-xs font-semibold text-slate-500">
+                        {angel.choir} · Príncipe {angel.prince}
+                      </p>
+                    )}
+                  </div>
+                  <span className="shrink-0 rounded-full bg-violet-100 px-3 py-1 text-xs font-black text-violet-700">
+                    {group.occurrenceCount} {group.occurrenceCount === 1 ? 'correspondência' : 'correspondências'}
+                  </span>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2" aria-label="Planetas correspondentes">
+                  {group.memberBodyIds.map((bodyId) => {
+                    const presentation = getPlanetPresentationPtBr(bodyId);
+
+                    return (
+                      <span
+                        key={bodyId}
+                        className="inline-flex items-center gap-2 rounded-full border border-white bg-slate-50 py-1.5 pl-1.5 pr-3 text-sm font-bold text-slate-800 shadow-sm"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br text-xl shadow-sm ring-1 ring-white ${getPlanetBadgeClassName(bodyId)}`}
+                        >
+                          {presentation.symbol}
+                        </span>
+                        {presentation.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </li>
+            );
+          })}
         </ul>
-      </div>
+      </section>
     </section>
   );
 };

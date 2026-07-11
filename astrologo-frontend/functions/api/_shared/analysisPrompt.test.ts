@@ -198,6 +198,24 @@ describe('analysisPrompt', () => {
     expect(complete).not.toContain('ignore previous instructions');
   });
 
+  it('instrui o anjo regente exclusivamente pelo quinário tropical do Sol sem campo novo no DTO', () => {
+    const complete = buildAnalysisPrompt('DADOS', { nome: 'V2' }, makeCanonicalV2());
+    const projected = projectCanonicalAnalysisV2(makeCanonicalV2());
+
+    expect(complete).toContain('👼 Anjo Regente do Consulente');
+    expect(complete).toContain('bodyId="sun"');
+    expect(complete).toContain('angelicQuinary');
+    expect(complete).toContain('qualitySummaryPtBr');
+    expect(complete).not.toMatch(/\bqualitySummary\b(?!PtBr)/);
+    expect(complete).toContain('exclusivamente da longitude tropical natal do Sol');
+    expect(complete).toContain('português do Brasil (pt-BR)');
+    expect(complete).toContain('nunca exponha bodyId');
+    expect(complete).not.toContain('Não eleja anjo regente');
+    expect(complete).toContain('correspondência simbólica da tradição hermético-cabalística');
+    expect(projected).not.toHaveProperty('consultantRulingAngel');
+    expect(projected).not.toHaveProperty('anjoRegente');
+  });
+
   it('reidrata o v2 canônico do D1 e ignora qualquer DTO do navegador', async () => {
     const canonical = makeCanonicalV2();
     const first = async () => ({ dados_posicionais_v2: JSON.stringify(canonical) });
