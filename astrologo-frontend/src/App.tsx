@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 // Módulo: astrologo-frontend/src/App.tsx
-// Versão: v02.18.02
+// Versão: v02.19.00
 // Descrição: Frontend principal do Oráculo Celestial com análise astrológica via Gemini.
 
 import DOMPurify from 'dompurify';
@@ -47,9 +47,11 @@ import {
 } from './astrologyV2';
 import { ComplianceBanner } from './components/ComplianceBanner';
 import { useNotification } from './components/Notification';
+import { getInfoContent, type InfoContentContext, type InfoTopic } from './infoContent';
 import { LicencasModule } from './modules/compliance/LicencasModule';
+import { formatTatwaDurationPtBr, presentTatwa, renderTatwaEmailCautionHtml } from './tatwaPresentation';
 
-const APP_VERSION = 'APP v02.18.02';
+const APP_VERSION = 'APP v02.19.00';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (value: string): boolean => emailRegex.test(value.trim());
@@ -88,7 +90,7 @@ interface UmbandaData {
   simbolo: string;
 }
 interface DadosGlobais {
-  tatwa: { principal: string; sub: string };
+  tatwa: unknown;
   numerologia: { expressao: number; caminhoVida: number; vibracaoHora: number };
 }
 interface DadosSistema {
@@ -105,7 +107,8 @@ interface ResultData {
   analiseIa?: string;
 }
 interface ModalProps {
-  type: 'astronomica' | 'tropical' | null;
+  type: InfoTopic | null;
+  context: InfoContentContext;
   onClose: () => void;
 }
 interface EmailModalProps {
@@ -131,7 +134,7 @@ interface ResultViewProps {
   analiseIa: string;
   onSolicitarAnalise?: () => void;
   loadingAi?: boolean;
-  openInfoModal: (t: 'astronomica' | 'tropical') => void;
+  openInfoModal: (topic: InfoTopic) => void;
 }
 interface GeoResult {
   id?: number;
@@ -204,24 +207,51 @@ const formatPosicaoLabel = (pos: string): string => {
   return p;
 };
 
-const InfoModal: React.FC<ModalProps> = ({ type, onClose }) => {
+const formatSignNamePtBr = (value: string): string => (value === 'Ophiuchus' ? 'Ofiúco' : value);
+
+const INFO_MODAL_THEME: Record<
+  InfoTopic,
+  { icon: React.ReactNode; borderColor: string; titleColor: string; sectionColor: string }
+> = {
+  tropical: {
+    icon: <Sun className="h-7 w-7 text-orange-500" />,
+    borderColor: 'border-orange-300',
+    titleColor: 'text-orange-700',
+    sectionColor: 'text-orange-700',
+  },
+  astronomica: {
+    icon: <Star className="h-7 w-7 text-indigo-500" />,
+    borderColor: 'border-indigo-300',
+    titleColor: 'text-indigo-700',
+    sectionColor: 'text-indigo-700',
+  },
+  tatwas: {
+    icon: <Wind className="h-7 w-7 text-sky-500" />,
+    borderColor: 'border-sky-300',
+    titleColor: 'text-sky-700',
+    sectionColor: 'text-sky-700',
+  },
+  numerologia: {
+    icon: <Hash className="h-7 w-7 text-violet-500" />,
+    borderColor: 'border-violet-300',
+    titleColor: 'text-violet-700',
+    sectionColor: 'text-violet-700',
+  },
+};
+
+const InfoModal: React.FC<ModalProps> = ({ type, context, onClose }) => {
+  useEffect(() => {
+    if (!type) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [type, onClose]);
+
   if (!type) return null;
-  const content =
-    type === 'astronomica'
-      ? {
-          titulo: 'Astrologia Astronômica',
-          icon: <Star className="w-6 h-6 text-amber-500" />,
-          borderColor: 'border-amber-300',
-          titleColor: 'text-amber-700',
-          texto: `<p>A <strong>Astrologia Astronômica Constelacional</strong> rompe com as convenções sazonais. Ela se baseia no <strong>mapa real e físico do céu</strong> no minuto exato do seu nascimento, inserindo a 13ª constelação: <strong>Ophiuchus</strong>.</p>`,
-        }
-      : {
-          titulo: 'Astrologia Tropical',
-          icon: <Sun className="w-6 h-6 text-orange-500" />,
-          borderColor: 'border-orange-300',
-          titleColor: 'text-orange-700',
-          texto: `<p>A <strong>Astrologia Tropical</strong> (ou Sazonal) não mapeia o céu estrelado, mas sim os ciclos e ritmos do nosso planeta. Funciona como um impecável <em>relógio psicológico</em> da sua <strong>Persona Terrena</strong>.</p>`,
-        };
+  const content = getInfoContent(type, context);
+  const theme = INFO_MODAL_THEME[type];
 
   return (
     <div
@@ -229,34 +259,62 @@ const InfoModal: React.FC<ModalProps> = ({ type, onClose }) => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="info-modal-title"
+      aria-describedby="info-modal-introduction"
+      onClick={onClose}
     >
       <div
-        className={`md3-glass bg-white/90 backdrop-blur-2xl border ${content.borderColor} p-6 md:p-8 rounded-3xl max-w-2xl w-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative overflow-y-auto max-h-[90vh]`}
+        className={`md3-glass bg-white/95 backdrop-blur-2xl border ${theme.borderColor} p-6 md:p-8 rounded-3xl max-w-2xl w-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative overflow-y-auto max-h-[90vh]`}
+        onClick={(event) => event.stopPropagation()}
       >
         <button
+          type="button"
           onClick={onClose}
-          aria-label="Fechar Modal"
-          title="Fechar Modal"
+          aria-label="Fechar explicação"
+          title="Fechar explicação"
           className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition"
         >
           <X className="w-5 h-5 text-slate-600" />
         </button>
         <h2
           id="info-modal-title"
-          className={`text-2xl md:text-3xl font-black ${content.titleColor} flex items-center gap-3 mb-6 border-b border-slate-200 pb-4`}
+          className={`pr-10 text-2xl md:text-3xl font-black ${theme.titleColor} flex items-start gap-3 mb-5 border-b border-slate-200 pb-4`}
         >
-          {content.icon} {content.titulo}
+          <span className="mt-1 shrink-0" aria-hidden="true">
+            {theme.icon}
+          </span>{' '}
+          {content.title}
         </h2>
-        <div
-          className="text-slate-700 text-sm md:text-base leading-relaxed space-y-4 [&_p]:text-justify"
-          dangerouslySetInnerHTML={{ __html: content.texto }}
-        />
+        <p id="info-modal-introduction" className="text-sm leading-relaxed text-slate-700 md:text-base">
+          {content.introduction}
+        </p>
+        <div className="mt-6 space-y-6">
+          {content.sections.map((section) => (
+            <section key={section.title}>
+              <h3 className={`text-base font-black md:text-lg ${theme.sectionColor}`}>{section.title}</h3>
+              <ul className="mt-3 space-y-3 text-sm leading-relaxed text-slate-700 md:text-base">
+                {section.items.map((item) => (
+                  <li key={item} className="flex gap-3">
+                    <span
+                      aria-hidden="true"
+                      className={`mt-2 h-2 w-2 shrink-0 rounded-full bg-current ${theme.sectionColor}`}
+                    />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+        <p className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold leading-relaxed text-slate-700">
+          {content.closing}
+        </p>
         <button
+          type="button"
           onClick={onClose}
-          aria-label="Compreendido"
+          aria-label="Fechar explicação e voltar ao mapa"
           className="mt-8 w-full py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold uppercase tracking-wider transition shadow-lg text-base"
         >
-          Compreendido
+          Entendi
         </button>
       </div>
     </div>
@@ -431,7 +489,7 @@ export const RenderBlocoAstrologico: React.FC<BlocoProps> = ({
         </h2>
         <button
           type="button"
-          aria-label="Saiba mais sobre o módulo"
+          aria-label={`Saiba mais sobre ${titulo}`}
           onClick={onInfoClick}
           className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border transition-all text-xs font-bold uppercase tracking-wider shadow-sm bg-white hover:shadow-md border-${colorTheme}-200 ${colorHex} hover:bg-${colorTheme}-50`}
         >
@@ -441,7 +499,7 @@ export const RenderBlocoAstrologico: React.FC<BlocoProps> = ({
 
       <div className="bg-white/60 backdrop-blur-xl p-5 md:p-8 rounded-4xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] w-full mb-8">
         <h3 className="text-lg md:text-xl font-bold text-slate-800 mb-6 flex items-center gap-2 border-b border-slate-200 pb-3">
-          I. Astrologia ({isTropical ? '12 Signos' : '13 Signos'})
+          I. Astrologia ({isTropical ? '12 signos' : '13 constelações'})
         </h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {dadosAstrologia.map((a, i) => (
@@ -451,7 +509,7 @@ export const RenderBlocoAstrologico: React.FC<BlocoProps> = ({
             >
               <p className="text-[10px] md:text-xs text-slate-500 mb-1 truncate font-medium">{a.astro}</p>
               <p className="font-bold flex items-center gap-2 text-slate-800 text-xs sm:text-sm md:text-base truncate">
-                {a.simbolo} {a.signo}
+                {a.simbolo} {formatSignNamePtBr(a.signo)}
               </p>
             </div>
           ))}
@@ -939,6 +997,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const { showNotification } = useNotification();
+  const tatwaPresentation = presentTatwa(result.dadosGlobais.tatwa);
 
   const gerarTextoRelatorio = (): string => {
     if (!result) return '';
@@ -953,8 +1012,18 @@ export const ResultView: React.FC<ResultViewProps> = ({
     t += divider;
     t += `*🌬️ FORÇAS GLOBAIS*\n\n`;
     t += `*Tatwas:*\n`;
-    t += `  • Principal: *${result.dadosGlobais.tatwa.principal}*\n`;
-    t += `  • Sub-tatwa: *${result.dadosGlobais.tatwa.sub}*\n\n`;
+    t += `  • Principal: *${tatwaPresentation.principal}*\n`;
+    t += `  • Subtatwa: *${tatwaPresentation.sub}*\n`;
+    t += `  • Método: *${tatwaPresentation.modeLabelPtBr}*\n`;
+    if (tatwaPresentation.nearMainBoundary && tatwaPresentation.mainBoundaryMarginSec !== null) {
+      t += `  • Atenção: resultado próximo de uma transição (${formatTatwaDurationPtBr(tatwaPresentation.mainBoundaryMarginSec)}).\n`;
+      if (tatwaPresentation.adjacent) {
+        t += `  • Possibilidade adjacente: *${tatwaPresentation.adjacent.principal} / ${tatwaPresentation.adjacent.sub}*\n`;
+      }
+    }
+    if (tatwaPresentation.subIsIndicative)
+      t += `  • O subtatwa é uma indicação sensível à precisão do horário natal.\n`;
+    t += `\n`;
     t += `*Numerologia:*\n`;
     t += `  • Expressão: *${result.dadosGlobais.numerologia.expressao}*\n`;
     t += `  • Caminho da Vida: *${result.dadosGlobais.numerologia.caminhoVida}*\n`;
@@ -962,10 +1031,10 @@ export const ResultView: React.FC<ResultViewProps> = ({
 
     const blocoTexto = (dados: DadosSistema) => {
       let texto = `\n*Astrologia:*\n`;
-      texto += `  • ☀️ Sol: *${dados.astrologia[0]?.signo ?? 'N/D'}*\n`;
-      texto += `  • ⬆️ Ascendente: *${dados.astrologia[1]?.signo ?? 'N/D'}*\n`;
-      texto += `  • 🌙 Lua: *${dados.astrologia[2]?.signo ?? 'N/D'}*\n`;
-      texto += `  • 🔭 Meio do Céu: *${dados.astrologia[3]?.signo ?? 'N/D'}*\n\n`;
+      texto += `  • ☀️ Sol: *${formatSignNamePtBr(dados.astrologia[0]?.signo ?? 'N/D')}*\n`;
+      texto += `  • ⬆️ Ascendente: *${formatSignNamePtBr(dados.astrologia[1]?.signo ?? 'N/D')}*\n`;
+      texto += `  • 🌙 Lua: *${formatSignNamePtBr(dados.astrologia[2]?.signo ?? 'N/D')}*\n`;
+      texto += `  • 🔭 Meio do Céu: *${formatSignNamePtBr(dados.astrologia[3]?.signo ?? 'N/D')}*\n\n`;
       texto += `*Umbanda:*\n`;
       texto += `  • 👑 Coroa (Orixá Ancestral): *${dados.umbanda[0]?.orixa ?? 'N/D'}*\n`;
       texto += `  • 🌊 Adjuntó (Orixá de Frente): *${dados.umbanda[1]?.orixa ?? 'N/D'}*\n`;
@@ -977,15 +1046,15 @@ export const ResultView: React.FC<ResultViewProps> = ({
     };
 
     t += divider;
-    t += `*🌞 MÓDULO I: ASTROLÓGICO TROPICAL (A PERSONA)*\n`;
+    t += `*🌞 MÓDULO I: ASTROLÓGICO TROPICAL*\n`;
     t += blocoTexto(result.dadosTropical);
 
     t += divider;
-    t += `*✨ AGORA, A VERDADE OCULTA... ✨*\n\n`;
-    t += `_O módulo tropical acima revelou a sua máscara terrena (Persona). Desfaça a ilusão sazonal e contemple abaixo a sua *verdadeira assinatura estelar*._\n`;
+    t += `*✨ DUAS PERSPECTIVAS, UM MESMO NASCIMENTO ✨*\n\n`;
+    t += `_O módulo tropical organiza o zodíaco pelo ciclo sazonal; o resumo constelacional usa 13 faixas de referência aproximadas ao longo da eclíptica. Os dados posicionais detalhados fazem a classificação pelas regiões oficiais da IAU._\n`;
     t += divider;
 
-    t += `*⭐ MÓDULO II: ASTRONÔMICO CONSTELACIONAL (A ALMA)*\n`;
+    t += `*⭐ MÓDULO II: ASTRONÔMICO CONSTELACIONAL*\n`;
     t += blocoTexto(result.dadosAstronomica);
 
     if (result.dadosPosicionaisV2) {
@@ -1017,7 +1086,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
           (a) => `
       <div style="background-color: #ffffff; padding: 12px; border-radius: 12px; border: 1px solid #f1f5f9; ${boxShadow} text-align: left;">
         <p style="font-size: 11px; color: #64748b; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px;">${a.astro}</p>
-        <p style="font-size: 15px; color: #1e293b; margin: 0; font-weight: bold;">${a.simbolo} ${a.signo}</p>
+        <p style="font-size: 15px; color: #1e293b; margin: 0; font-weight: bold;">${a.simbolo} ${formatSignNamePtBr(a.signo)}</p>
       </div>
     `,
         )
@@ -1056,7 +1125,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
                 <h2 style="font-size: 28px; font-weight: 900; color: ${titleColor}; margin: 0 0 32px 0;">${titulo}</h2>
                 
                 <div style="background-color: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); padding: 32px; border-radius: 24px; border: 1px solid #ffffff; ${boxShadow} margin-bottom: 32px;">
-                    <h3 style="font-size: 20px; font-weight: bold; color: #1e293b; margin: 0 0 24px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">I. Astrologia (${isTropical ? '12 Signos' : '13 Signos'})</h3>
+                    <h3 style="font-size: 20px; font-weight: bold; color: #1e293b; margin: 0 0 24px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">I. Astrologia (${isTropical ? '12 signos' : '13 constelações'})</h3>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px;">
                         ${blocoAstrologiaHtml(dadosAstrologia)}
                     </div>
@@ -1106,8 +1175,10 @@ export const ResultView: React.FC<ResultViewProps> = ({
                 <div style="background-color: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); padding: 24px; border-radius: 24px; border: 1px solid #ffffff; ${boxShadow}">
                     <h3 style="font-size: 20px; font-weight: bold; color: #2563eb; margin: 0 0 16px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">🌬️ Forças Globais: Tatwas</h3>
                     <div style="font-size: 16px; color: #334155;">
-                        <div style="display: flex; justify-content: space-between; padding: 12px; background-color: #f8fafc; border-radius: 8px; margin-bottom: 8px;"><span>Principal</span> <strong style="color: #1e293b;">${result.dadosGlobais.tatwa.principal}</strong></div>
-                        <div style="display: flex; justify-content: space-between; padding: 12px; background-color: #f8fafc; border-radius: 8px;"><span>Sub-tatwa</span> <strong style="color: #1e293b;">${result.dadosGlobais.tatwa.sub}</strong></div>
+                        <div style="display: flex; justify-content: space-between; padding: 12px; background-color: #f8fafc; border-radius: 8px; margin-bottom: 8px;"><span>Principal</span> <strong style="color: #1e293b;">${tatwaPresentation.principal}</strong></div>
+                        <div style="display: flex; justify-content: space-between; padding: 12px; background-color: #f8fafc; border-radius: 8px; margin-bottom: 8px;"><span>Subtatwa</span> <strong style="color: #1e293b;">${tatwaPresentation.sub}</strong></div>
+                        <div style="padding: 10px 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; color: #1e40af;"><strong>Método:</strong> ${tatwaPresentation.modeLabelPtBr}</div>
+                        ${renderTatwaEmailCautionHtml(tatwaPresentation)}
                     </div>
                 </div>
                 <div style="background-color: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); padding: 24px; border-radius: 24px; border: 1px solid #ffffff; ${boxShadow}">
@@ -1126,8 +1197,8 @@ export const ResultView: React.FC<ResultViewProps> = ({
               <div style="position: absolute; inset: 0; background-image: linear-gradient(to right, rgba(251, 146, 60, 0.2), rgba(99, 102, 241, 0.2), rgba(52, 211, 153, 0.2)); border-radius: 24px; filter: blur(20px);"></div>
               <div style="position: relative; background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); padding: 40px; border-radius: 24px; ${boxShadow}">
                   <p style="font-size: 32px; margin: 0 0 12px 0;">✨</p>
-                  <h3 style="font-size: 24px; font-weight: 900; color: #4f46e5; margin: 0 0 8px 0;">Agora, a Verdade Oculta!</h3>
-                  <p style="font-size: 16px; color: #475569; margin: 0; max-width: 500px; margin-left: auto; margin-right: auto;">O módulo tropical acima revelou a sua <strong>máscara terrena (Persona)</strong>. Desfaça a ilusão sazonal e contemple abaixo a sua <strong>verdadeira assinatura estelar</strong>.</p>
+                  <h3 style="font-size: 24px; font-weight: 900; color: #4f46e5; margin: 0 0 8px 0;">Duas perspectivas, um mesmo nascimento</h3>
+                  <p style="font-size: 16px; color: #475569; margin: 0; max-width: 500px; margin-left: auto; margin-right: auto;">O módulo tropical organiza o zodíaco pelo ciclo sazonal. O resumo constelacional usa 13 faixas de referência aproximadas ao longo da eclíptica; os dados posicionais detalhados classificam pelas regiões oficiais da IAU.</p>
               </div>
             </div>
 
@@ -1229,28 +1300,67 @@ export const ResultView: React.FC<ResultViewProps> = ({
 
       <div className="grid md:grid-cols-2 gap-4 md:gap-6 w-full mb-8">
         <div className="bg-white/70 backdrop-blur-2xl p-5 md:p-8 rounded-4xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] w-full flex flex-col justify-center min-w-0">
-          <h3 className="text-lg md:text-xl font-bold text-blue-600 mb-6 flex items-center gap-2 border-b border-slate-200 pb-3">
-            <Wind className="text-blue-500 w-5 h-5" /> Forças Globais: Tatwas
-          </h3>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+            <h3 className="flex items-center gap-2 text-lg font-bold text-blue-600 md:text-xl">
+              <Wind className="h-5 w-5 text-blue-500" /> Forças Globais: Tatwas
+            </h3>
+            <button
+              type="button"
+              aria-label="Saiba mais sobre o cálculo dos Tatwas"
+              onClick={() => openInfoModal('tatwas')}
+              className="flex items-center gap-1.5 rounded-full border border-sky-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wider text-sky-700 shadow-sm transition hover:bg-sky-50 hover:shadow-md"
+            >
+              <HelpCircle className="h-4 w-4" /> Saiba mais
+            </button>
+          </div>
           <div className="space-y-3">
             <div className="bg-white/80 p-3 md:p-4 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm">
               <p className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Principal</p>
               <p className="font-bold text-slate-800 text-sm md:text-base truncate pl-2">
-                {String(result.dadosGlobais.tatwa.principal)}
+                {tatwaPresentation.principal}
               </p>
             </div>
             <div className="bg-white/80 p-3 md:p-4 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm">
-              <p className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Sub-tatwa</p>
-              <p className="font-bold text-slate-800 text-sm md:text-base truncate pl-2">
-                {String(result.dadosGlobais.tatwa.sub)}
-              </p>
+              <p className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Subtatwa</p>
+              <p className="font-bold text-slate-800 text-sm md:text-base truncate pl-2">{tatwaPresentation.sub}</p>
             </div>
+            <div className="rounded-xl border border-blue-100 bg-blue-50/80 p-3 text-xs text-blue-900">
+              <span className="font-bold">Método:</span> {tatwaPresentation.modeLabelPtBr}
+            </div>
+            {tatwaPresentation.nearMainBoundary && tatwaPresentation.mainBoundaryMarginSec !== null && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
+                <strong>Próximo de uma transição:</strong> margem de{' '}
+                {formatTatwaDurationPtBr(tatwaPresentation.mainBoundaryMarginSec)}.
+                {tatwaPresentation.adjacent && (
+                  <span>
+                    {' '}
+                    Possibilidade adjacente: <strong>{tatwaPresentation.adjacent.principal}</strong> /{' '}
+                    <strong>{tatwaPresentation.adjacent.sub}</strong>.
+                  </span>
+                )}
+              </div>
+            )}
+            {tatwaPresentation.subIsIndicative && (
+              <p className="px-1 text-[11px] leading-relaxed text-slate-500">
+                O subtatwa é indicativo e especialmente sensível à precisão do horário registrado.
+              </p>
+            )}
           </div>
         </div>
         <div className="bg-white/70 backdrop-blur-2xl p-5 md:p-8 rounded-4xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] w-full flex flex-col justify-center min-w-0">
-          <h3 className="text-lg md:text-xl font-bold text-blue-600 mb-6 flex items-center gap-2 border-b border-slate-200 pb-3">
-            <Hash className="text-blue-500 w-5 h-5" /> Forças Globais: Numerologia
-          </h3>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+            <h3 className="flex items-center gap-2 text-lg font-bold text-blue-600 md:text-xl">
+              <Hash className="h-5 w-5 text-blue-500" /> Forças Globais: Numerologia
+            </h3>
+            <button
+              type="button"
+              aria-label="Saiba mais sobre o cálculo da Numerologia"
+              onClick={() => openInfoModal('numerologia')}
+              className="flex items-center gap-1.5 rounded-full border border-violet-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wider text-violet-700 shadow-sm transition hover:bg-violet-50 hover:shadow-md"
+            >
+              <HelpCircle className="h-4 w-4" /> Saiba mais
+            </button>
+          </div>
           <div className="space-y-3">
             <div className="flex justify-between items-center bg-white/80 p-3 md:p-4 rounded-xl border border-slate-100 shadow-sm">
               <span className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Expressão</span>
@@ -1289,11 +1399,12 @@ export const ResultView: React.FC<ResultViewProps> = ({
           <Sparkles className="w-10 h-10 text-indigo-500 shrink-0 animate-pulse mb-3" />
           <div className="flex flex-col items-center max-w-2xl">
             <h4 className="text-indigo-600 font-black uppercase tracking-widest text-sm md:text-xl mb-2">
-              ✨ Agora, a Verdade Oculta! ✨
+              ✨ Duas perspectivas, um mesmo nascimento ✨
             </h4>
             <p className="text-slate-600 text-sm md:text-base leading-relaxed text-balance">
-              O módulo tropical acima revelou a sua <strong>máscara terrena (Persona)</strong>. Desfaça a ilusão sazonal
-              e contemple abaixo a sua <strong>verdadeira assinatura estelar</strong>.
+              O módulo tropical organiza o zodíaco pelo ciclo sazonal. A seguir, o resumo constelacional usa 13 faixas
+              de referência aproximadas ao longo da eclíptica; os dados posicionais detalhados classificam pelas regiões
+              oficiais da IAU.
             </p>
           </div>
         </div>
@@ -1366,7 +1477,7 @@ export default function App() {
   const [loadingAi, setLoadingAi] = useState(false);
   const [result, setResult] = useState<ResultData | null>(null);
   const [analiseIa, setAnaliseIa] = useState<string>('');
-  const [modalType, setModalType] = useState<'astronomica' | 'tropical' | null>(null);
+  const [modalType, setModalType] = useState<InfoTopic | null>(null);
   const { showNotification } = useNotification();
 
   // ── Auth & Session State ──
@@ -1551,8 +1662,12 @@ export default function App() {
           query: result.query,
         }),
       });
-      const data = (await res.json()) as { analise?: string };
-      if (data.analise) setAnaliseIa(data.analise);
+      const data = (await res.json()) as { analise?: string; error?: string };
+      if (res.ok && data.analise) {
+        setAnaliseIa(data.analise);
+      } else {
+        showNotification(data.error ?? 'A análise não pôde ser gerada com segurança.', 'error');
+      }
     } catch {
       showNotification('A Inteligência falhou.', 'error');
     }
@@ -1571,7 +1686,18 @@ export default function App() {
   return (
     <div className="min-h-screen bg-transparent text-slate-800 font-sans flex flex-col items-center w-full overflow-x-hidden relative">
       <div className="fixed inset-0 bg-slate-50 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-blue-50/50 via-slate-50 to-purple-50/50 -z-10"></div>
-      <InfoModal type={modalType} onClose={() => setModalType(null)} />
+      <InfoModal
+        type={modalType}
+        context={
+          result
+            ? {
+                tatwa: presentTatwa(result.dadosGlobais.tatwa),
+                numerologia: result.dadosGlobais.numerologia,
+              }
+            : {}
+        }
+        onClose={() => setModalType(null)}
+      />
 
       {!showLicenses ? (
         <div className="max-w-6xl mx-auto w-full flex flex-col items-center grow p-3 sm:p-6 md:p-8">

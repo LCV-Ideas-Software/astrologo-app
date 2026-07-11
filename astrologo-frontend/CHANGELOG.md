@@ -1,5 +1,30 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.19.00] - 2026-07-11
+
+### Corrigido
+
+- Tatwas calculados em segundos inteiros a partir do instante UTC e do nascer aparente do Sol local, inclusive com o nascer do Sol do dia civil anterior para nascimentos anteriores ao evento local.
+- Removidos o truncamento para hora/minuto, a aritmética por `4.8` minutos, o fallback solar genérico e a dependência do retorno arredondado do Open-Meteo.
+- Astrologia Tropical e Astronômica passam a ser apresentadas como perspectivas diferentes, sem tratar uma delas como ilusão e a outra como verdade absoluta.
+
+### Adicionado
+
+- Contrato Tatwa `2.0.0` com padrão `fixed`, perspectiva `legacy-rulingFirst`, proveniência astronômica, margens, aviso de fronteira e possibilidade adjacente.
+- Identificação defensiva de mapas legados sem marcador, preservando exatamente os resultados históricos.
+- Botões **Saiba mais** em Tatwas e Numerologia; conteúdos Tropical e Astronômico reescritos para explicar método, alcance e limitações a usuários leigos.
+- Paridade do método e da incerteza na interface, relatório copiado, WhatsApp, e-mail e adendo acumulativo da IA reidratado do registro canônico.
+- Validação integral do contrato antes da persistência e política fail-closed no agente: Tatwa ausente no D1 não pode ser substituído pelo navegador.
+
+### Documentado
+
+- Fontes, decisões, casos reais e regras de Numerologia em `../docs/METODOLOGIA_TATWAS_E_NUMEROLOGIA.md`.
+- Nenhuma alteração de schema D1 é necessária: `dados_globais` já armazena o contrato expandido como JSON serializado.
+
+### Preservado
+
+- Prompt legado integral, cálculos astrológicos, dados posicionais, angelologia, autenticação e mapas salvos continuam compatíveis.
+
 ## [v02.18.02] - 2026-07-11
 
 ### Segurança

@@ -11,6 +11,16 @@ export interface LocalSolarTimes {
   };
 }
 
+export interface LocalSolarTimesInput {
+  readonly date: string;
+  readonly timeZoneIana: string;
+  readonly latitudeDeg: number;
+  readonly longitudeDeg: number;
+  readonly elevationMeters: number | null;
+}
+
+export const normalizeObserverElevationMeters = (value: number | null): number => Math.max(-500, value ?? 0);
+
 const eventInLocalDate = (
   eventDate: Date,
   expectedDate: Temporal.PlainDate,
@@ -22,13 +32,7 @@ const eventInLocalDate = (
   return { instantUtc: instant.toString(), hour: local.hour, minute: local.minute };
 };
 
-export function calculateLocalSolarTimes(input: {
-  readonly date: string;
-  readonly timeZoneIana: string;
-  readonly latitudeDeg: number;
-  readonly longitudeDeg: number;
-  readonly elevationMeters: number | null;
-}): LocalSolarTimes | null {
+export function calculateLocalSolarTimes(input: LocalSolarTimesInput): LocalSolarTimes | null {
   const plainDate = Temporal.PlainDate.from(input.date);
   const localStart = Temporal.ZonedDateTime.from(
     {
@@ -41,7 +45,11 @@ export function calculateLocalSolarTimes(input: {
     },
     { disambiguation: 'compatible' },
   );
-  const observer = new Observer(input.latitudeDeg, input.longitudeDeg, Math.max(-500, input.elevationMeters ?? 0));
+  const observer = new Observer(
+    input.latitudeDeg,
+    input.longitudeDeg,
+    normalizeObserverElevationMeters(input.elevationMeters),
+  );
   const startDate = new Date(localStart.toInstant().epochMilliseconds);
   const sunriseEvent = SearchRiseSet(Body.Sun, observer, 1, startDate, 1.5);
   const sunsetEvent = SearchRiseSet(Body.Sun, observer, -1, startDate, 1.5);

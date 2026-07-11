@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.18.02**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.19.00**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.19.00`**                      | **Tatwas v2 e ajuda contextual.** Corrige a âncora solar e a precisão temporal, adota a ordem fixa em novos mapas, identifica a perspectiva legada, comunica fronteiras e proveniência e acrescenta explicações leigas de Tatwas, Numerologia e dos dois sistemas astrológicos. |
 | **`v02.18.02`**                      | **Correção CodeQL CWE-367.** A materialização do Swiss Ephemeris elimina a checagem separada do destino e passa a removê-lo sem seguir links simbólicos antes da publicação atômica da cópia verificada. |
 | **`v02.18.01`**                      | **Hardening da cadeia de suprimentos.** O Swiss Ephemeris WASM deixa de ser versionado no Git e passa a ser materializado localmente sob demanda a partir da dependência exata, com verificação de tamanho/SHA-256; CI, Wrangler e Scorecard bloqueiam recorrências antes do deploy. |
 | **`v02.18.00`**                      | **Dados posicionais e angelologia v2.** Dez planetas com graus, Casas Placidus, cúspides, constelações IAU e quinários dos 72 anjos; Anjo Regente do Consulente derivado do Sol tropical; UI, relatórios, e-mail, prompt de IA e admin integralmente adaptados para apresentação em pt-BR. |
@@ -37,13 +38,14 @@ The version history at a glance:
 Aplicação para gerar análises astrológicas a partir de dados de nascimento (data, hora, local). O fluxo:
 
 1. **Coleta**: usuário fornece dados de nascimento via formulário.
-2. **Cálculo astrométrico** (`functions/api/calcular.ts`): cálculos determinísticos de posições planetárias, signos, casas — sem IA, baseado em algoritmos astronômicos públicos.
+2. **Cálculo astrométrico** (`functions/api/calcular.ts`): cálculos determinísticos de posições planetárias, signos, casas e Tatwas ancorados no nascer do Sol local — sem IA, com contratos versionados e proveniência.
 3. **Análise por IA** (`functions/api/analisar.ts`): Gemini 2.5 Pro recebe os dados astrométricos calculados e produz uma narrativa em prosa esotérica.
 4. **Persistência opcional** (`functions/api/astrologo-auth.ts` + D1): usuário pode salvar a análise sob um identificador único e recuperar depois com e-mail + código.
 5. **Compartilhamento via e-mail** (`functions/api/enviar-email.ts`): envio do mapa + análise para um endereço informado.
 
 Funcionalidades adicionais:
 
+- **Metodologia auditável**: [Tatwas e Numerologia](./docs/METODOLOGIA_TATWAS_E_NUMEROLOGIA.md), com fontes, variantes, fixtures e limites interpretativos.
 - **Rate limiting por D1** (`requestSecurity.ts`): proteção contra abuso de endpoints públicos via janelas deslizantes persistidas.
 - **Auth opcional**: endpoint de resgate por e-mail/código para acesso a análises previamente salvas.
 - **Compliance** (`functions/_middleware.ts`): redirect canônico para domínio público + headers de segurança baseline.

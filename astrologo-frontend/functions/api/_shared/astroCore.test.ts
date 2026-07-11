@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   calcExpressionNumber,
   getJulianDate,
-  getTatwaAtMoment,
+  getLegacyRoundedTatwaAtMoment,
   isValidDateString,
   isValidTimeString,
   reduceNum,
@@ -50,7 +50,7 @@ describe('astroCore', () => {
   });
 
   it('calcula Vayu-Akasha para 16:45 com nascer do sol 06:00', () => {
-    const tatwa = getTatwaAtMoment(16, 45, 6, 0);
+    const tatwa = getLegacyRoundedTatwaAtMoment(16, 45, 6, 0);
     expect(tatwa.principal).toBe('Vayu (Ar)');
     expect(tatwa.sub).toBe('Akasha (Éter)');
   });

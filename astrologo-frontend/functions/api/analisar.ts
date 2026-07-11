@@ -12,6 +12,7 @@ import {
   jsonResponse,
   securityHeaders,
 } from './_shared/requestSecurity';
+import { buildAnalysisGlobalsWithCanonicalTatwa, loadCanonicalTatwa } from './_shared/tatwaPrompt';
 
 interface EnvBindings {
   GEMINI_API_KEY: string;
@@ -21,6 +22,9 @@ interface Context {
   request: Request;
   env: EnvBindings;
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /**
  * Logging estruturado com timestamp e contexto
@@ -203,11 +207,28 @@ export async function onRequestPost(context: Context) {
       });
     }
 
-    const dadosAnalise = `Sistema Tropical: ${JSON.stringify(dadosTropical)} | Sistema Astronômico Constelacional: ${JSON.stringify(dadosAstronomica)} | Globais (Tatwas e Numerologia): ${JSON.stringify(dadosGlobais)}`;
     // O navegador nunca é autoridade para fatos v2. O servidor reidrata pelo id;
     // mapas legados sem o bloco persistido continuam naturalmente no prompt v1.
-    const canonicalV2 = await loadCanonicalAnalysisV2(env.BIGDATA_DB, id);
-    const prompt = buildAnalysisPrompt(dadosAnalise, query, canonicalV2);
+    const [canonicalV2, canonicalTatwa] = await Promise.all([
+      loadCanonicalAnalysisV2(env.BIGDATA_DB, id),
+      loadCanonicalTatwa(env.BIGDATA_DB, id),
+    ]);
+    if (!canonicalTatwa) {
+      return jsonResponse(
+        {
+          success: false,
+          code: 'CANONICAL_TATWA_UNAVAILABLE',
+          error:
+            'Os Tatwas canônicos deste mapa não estão disponíveis com segurança. Recalcule o mapa antes da análise.',
+        },
+        503,
+        corsHeaders,
+      );
+    }
+    const submittedGlobals = isRecord(dadosGlobais) ? dadosGlobais : {};
+    const globalsForAnalysis = buildAnalysisGlobalsWithCanonicalTatwa(submittedGlobals, canonicalTatwa);
+    const dadosAnalise = `Sistema Tropical: ${JSON.stringify(dadosTropical)} | Sistema Astronômico Constelacional: ${JSON.stringify(dadosAstronomica)} | Globais (Tatwas e Numerologia): ${JSON.stringify(globalsForAnalysis)}`;
+    const prompt = buildAnalysisPrompt(dadosAnalise, query, canonicalV2, canonicalTatwa);
 
     // ==== DYNAMIC MODEL CONFIGURATION VIA BIGDATA_DB ====
     let selectedModel = GEMINI_CONFIG_DEFAULTS.model;

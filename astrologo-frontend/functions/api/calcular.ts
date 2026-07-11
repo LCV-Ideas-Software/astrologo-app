@@ -2,14 +2,12 @@ import {
   type AstroInfo,
   calcExpressionNumber,
   getJulianDate,
-  getTatwaAtMoment,
   isValidDateString,
   isValidTimeString,
   reduceNum,
   wrapDegrees,
 } from './_shared/astroCore';
 import { type BirthTimeDisambiguation, resolveBirthCivilTime } from './_shared/birthTime';
-import { fetchWithTimeout } from './_shared/externalFetch';
 import { resolveBirthPlace } from './_shared/location';
 import { calculateDadosPosicionaisV2 } from './_shared/positionV2';
 import { validateDadosPosicionaisV2 } from './_shared/positionV2Schema';
@@ -23,6 +21,8 @@ import {
 } from './_shared/requestSecurity';
 import { calculateLocalSolarTimes } from './_shared/solarTimes';
 import { swissEphemeris } from './_shared/swissRuntime';
+import { calculateWesternTatwaAtBirth } from './_shared/tatwaBirth';
+import { validateWesternTatwaBirthResult } from './_shared/tatwaSchema';
 
 interface EnvBindings {
   GEMINI_API_KEY: string;
@@ -32,13 +32,6 @@ interface Context {
   request: Request;
   env: EnvBindings;
 }
-
-const parseIsoTime = (value: string | undefined, fallbackH: number, fallbackM: number): [number, number] => {
-  if (!value) return [fallbackH, fallbackM];
-  const match = value.match(/T(\d{2}):(\d{2})/);
-  if (!match) return [fallbackH, fallbackM];
-  return [Number(match[1]), Number(match[2])];
-};
 
 export async function onRequestOptions(context: Context) {
   return new Response(null, {
@@ -171,51 +164,28 @@ export async function onRequestPost(context: Context) {
 
     const lat = place.latitudeDeg;
     const lon = place.longitudeDeg;
-    let srH = 6;
-    let srM = 0;
-    let ssH = 18;
-    let ssM = 0;
-
-    try {
-      const archiveRes = await fetchWithTimeout(
-        `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${dataNascimento}&end_date=${dataNascimento}&daily=sunrise,sunset&timezone=${encodeURIComponent(place.timeZoneIana)}`,
+    const solarTimes = calculateLocalSolarTimes({
+      date: dataNascimento,
+      timeZoneIana: place.timeZoneIana,
+      latitudeDeg: lat,
+      longitudeDeg: lon,
+      elevationMeters: place.elevationMeters,
+    });
+    if (!solarTimes) {
+      return jsonResponse(
+        {
+          success: false,
+          code: 'SOLAR_TIMES_UNAVAILABLE',
+          error: 'Não foi possível determinar nascer e pôr do Sol para esse local e data.',
+        },
+        422,
+        corsHeaders,
       );
-      if (archiveRes.ok) {
-        const archiveData = (await archiveRes.json()) as { daily?: { sunrise?: string[]; sunset?: string[] } };
-        const sunriseRaw = archiveData.daily?.sunrise?.[0];
-        const sunsetRaw = archiveData.daily?.sunset?.[0];
-        if (!sunriseRaw?.match(/T\d{2}:\d{2}/) || !sunsetRaw?.match(/T\d{2}:\d{2}/)) {
-          throw new Error('Solar archive returned incomplete data');
-        }
-        [srH, srM] = parseIsoTime(sunriseRaw, 6, 0);
-        [ssH, ssM] = parseIsoTime(sunsetRaw, 18, 0);
-      } else {
-        throw new Error('Solar archive unavailable');
-      }
-    } catch {
-      const solarTimes = calculateLocalSolarTimes({
-        date: dataNascimento,
-        timeZoneIana: place.timeZoneIana,
-        latitudeDeg: lat,
-        longitudeDeg: lon,
-        elevationMeters: place.elevationMeters,
-      });
-      if (!solarTimes) {
-        return jsonResponse(
-          {
-            success: false,
-            code: 'SOLAR_TIMES_UNAVAILABLE',
-            error: 'Não foi possível determinar nascer e pôr do Sol para esse local e data.',
-          },
-          422,
-          corsHeaders,
-        );
-      }
-      srH = solarTimes.sunrise.hour;
-      srM = solarTimes.sunrise.minute;
-      ssH = solarTimes.sunset.hour;
-      ssM = solarTimes.sunset.minute;
     }
+    const srH = solarTimes.sunrise.hour;
+    const srM = solarTimes.sunrise.minute;
+    const ssH = solarTimes.sunset.hour;
+    const ssM = solarTimes.sunset.minute;
 
     const [ano = 0, mes = 1, dia = 1] = dataNascimento.split('-').map(Number);
     const [hLocal = 0, mLocal = 0] = horaNascimento.split(':').map(Number);
@@ -435,10 +405,49 @@ export async function onRequestPost(context: Context) {
       };
     };
 
-    const tatwa = getTatwaAtMoment(hLocal, mLocal, srH, srM);
+    const idUnico = crypto.randomUUID();
+    const calculatedAtUtc = new Date().toISOString();
+    const tatwa = calculateWesternTatwaAtBirth({
+      date: dataNascimento,
+      birthInstantUtc: timeResolution.instantUtc,
+      birthCivilLocal: `${dataNascimento}T${horaNascimento}:00`,
+      birthOffset: timeResolution.offsetAtBirth,
+      birthTimeDisambiguation: timeResolution.disambiguation,
+      historicalTimeConfidence: timeResolution.historicalConfidence,
+      timeZoneIana: place.timeZoneIana,
+      latitudeDeg: lat,
+      longitudeDeg: lon,
+      elevationMeters: place.elevationMeters,
+      placeProviderResultId: place.providerResultId,
+      calculatedAtUtc,
+    });
+    if (!tatwa) {
+      return jsonResponse(
+        {
+          success: false,
+          code: 'TATWA_SUNRISE_UNAVAILABLE',
+          error: 'Não foi possível determinar o nascer do Sol que ancora o ciclo dos Tatwas.',
+        },
+        422,
+        corsHeaders,
+      );
+    }
+    const tatwaValidation = validateWesternTatwaBirthResult(tatwa);
+    if (!tatwaValidation.valid) {
+      console.error('Contrato Tatwa v2 inválido.', tatwaValidation.errors);
+      return jsonResponse(
+        {
+          success: false,
+          code: 'TATWA_SCHEMA_VALIDATION_FAILED',
+          error: 'O cálculo dos Tatwas não passou pelos invariantes de segurança.',
+        },
+        500,
+        corsHeaders,
+      );
+    }
 
     const dadosGlobais = {
-      tatwa: { principal: tatwa.principal, sub: tatwa.sub },
+      tatwa,
       numerologia: {
         expressao: calcExpressionNumber(nome),
         caminhoVida: reduceNum(dataNascimento),
@@ -458,8 +467,6 @@ export async function onRequestPost(context: Context) {
       getTropicalInfo(mcLon),
     );
 
-    const idUnico = crypto.randomUUID();
-    const calculatedAtUtc = new Date().toISOString();
     const dadosPosicionaisV2 = calculateDadosPosicionaisV2(
       {
         calculationId: idUnico,

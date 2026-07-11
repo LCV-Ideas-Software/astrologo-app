@@ -1,4 +1,5 @@
 import type { D1DatabaseLike } from './requestSecurity';
+import { buildTatwaPromptAddendum, type TatwaPromptDto } from './tatwaPrompt';
 
 const BODY_DEFINITIONS = {
   sun: { displayNamePtBr: 'Sol', symbol: '☀️' },
@@ -644,10 +645,16 @@ DADOS_ASTROLOGICOS_V2 — INÍCIO
 ${JSON.stringify(dto)}
 DADOS_ASTROLOGICOS_V2 — FIM`;
 
-export const buildAnalysisPrompt = (dadosAnalise: string, query: unknown, canonicalV2: unknown): string => {
+export const buildAnalysisPrompt = (
+  dadosAnalise: string,
+  query: unknown,
+  canonicalV2: unknown,
+  canonicalTatwa: TatwaPromptDto | null = null,
+): string => {
   const legacyPrompt = buildLegacyAnalysisPrompt(dadosAnalise, query);
   const dto = projectCanonicalAnalysisV2(canonicalV2);
-  return dto ? legacyPrompt + buildV2Addendum(dto) : legacyPrompt;
+  const tatwaAddendum = buildTatwaPromptAddendum(canonicalTatwa);
+  return dto ? legacyPrompt + tatwaAddendum + buildV2Addendum(dto) : legacyPrompt + tatwaAddendum;
 };
 
 export const loadCanonicalAnalysisV2 = async (

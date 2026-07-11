@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+## [v02.19.00] - 2026-07-11
+
+### Corrigido
+
+- **Tatwas por instante astronômico** — o cálculo deixa de descartar segundos e elimina o uso de minutos fracionários. O ciclo agora usa segundos inteiros, intervalos semiabertos, nascer aparente do Sol calculado para as coordenadas exatas e o nascer do Sol do dia civil anterior quando o nascimento ocorre antes do evento local.
+- **Fonte solar determinística** — Astronomy Engine 2.1.19 passa a ser a fonte controlada pelo servidor, sem horário genérico nem fallback silencioso para outra cidade; indisponibilidade retorna erro tipado.
+- **Perspectivas sem falsa hierarquia** — a narrativa visível deixa de chamar o sistema tropical de “máscara” e o constelacional de “verdade oculta”; ambos são explicados como referências distintas aplicadas ao mesmo nascimento.
+
+### Adicionado
+
+- **Contrato Tatwa v2** — novos mapas usam `fixed` (**Ordem fixa — Akasha primeiro**) e persistem também a perspectiva `legacy-rulingFirst` (**Ordem pelo principal — Tatwa principal primeiro**), com âncora, proveniência, intermediários, margens e hipótese adjacente.
+- **Compatibilidade histórica** — mapas sem marcador continuam com seus valores originais e são identificados como registros legados; nenhuma leitura antiga é recalculada ou relabelada como se tivesse a nova proveniência.
+- **Ajuda para usuários leigos** — botões **Saiba mais** em Tatwas e Numerologia e explicações ampliadas nos módulos Tropical e Astronômico, com metodologia, limitações, resultado contextual e linguagem integralmente em português do Brasil.
+- **Agente de IA e relatórios** — adendo acumulativo, reidratado do D1, ensina os dois métodos sem resumir o prompt anterior; tela, texto, WhatsApp e e-mail passam a identificar método e incerteza.
+- **Contrato validado antes de salvar** — combinações impossíveis, timestamps/fusos inválidos e proveniência incoerente são recusados; se o D1 não devolver o Tatwa canônico, o agente omite o dado em vez de aceitar uma substituição enviada pelo navegador.
+
+### Documentado
+
+- Metodologia, fontes históricas concorrentes, algoritmo, fixtures reais, incerteza e cálculo numerológico em `docs/METODOLOGIA_TATWAS_E_NUMEROLOGIA.md`.
+- O objeto expandido continua dentro de `dados_globais`; a coluna `TEXT` existente comporta o JSON e não exige nova migração ou `ALTER TABLE`.
+
+### Preservado
+
+- Posições, Casas Placidus, angelologia, autenticação, persistência e estrutura integral do prompt legado permanecem compatíveis.
+
 ## [v02.18.02] - 2026-07-11
 
 ### Segurança

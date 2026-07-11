@@ -165,6 +165,20 @@ describe('analysisPrompt', () => {
     expect(buildAnalysisPrompt('DADOS', { nome: 'Legado' }, { schemaVersion: 'inválida' })).toBe(legacy);
   });
 
+  it('acrescenta as instruções de Tatwa sem alterar um byte do prompt legado', () => {
+    const legacy = buildLegacyAnalysisPrompt('DADOS', { nome: 'Tatwa' });
+    const complete = buildAnalysisPrompt('DADOS', { nome: 'Tatwa' }, null, {
+      schemaVersion: 'legacy',
+      calculationMode: 'legacy-rulingFirst',
+      selected: { principal: 'Vayu (Ar)', sub: 'Akasha (Éter)' },
+      provenanceAvailable: false,
+    });
+
+    expect(complete.slice(0, legacy.length)).toBe(legacy);
+    expect(complete).toContain('ADENDO — TATWAS E PERSPECTIVAS DE CÁLCULO');
+    expect(complete).toContain('mapa legado');
+  });
+
   it('projeta somente o contrato v2 allowlisted e não inventa grau IAU ou posição mundana', () => {
     const projected = projectCanonicalAnalysisV2(makeCanonicalV2());
     expect(projected).not.toBeNull();

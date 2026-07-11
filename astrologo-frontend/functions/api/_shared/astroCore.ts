@@ -1,9 +1,11 @@
+import { computeWesternTatwa, TATWA_ORDER } from './tatwa';
+
 export interface AstroInfo {
   nome: string;
   decanato: number;
 }
 
-export const TATWA_ORDER = ['Akasha (Éter)', 'Vayu (Ar)', 'Tejas (Fogo)', 'Apas (Água)', 'Prithvi (Terra)'] as const;
+export { TATWA_ORDER };
 
 export interface TatwaResult {
   principal: string;
@@ -105,25 +107,22 @@ export const calcExpressionNumber = (input: string): number => {
   return reduceNum(sum);
 };
 
-export const getTatwaAtMoment = (
+/** @deprecated Compatibilidade exclusiva com testes e registros antigos arredondados para HH:mm. */
+export const getLegacyRoundedTatwaAtMoment = (
   hour: number,
   minute: number,
   sunriseHour: number,
   sunriseMinute: number,
 ): TatwaResult => {
-  const nowMins = hour * 60 + minute;
-  const sunriseMins = sunriseHour * 60 + sunriseMinute;
-  const minsFromSunrise = (((nowMins - sunriseMins) % 1440) + 1440) % 1440;
-
-  const principalIndex = Math.floor(minsFromSunrise / 24) % 5;
-  const withinPrincipal = minsFromSunrise % 24;
-  const subOffset = Math.floor(withinPrincipal / 4.8);
-  const subIndex = (principalIndex + subOffset) % 5;
+  const nowSec = (hour * 60 + minute) * 60;
+  const sunriseSec = (sunriseHour * 60 + sunriseMinute) * 60;
+  const elapsedSec = (((nowSec - sunriseSec) % 86_400) + 86_400) % 86_400;
+  const legacy = computeWesternTatwa(elapsedSec, 0, { subOrder: 'rulingFirst' });
 
   return {
-    principal: TATWA_ORDER[principalIndex] ?? 'Akasha (Éter)',
-    sub: TATWA_ORDER[subIndex] ?? 'Akasha (Éter)',
-    principalIndex,
-    subIndex,
+    principal: legacy.principal,
+    sub: legacy.sub,
+    principalIndex: legacy.principalIndex,
+    subIndex: legacy.subIndex,
   };
 };

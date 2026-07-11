@@ -94,7 +94,7 @@ const CONSTELLATION_NAMES_PT_BR: Readonly<Record<string, string>> = Object.freez
   Mus: 'Mosca',
   Nor: 'Esquadro',
   Oct: 'Oitante',
-  Oph: 'Ophiuchus (Serpentário)',
+  Oph: 'Ofiúco (Serpentário)',
   Ori: 'Órion',
   Pav: 'Pavão',
   Peg: 'Pégaso',

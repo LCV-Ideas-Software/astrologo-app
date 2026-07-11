@@ -20,6 +20,16 @@ interface ExecutedStatement {
 
 interface CalculationResponse {
   readonly success: boolean;
+  readonly dadosGlobais: {
+    readonly tatwa: {
+      readonly schemaVersion: string;
+      readonly calculationMode: string;
+      readonly principal: string;
+      readonly sub: string;
+      readonly variants: Record<string, { principal: string; sub: string }>;
+      readonly anchor: { readonly solarModel: { readonly engineId: string } };
+    };
+  };
   readonly dadosTropical: {
     readonly astrologia: readonly { readonly astro: string }[];
     readonly umbanda: readonly unknown[];
@@ -80,10 +90,7 @@ describe('/api/calcular v2', () => {
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         );
       }
-      return new Response(JSON.stringify({ daily: { sunrise: ['1990-05-15T06:17'], sunset: ['1990-05-15T17:20'] } }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      throw new Error(`Requisição externa inesperada: ${url.href}`);
     });
     vi.stubGlobal('fetch', fetchMock);
     vi.doMock('./_shared/swissRuntime', () => ({ swissEphemeris: swiss }));
@@ -118,7 +125,28 @@ describe('/api/calcular v2', () => {
     expect(payload.dadosAstronomica.umbanda).toHaveLength(6);
     expect(payload.dadosPosicionaisV2.positions).toHaveLength(10);
     expect(payload.dadosPosicionaisV2.birthContext.timeResolution.timeZoneIana).toBe('America/Sao_Paulo');
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(payload.dadosGlobais.tatwa).toMatchObject({
+      schemaVersion: '2.0.0',
+      calculationMode: 'fixed',
+      anchor: {
+        birthCivilLocal: '1990-05-15T14:30:00',
+        birthOffset: '-03:00',
+        birthTimeDisambiguation: 'exact',
+        inputTimePrecision: 'minute',
+        epochQuantization: 'floor-each-instant-to-whole-second',
+        sunriseRelation: 'same-civil-date',
+        placeProviderResultId: 3451190,
+        solarModel: { engineId: 'astronomy-engine' },
+      },
+    });
+    expect(payload.dadosGlobais.tatwa).not.toHaveProperty('method');
+    expect(payload.dadosGlobais.tatwa).not.toHaveProperty('subOrder');
+    expect(payload.dadosGlobais.tatwa.variants.fixed).toMatchObject({
+      principal: payload.dadosGlobais.tatwa.principal,
+      sub: payload.dadosGlobais.tatwa.sub,
+    });
+    expect(payload.dadosGlobais.tatwa.variants['legacy-rulingFirst']).toBeDefined();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     for (const [, init] of fetchMock.mock.calls) {
       expect(init).toEqual(expect.objectContaining({ signal: expect.any(AbortSignal) }));
     }
@@ -126,6 +154,7 @@ describe('/api/calcular v2', () => {
     const insert = executed.find(({ query }) => query.includes('INSERT INTO astrologo_mapas'));
     expect(insert?.query).toContain('dados_posicionais_v2');
     expect(insert?.bindings).toHaveLength(9);
+    expect(JSON.parse(String(insert?.bindings[7]))).toEqual(payload.dadosGlobais);
     expect(JSON.parse(String(insert?.bindings[8]))).toEqual(payload.dadosPosicionaisV2);
   });
 });
