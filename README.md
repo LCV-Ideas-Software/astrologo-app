@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.19.00**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.20.00**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.20.00`**                      | **Ajuda contextual dos dados posicionais.** Acrescenta explicações leigas à leitura detalhada, às Cúspides Placidus e à Falange Angelical, distinguindo posições tropicais, regiões IAU, casas, quinários e regência solar sem alterar os cálculos. |
 | **`v02.19.00`**                      | **Tatwas v2 e ajuda contextual.** Corrige a âncora solar e a precisão temporal, adota a ordem fixa em novos mapas, identifica a perspectiva legada, comunica fronteiras e proveniência e acrescenta explicações leigas de Tatwas, Numerologia e dos dois sistemas astrológicos. |
 | **`v02.18.02`**                      | **Correção CodeQL CWE-367.** A materialização do Swiss Ephemeris elimina a checagem separada do destino e passa a removê-lo sem seguir links simbólicos antes da publicação atômica da cópia verificada. |
 | **`v02.18.01`**                      | **Hardening da cadeia de suprimentos.** O Swiss Ephemeris WASM deixa de ser versionado no Git e passa a ser materializado localmente sob demanda a partir da dependência exata, com verificação de tamanho/SHA-256; CI, Wrangler e Scorecard bloqueiam recorrências antes do deploy. |
@@ -45,7 +46,7 @@ Aplicação para gerar análises astrológicas a partir de dados de nascimento (
 
 Funcionalidades adicionais:
 
-- **Metodologia auditável**: [Tatwas e Numerologia](./docs/METODOLOGIA_TATWAS_E_NUMEROLOGIA.md), com fontes, variantes, fixtures e limites interpretativos.
+- **Metodologia auditável**: [Tatwas e Numerologia](./docs/METODOLOGIA_TATWAS_E_NUMEROLOGIA.md) e [leitura dos dados posicionais](./docs/GUIA_LEITURA_DADOS_POSICIONAIS.md), com fontes, regras e limites interpretativos.
 - **Rate limiting por D1** (`requestSecurity.ts`): proteção contra abuso de endpoints públicos via janelas deslizantes persistidas.
 - **Auth opcional**: endpoint de resgate por e-mail/código para acesso a análises previamente salvas.
 - **Compliance** (`functions/_middleware.ts`): redirect canônico para domínio público + headers de segurança baseline.

@@ -19,12 +19,13 @@ Currently, two official plugins are available:
 
 ## Change History
 
-**Status.** Stable. Current release: **v02.19.00**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.20.00**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release     | Notes                                                                                                                                      |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `v02.20.00` | Novos “Saiba mais” na leitura detalhada, nas Cúspides Placidus e na Falange Angelical, com explicações leigas das camadas e limitações. |
 | `v02.19.00` | Tatwas v2 com ordem fixa nos mapas novos, legado identificado, âncora solar auditável, incerteza e novos “Saiba mais” para Tatwas, Numerologia e sistemas astrológicos. |
 | `v02.18.02` | Elimina a condição de corrida CodeQL no destino materializado sem seguir links simbólicos e preserva a publicação atômica do WASM verificado. |
 | `v02.18.01` | Remove o Swiss Ephemeris WASM do Git; dev/test/build materializam e validam o módulo fixado, enquanto CI e Scorecard bloqueiam recorrências. |
@@ -32,6 +33,8 @@ The version history at a glance:
 | `v02.17.25` | 4-gate quality directive compliance for eslint, biome, prettier, and cross-review in the Astrologo frontend package and deploy workflow. |
 
 Consulte a [metodologia de Tatwas e Numerologia](../docs/METODOLOGIA_TATWAS_E_NUMEROLOGIA.md) para as regras, fontes, variantes e limitações desta versão.
+
+O [guia de leitura dos dados posicionais](../docs/GUIA_LEITURA_DADOS_POSICIONAIS.md) documenta posições, Casas Placidus, regiões IAU e correspondências angelicais exibidas nos novos diálogos.
 
 ## React Compiler
 

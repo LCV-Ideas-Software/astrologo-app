@@ -1,6 +1,13 @@
 import { formatTatwaDurationPtBr, type TatwaPresentation } from './tatwaPresentation';
 
-export type InfoTopic = 'tropical' | 'astronomica' | 'tatwas' | 'numerologia';
+export type InfoTopic =
+  | 'tropical'
+  | 'astronomica'
+  | 'tatwas'
+  | 'numerologia'
+  | 'detailedMap'
+  | 'celestialDistribution'
+  | 'mapCorrespondences';
 
 export interface NumerologyInfoContext {
   readonly expressao: number;
@@ -145,6 +152,99 @@ const numerologyContent = (numerologia: NumerologyInfoContext | undefined): Info
   };
 };
 
+const detailedMapContent: InfoContent = {
+  title: 'Como ler o quadro detalhado do mapa',
+  introduction:
+    'Este quadro reúne quatro camadas calculadas para cada um dos dez corpos celestes considerados no mapa. Elas respondem a perguntas diferentes e não devem ser tratadas como se fossem a mesma medida.',
+  sections: [
+    {
+      title: 'O que aparece em cada cartão',
+      items: [
+        'A posição tropical informa signo, grau e decanato dentro do zodíaco sazonal de 12 setores iguais.',
+        'A Casa Placidus informa em qual das 12 divisões astrológicas locais o corpo foi posicionado, usando o instante e o lugar de nascimento.',
+        'O céu astronômico informa a região oficial da IAU que contém a coordenada celeste. Essa camada não calcula um grau dentro da constelação, porque as constelações oficiais são áreas bidimensionais de formatos irregulares.',
+        'O quinário angelical informa qual intervalo tropical de 5 graus e qual anjo do catálogo do projeto correspondem à longitude do corpo. Essa associação é simbólica, não uma classificação astronômica.',
+      ],
+    },
+    {
+      title: 'O destaque pessoal e a lista completa',
+      items: [
+        'O Anjo Regente do Consulente é sempre a correspondência do quinário ocupado pelo Sol tropical natal. Ele não é escolhido pelo anjo que mais se repete no mapa.',
+        'Os cartões seguintes mostram as mesmas quatro camadas para Sol, Lua, Mercúrio, Vênus, Marte, Júpiter, Saturno, Urano, Netuno e Plutão.',
+      ],
+    },
+    {
+      title: 'Como o horário é apresentado',
+      items: [
+        'O sistema resolve a data e a hora civis no fuso histórico do lugar de nascimento para obter um único instante. Na tela, esse mesmo instante é convertido para a Hora oficial de Brasília, sem alterar o momento usado nos cálculos.',
+        'As posições celestes são geocêntricas: usam o centro da Terra como referência. Elas não simulam uma fotografia do horizonte nem a aparência local do céu no momento do nascimento.',
+        'Quando uma região IAU ou uma Casa Placidus não pode ser determinada com segurança pelo método declarado, o aplicativo informa a indisponibilidade em vez de inventar ou substituir o resultado.',
+      ],
+    },
+  ],
+  closing:
+    'Use este quadro para comparar camadas posicionais e simbólicas com regras próprias; a interpretação nasce da leitura conjunta, não da mistura de suas unidades.',
+};
+
+const celestialDistributionContent: InfoContent = {
+  title: 'Como ler as Cúspides das Casas Placidus',
+  introduction:
+    'Uma cúspide é o ponto de início de uma casa astrológica. O quadro mostra, com duas casas decimais, em qual signo tropical e grau começa cada uma das 12 Casas Placidus.',
+  sections: [
+    {
+      title: 'Casa e signo são divisões diferentes',
+      items: [
+        'Os 12 signos tropicais são setores iguais de 30 graus. As Casas Placidus dependem do movimento aparente do céu para o instante e o lugar observados e não precisam ter o mesmo tamanho em longitude zodiacal.',
+        'O grau da cúspide marca somente o começo da casa. Ele não é o grau de um planeta, não descreve toda a extensão da casa e não é um grau dentro de uma constelação.',
+        'A Casa 1 começa no Ascendente e a Casa 10 começa no Meio do Céu. As demais cúspides completam as fronteiras das 12 casas.',
+        'Como as casas podem ter extensões diferentes, um mesmo signo pode aparecer em duas cúspides seguidas e outro pode não aparecer em nenhuma. Isso, por si só, não indica erro.',
+      ],
+    },
+    {
+      title: 'Por que hora e lugar importam',
+      items: [
+        'O cálculo usa o horário e o local de nascimento. Alterações nesses dados podem deslocar as cúspides e também mudar a casa atribuída a um corpo celeste.',
+        'Em certas latitudes, especialmente além dos círculos polares, o método Placidus pode ficar matematicamente indisponível. Nessa situação, o aplicativo não substitui silenciosamente Placidus por outro sistema: ele informa que as cúspides não estão disponíveis.',
+      ],
+    },
+  ],
+  closing:
+    'As casas são uma estrutura interpretativa da astrologia. Confira com cuidado hora e local antes de atribuir significado às posições mostradas.',
+};
+
+const mapCorrespondencesContent: InfoContent = {
+  title: 'Como ler a Falange Angelical do Mapa',
+  introduction:
+    'A metodologia adotada divide o círculo tropical de 360 graus em 72 intervalos iguais de 5 graus. Cada intervalo, chamado quinário, corresponde a um anjo do catálogo hermético-cabalístico usado pelo projeto.',
+  sections: [
+    {
+      title: 'Como cada correspondência é formada',
+      items: [
+        'Cada um dos dez corpos celestes é associado separadamente ao anjo do quinário que contém sua longitude tropical. Um ponto exatamente no começo de um novo quinário pertence ao novo intervalo.',
+        'Dois ou mais corpos podem ocupar quinários ligados ao mesmo anjo. Por isso, um único cartão pode reunir vários nomes e mostrar mais de uma correspondência.',
+        'A tela pode exibir menos de dez cartões, mas o total continua sendo dez correspondências: cada corpo aparece uma única vez em algum grupo.',
+        'Nome, triplete hebraico, coro e príncipe vêm do catálogo documentado pelo projeto. A contagem informa quantos corpos foram agrupados; ela não cria uma hierarquia espiritual nem mede força ou dominância.',
+      ],
+    },
+    {
+      title: 'Anjo Regente e falange não são a mesma coisa',
+      items: [
+        'O Anjo Regente do Consulente deriva exclusivamente da posição tropical do Sol. Ele não é escolhido por repetição, maioria ou outro planeta.',
+        'A Falange Angelical do Mapa é o conjunto das correspondências dos dez corpos, agrupadas para evitar repetir o mesmo anjo em vários cartões.',
+      ],
+    },
+    {
+      title: 'Limite desta metodologia',
+      items: [
+        'Este sistema angelical usa somente a longitude tropical. Ele ainda não foi adaptado às 13 constelações de referência nem às regiões oficiais da IAU exibidas na camada astronômica.',
+        'Trata-se de uma correspondência simbólica de uma tradição específica. O resultado não é medição física, diagnóstico, promessa, sentença sobre a pessoa nem consenso universal entre escolas de angelologia.',
+      ],
+    },
+  ],
+  closing:
+    'Leia a falange como um mapa de correspondências dentro da metodologia declarada, distinguindo-a tanto da astronomia quanto de outras escolas espirituais.',
+};
+
 export const getInfoContent = (topic: InfoTopic, context: InfoContentContext = {}): InfoContent => {
   switch (topic) {
     case 'tropical':
@@ -155,5 +255,11 @@ export const getInfoContent = (topic: InfoTopic, context: InfoContentContext = {
       return tatwaContent(context.tatwa);
     case 'numerologia':
       return numerologyContent(context.numerologia);
+    case 'detailedMap':
+      return detailedMapContent;
+    case 'celestialDistribution':
+      return celestialDistributionContent;
+    case 'mapCorrespondences':
+      return mapCorrespondencesContent;
   }
 };

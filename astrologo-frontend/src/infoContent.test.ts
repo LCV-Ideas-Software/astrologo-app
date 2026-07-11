@@ -62,4 +62,39 @@ describe('conteúdo leigo dos botões Saiba mais', () => {
     expect(text).toContain('data de nascimento');
     expect(text).toContain('hora de nascimento');
   });
+
+  it('ensina a separar as quatro camadas da leitura detalhada do mapa', () => {
+    const text = flatten('detailedMap');
+    expect(text).toContain('quatro camadas');
+    expect(text).toContain('posição tropical');
+    expect(text).toContain('Casa Placidus');
+    expect(text).toContain('região oficial da IAU');
+    expect(text).toContain('quinário angelical');
+    expect(text).toContain('Hora oficial de Brasília');
+    expect(text).toContain('não calcula um grau dentro da constelação');
+    expect(text).toContain('posições celestes são geocêntricas');
+  });
+
+  it('explica o que são cúspides e as limitações das Casas Placidus', () => {
+    const text = flatten('celestialDistribution');
+    expect(text).toContain('cúspide é o ponto de início');
+    expect(text).toContain('horário e o local de nascimento');
+    expect(text).toContain('não precisam ter o mesmo tamanho');
+    expect(text).toContain('Casa 1');
+    expect(text).toContain('Casa 10');
+    expect(text).toContain('duas cúspides seguidas');
+    expect(text).toContain('não substitui silenciosamente');
+  });
+
+  it('distingue a falange angelical do regente solar e declara a base tropical', () => {
+    const text = flatten('mapCorrespondences');
+    expect(text).toContain('72 intervalos iguais de 5 graus');
+    expect(text).toContain('longitude tropical');
+    expect(text).toContain('posição tropical do Sol');
+    expect(text).toContain('não é escolhido por repetição');
+    expect(text).toContain('menos de dez cartões');
+    expect(text).toContain('dez correspondências');
+    expect(text).toContain('não foi adaptado às 13 constelações');
+    expect(text).toContain('correspondência simbólica');
+  });
 });

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 // Módulo: astrologo-frontend/src/App.tsx
-// Versão: v02.19.00
+// Versão: v02.20.00
 // Descrição: Frontend principal do Oráculo Celestial com análise astrológica via Gemini.
 
 import DOMPurify from 'dompurify';
@@ -51,7 +51,7 @@ import { getInfoContent, type InfoContentContext, type InfoTopic } from './infoC
 import { LicencasModule } from './modules/compliance/LicencasModule';
 import { formatTatwaDurationPtBr, presentTatwa, renderTatwaEmailCautionHtml } from './tatwaPresentation';
 
-const APP_VERSION = 'APP v02.19.00';
+const APP_VERSION = 'APP v02.20.00';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (value: string): boolean => emailRegex.test(value.trim());
@@ -236,6 +236,24 @@ const INFO_MODAL_THEME: Record<
     borderColor: 'border-violet-300',
     titleColor: 'text-violet-700',
     sectionColor: 'text-violet-700',
+  },
+  detailedMap: {
+    icon: <Compass className="h-7 w-7 text-violet-500" />,
+    borderColor: 'border-violet-300',
+    titleColor: 'text-violet-700',
+    sectionColor: 'text-violet-700',
+  },
+  celestialDistribution: {
+    icon: <Hash className="h-7 w-7 text-emerald-500" />,
+    borderColor: 'border-emerald-300',
+    titleColor: 'text-emerald-700',
+    sectionColor: 'text-emerald-700',
+  },
+  mapCorrespondences: {
+    icon: <Sparkles className="h-7 w-7 text-fuchsia-500" />,
+    borderColor: 'border-fuchsia-300',
+    titleColor: 'text-fuchsia-700',
+    sectionColor: 'text-fuchsia-700',
   },
 };
 
@@ -644,7 +662,10 @@ const getPlanetBadgeClassName = (bodyId: string): string =>
 const getZodiacPresentation = (signId: string): AstrologicalGlyphPresentation =>
   ZODIAC_PRESENTATIONS[signId] ?? { symbol: '✦', badgeClassName: FALLBACK_BADGE_CLASS_NAME };
 
-const PositionalV2Panel: React.FC<{ data: DadosPosicionaisV2 }> = ({ data }) => {
+const PositionalV2Panel: React.FC<{
+  data: DadosPosicionaisV2;
+  openInfoModal: (topic: InfoTopic) => void;
+}> = ({ data, openInfoModal }) => {
   const rulingPosition = findConsultantRulingPosition(data.positions);
   const rulingZodiac = rulingPosition ? getZodiacPresentation(rulingPosition.tropical.sign.id) : undefined;
   const angelForId = (angelId: number) =>
@@ -658,23 +679,35 @@ const PositionalV2Panel: React.FC<{ data: DadosPosicionaisV2 }> = ({ data }) => 
             aria-hidden="true"
             className="absolute -right-16 -top-20 -z-10 h-64 w-64 rounded-full bg-violet-200/40 blur-3xl"
           />
-          <div className="flex items-start gap-4">
-            <span
-              aria-hidden="true"
-              className="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500 to-fuchsia-600 text-white shadow-lg shadow-violet-200 ring-4 ring-white"
-            >
-              <Compass className="h-7 w-7" />
-            </span>
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-700">Leitura detalhada do mapa</p>
-              <h3 id="posicoes-astrologicas-titulo" className="mt-1 text-xl font-black text-slate-900 md:text-3xl">
-                Posições, Casas Placidus e Falange Angelical
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                Nascimento convertido: {formatInstantInBrasilia(data.birthContext.timeResolution.instantUtc)} —{' '}
-                <strong className="text-violet-800">Hora oficial de Brasília</strong>
-              </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-4">
+              <span
+                aria-hidden="true"
+                className="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500 to-fuchsia-600 text-white shadow-lg shadow-violet-200 ring-4 ring-white"
+              >
+                <Compass className="h-7 w-7" />
+              </span>
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-700">
+                  Leitura detalhada do mapa
+                </p>
+                <h3 id="posicoes-astrologicas-titulo" className="mt-1 text-xl font-black text-slate-900 md:text-3xl">
+                  Posições, Casas Placidus e Falange Angelical
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                  Nascimento convertido: {formatInstantInBrasilia(data.birthContext.timeResolution.instantUtc)} —{' '}
+                  <strong className="text-violet-800">Hora oficial de Brasília</strong>
+                </p>
+              </div>
             </div>
+            <button
+              type="button"
+              aria-label="Saiba mais sobre a leitura detalhada do mapa"
+              onClick={() => openInfoModal('detailedMap')}
+              className="flex shrink-0 items-center gap-1.5 self-start rounded-full border border-violet-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wider text-violet-700 shadow-sm transition hover:bg-violet-50 hover:shadow-md"
+            >
+              <HelpCircle className="h-4 w-4" /> Saiba mais
+            </button>
           </div>
           {data.birthContext.timeResolution.historicalConfidence === 'best-effort-1900-1969' && (
             <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm font-semibold leading-relaxed text-amber-900">
@@ -847,20 +880,32 @@ const PositionalV2Panel: React.FC<{ data: DadosPosicionaisV2 }> = ({ data }) => 
         aria-labelledby="cuspides-casas-titulo"
         className="rounded-[2.25rem] border border-emerald-100 bg-white/85 p-5 shadow-[0_16px_45px_rgba(5,150,105,0.09)] backdrop-blur-2xl md:p-8"
       >
-        <header className="flex items-start gap-4">
-          <span
-            aria-hidden="true"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-400 to-teal-600 text-white shadow-lg shadow-emerald-100"
-          >
-            <Hash className="h-6 w-6" />
-          </span>
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-800">Distribuição celeste</p>
-            <h4 id="cuspides-casas-titulo" className="mt-1 text-xl font-black text-slate-900 md:text-2xl">
-              Cúspides das 12 Casas Placidus
-            </h4>
-            <p className="mt-1 text-sm text-slate-600">O signo e o grau exato que iniciam cada casa astrológica.</p>
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-4">
+            <span
+              aria-hidden="true"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-400 to-teal-600 text-white shadow-lg shadow-emerald-100"
+            >
+              <Hash className="h-6 w-6" />
+            </span>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-800">Distribuição celeste</p>
+              <h4 id="cuspides-casas-titulo" className="mt-1 text-xl font-black text-slate-900 md:text-2xl">
+                Cúspides das 12 Casas Placidus
+              </h4>
+              <p className="mt-1 text-sm text-slate-600">
+                O signo e o grau de cada cúspide, apresentados com duas casas decimais.
+              </p>
+            </div>
           </div>
+          <button
+            type="button"
+            aria-label="Saiba mais sobre a distribuição celeste e as Casas Placidus"
+            onClick={() => openInfoModal('celestialDistribution')}
+            className="flex shrink-0 items-center gap-1.5 self-start rounded-full border border-emerald-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wider text-emerald-700 shadow-sm transition hover:bg-emerald-50 hover:shadow-md"
+          >
+            <HelpCircle className="h-4 w-4" /> Saiba mais
+          </button>
         </header>
 
         {data.houses.status === 'available' && data.houses.cusps ? (
@@ -909,22 +954,34 @@ const PositionalV2Panel: React.FC<{ data: DadosPosicionaisV2 }> = ({ data }) => 
           aria-hidden="true"
           className="absolute -bottom-16 -right-16 h-56 w-56 rounded-full bg-fuchsia-200/30 blur-3xl"
         />
-        <header className="relative flex items-start gap-4">
-          <span
-            aria-hidden="true"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500 to-fuchsia-600 text-white shadow-lg shadow-violet-200"
-          >
-            <Sparkles className="h-6 w-6" />
-          </span>
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-fuchsia-600">Correspondências do mapa</p>
-            <h4 id="falange-angelical-titulo" className="mt-1 text-xl font-black text-slate-900 md:text-2xl">
-              Falange Angelical do Mapa
-            </h4>
-            <p className="mt-1 text-sm text-slate-600">
-              Os anjos associados aos quinários tropicais ocupados pelos planetas.
-            </p>
+        <header className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-4">
+            <span
+              aria-hidden="true"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500 to-fuchsia-600 text-white shadow-lg shadow-violet-200"
+            >
+              <Sparkles className="h-6 w-6" />
+            </span>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-fuchsia-600">
+                Correspondências do mapa
+              </p>
+              <h4 id="falange-angelical-titulo" className="mt-1 text-xl font-black text-slate-900 md:text-2xl">
+                Falange Angelical do Mapa
+              </h4>
+              <p className="mt-1 text-sm text-slate-600">
+                Os anjos associados aos quinários tropicais ocupados pelos dez corpos celestes do mapa.
+              </p>
+            </div>
           </div>
+          <button
+            type="button"
+            aria-label="Saiba mais sobre as correspondências e a Falange Angelical do Mapa"
+            onClick={() => openInfoModal('mapCorrespondences')}
+            className="flex shrink-0 items-center gap-1.5 self-start rounded-full border border-fuchsia-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wider text-fuchsia-700 shadow-sm transition hover:bg-fuchsia-50 hover:shadow-md"
+          >
+            <HelpCircle className="h-4 w-4" /> Saiba mais
+          </button>
         </header>
 
         <ul className="relative mt-6 grid gap-4 md:grid-cols-2" aria-label="Anjos e planetas da falange angelical">
@@ -1420,7 +1477,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
       />
 
       {result.dadosPosicionaisV2 ? (
-        <PositionalV2Panel data={result.dadosPosicionaisV2} />
+        <PositionalV2Panel data={result.dadosPosicionaisV2} openInfoModal={openInfoModal} />
       ) : (
         <p className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
           Mapa legado: graus, Casas Placidus e falange angelical não estão disponíveis. O horário legado não possui fuso

@@ -1,5 +1,22 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.20.00] - 2026-07-11
+
+### Adicionado
+
+- Botão **Saiba mais** no quadro de posições detalhadas, explicando as quatro camadas: posição tropical, Casa Placidus, região IAU e quinário angelical.
+- Botão **Saiba mais** nas Cúspides das 12 Casas Placidus, com definição de cúspide, diferença entre casa e signo, sensibilidade a hora/local e limitação polar.
+- Botão **Saiba mais** na Falange Angelical do Mapa, distinguindo o regente derivado do Sol das dez correspondências agrupadas e declarando a base exclusivamente tropical.
+
+### Melhorado
+
+- Conteúdos em português do Brasil voltados a usuários leigos, sem apresentar sistemas simbólicos como medições científicas nem misturar grau tropical com região constelacional.
+- A descrição das cúspides agora informa a apresentação com duas casas decimais, e o conjunto que inclui Sol e Lua é chamado de “dez corpos celestes”.
+
+### Preservado
+
+- Cálculos, payloads, persistência, análise por IA, relatórios, e-mail e compatibilidade com mapas salvos não foram alterados.
+
 ## [v02.19.00] - 2026-07-11
 
 ### Corrigido

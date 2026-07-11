@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+## [v02.20.00] - 2026-07-11
+
+### Adicionado
+
+- **Ajuda para a leitura detalhada** — o quadro de posições passa a explicar, em linguagem leiga, as diferenças entre posição tropical, Casa Placidus, região oficial da IAU e quinário angelical, além da conversão visual para a Hora oficial de Brasília.
+- **Ajuda para as cúspides Placidus** — o novo diálogo define cúspide, diferencia casa de signo, explica a dependência de hora e local, os tamanhos desiguais e a indisponibilidade em latitudes incompatíveis com o método.
+- **Ajuda para a Falange Angelical** — o novo conteúdo mostra como os 72 quinários tropicais de 5° são agrupados, distingue o Anjo Regente solar da falange e declara que esta metodologia ainda não foi adaptada ao sistema constelacional.
+
+### Melhorado
+
+- O subtítulo das cúspides deixa de chamar de “exato” um grau apresentado com duas casas decimais, e as referências ao conjunto posicional passam a usar “dez corpos celestes” quando incluem Sol e Lua.
+- Os três botões seguem o mesmo modal acessível e responsivo já usado nos demais módulos, com fechamento por Escape, fundo, botão superior ou ação **Entendi**.
+
+### Documentado
+
+- O novo guia `docs/GUIA_LEITURA_DADOS_POSICIONAIS.md` registra as camadas exibidas, as limitações metodológicas e as fontes oficiais utilizadas nas explicações.
+
+### Preservado
+
+- Cálculos, contratos de API, banco D1, persistência, prompt da IA, e-mail, relatórios e `admin-app` permanecem inalterados.
+
 ## [v02.19.00] - 2026-07-11
 
 ### Corrigido
