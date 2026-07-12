@@ -13,8 +13,15 @@ export interface D1Statement<TFirst = unknown> {
   all: () => Promise<{ results: TFirst[] }>;
 }
 
+export interface D1BatchResult<T = unknown> {
+  readonly success?: boolean;
+  readonly results?: T[];
+  readonly error?: string;
+}
+
 export interface D1DatabaseLike {
   prepare: <TFirst = unknown>(query: string) => D1Statement<TFirst>;
+  batch?: <T = unknown>(statements: D1Statement<T>[]) => Promise<D1BatchResult<T>[]>;
 }
 
 const DEFAULT_RATE_POLICIES = {
@@ -23,6 +30,7 @@ const DEFAULT_RATE_POLICIES = {
   'astrologo/enviar-email': { enabled: 1, max_requests: 4, window_minutes: 60 },
   'astrologo/contato': { enabled: 1, max_requests: 5, window_minutes: 30 },
   'astrologo/auth': { enabled: 1, max_requests: 8, window_minutes: 15 },
+  'astrologo/auth-read': { enabled: 1, max_requests: 60, window_minutes: 15 },
   'astrologo/transitos': { enabled: 1, max_requests: 6, window_minutes: 15 },
   'astrologo/sinastria': { enabled: 1, max_requests: 4, window_minutes: 15 },
   'astrologo/localidade': { enabled: 1, max_requests: 4, window_minutes: 30 },

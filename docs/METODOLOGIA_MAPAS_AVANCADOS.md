@@ -77,6 +77,57 @@ O mapa-base é Natural Earth 1:110m, empacotado por `world-atlas@2.0.2`, convert
 
 O contrato não calcula parans, espaço local, linhas de eclipse, direções por azimute ou um raio quilométrico de influência. Proximidade visual e cruzamento de linhas não autorizam afirmar maior intensidade. O mapa não recomenda mudança, viagem, investimento ou moradia.
 
+## Reidratação de mapas salvos
+
+O snapshot guardado em `astrologo_user_data` continua sendo o registro histórico apresentado imediatamente ao abrir um mapa. Em paralelo, o frontend solicita um envelope `urn:astrologo:saved-map-hydration` versão `1.0.0` ao endpoint autenticado. O servidor resolve o e-mail exclusivamente pelo token de sessão e exige simultaneamente:
+
+- sessão do tipo `session`, não utilizada e não expirada;
+- identificador presente na lista de mapas daquela conta;
+- linha de `astrologo_mapas` com o mesmo proprietário;
+- contrato, versão, estado `ready` e vínculos internos válidos em cada artefato.
+
+Mapa inexistente e mapa de outra conta retornam a mesma resposta `404`. A sinastria só é reidratada quando o mapa aberto é o gráfico primário A e o contrato confirma os identificadores de A e B. Cada artefato é independente: um payload inválido ou ausente não apaga os demais nem substitui o snapshot legado. No navegador, aborto da requisição, identidade do controlador e comparação do `calculationId` impedem que uma resposta atrasada do mapa A modifique o mapa B.
+
+Mapas novos recebem em `/api/calcular` uma prova aleatória cujo SHA-256, e nunca o segredo, fica em `astrologo_mapas.save_claim_hash`. No primeiro salvamento, o navegador apresenta o segredo; o servidor pré-valida existência, proprietário e hash de todos os mapas e executa a reivindicação em uma transação D1 com assertivas internas. Se qualquer prova mudar ou falhar, a transação inteira é revertida. O segredo é removido antes de persistir `astrologo_user_data`, e um titular já registrado nunca é sobrescrito.
+
+Mapas históricos não recebem uma prova inventada. A migration 017 associa registros antigos somente quando `astrologo_user_data` demonstra exatamente um e-mail normalizado para aquele identificador; conflitos, JSON legado malformado e linhas já atribuídas permanecem intocados. Reidratações usam o bucket separado `astrologo/auth-read`, sem consumir a cota das operações mutáveis de autenticação.
+
+Cada artefato possui um estado explícito: `available`, `absent`, `invalid` ou `error`. Somente `absent` autoriza o fallback identificado para o snapshot histórico. Payload canônico corrompido produz `409`; falha operacional do D1 produz `503`. O envelope também confere novamente todos os backlinks internos antes de chegar à interface.
+
+## Análise de IA com contexto extenso
+
+O prompt histórico e todos os adendos permanecem cumulativos. O caminho direto continua sendo usado quando a contagem cabe no menor valor entre 120.000 tokens e 75% do limite de entrada publicado pelo modelo configurado. A resposta direta, que antes era aceita apenas por possuir texto, agora também precisa terminar com `finishReason=STOP`.
+
+Quando o contexto ultrapassa esse teto, o servidor ativa `astrologo-long-analysis-v1`:
+
+1. preserva os bytes UTF-8 e o SHA-256 do prompt monolítico original;
+2. substitui exclusivamente cada payload serializado por um placeholder ligado ao seu hash e comprova que a restauração reproduz o prompt byte por byte;
+3. reúne consulta, Tropical, Astronômica, dados globais, Tatwas, V2 e mapa natal no domínio coerente `core`, mantendo trânsitos, sinastria e localidade como domínios próprios;
+4. mantém cada linha cartográfica como unidade indivisível enquanto ela couber; documentos ou linhas isoladamente excessivos são divididos por uma árvore JSON genérica e reversível, com índices e hashes suficientes para comprovar a reconstrução exata;
+5. usa divisão balanceada e consulta `countTokens` somente para grupos finais ou subgrupos que ainda precisam ser divididos, evitando uma chamada remota para cada unidade;
+6. executa no máximo duas gerações simultâneas;
+7. valida cada envelope estruturado antes de coletar seu HTML e suas notas de integração;
+8. inicia a síntese apenas quando a cobertura conjunta coincide exatamente com o manifesto;
+9. quando as notas ainda excedem o contexto, executa reduções hierárquicas token-aware que preservam toda a cobertura antes da síntese final;
+10. concatena todos os HTMLs completos na ordem canônica e acrescenta somente o HTML novo da síntese.
+
+O limite operacional de entrada de cada fragmento é no máximo 96.000 tokens, sempre reduzido quando o contexto real do modelo exigir. São reservados tokens para saída e uma margem adicional de 2.048 tokens. Limites de entrada e saída são consultados por `models.get`; a indisponibilidade dessa metainformação usa valores conservadores, mas o empacotamento longo ainda depende de uma contagem válida.
+
+### Cobertura e falha fechada
+
+Cada unidade possui `evidenceId`, caminho, SHA-256 e vínculo com a fonte original. A resposta de uma etapa deve repetir exatamente identidade, versão do prompt, hash de entrada e todos os IDs atribuídos. As notas usadas pela síntese também precisam cobrir todas as evidências do lote. As condições abaixo interrompem a montagem e impedem qualquer atualização de `astrologo_mapas.analise_ia`:
+
+- `finishReason` diferente de `STOP`, inclusive `MAX_TOKENS`;
+- JSON inválido, campo inesperado ou schema divergente;
+- hash, ordinal, fragmento ou domínio diferente do plano;
+- evidência ausente, extra, duplicada ou não coberta pelas notas;
+- falha de contagem, etapa acima do contexto ou síntese incompleta;
+- HTML final acima de 1.500.000 bytes ou sem espaço na linha D1 completa depois de reservar 131.072 bytes de margem operacional.
+
+Há até três tentativas por etapa, com ampliação do orçamento de saída somente dentro do limite informado pelo modelo. Fragmentos são mantidos apenas na memória da requisição atual: esta versão não oferece streaming, polling nem retomada persistente. A coluna final existente continua sendo atualizada uma única vez, depois da cobertura integral. Antes do `UPDATE`, o servidor soma em bytes os demais campos variáveis da linha e recusa a persistência se análise, dados existentes e margem não couberem no limite D1 de 2 MB.
+
+A arquitetura considera os limites oficiais atuais: o Gemini fornece consulta de modelos, contagem de tokens, JSON estruturado e `finishReason`; Workers HTTP não impõem limite rígido de duração enquanto o cliente permanece conectado, mas limitam conexões simultâneas; e o D1 limita string ou linha a 2 MB. Referências: <https://ai.google.dev/gemini-api/docs/tokens>, <https://ai.google.dev/gemini-api/docs/generate-content/structured-output>, <https://ai.google.dev/api/generate-content>, <https://developers.cloudflare.com/workers/platform/limits/> e <https://developers.cloudflare.com/d1/platform/limits/>.
+
 ## Referências de implementação e pesquisa de produto
 
 As referências abaixo foram usadas como comparação funcional, não como fonte dos cálculos deste projeto:
@@ -92,4 +143,4 @@ Da comparação vieram quatro decisões de UX: desenho e tabela devem coexistir;
 
 ## Persistência e implantação
 
-As tabelas avançadas são criadas pela migration `016_bigdata_astrologo_advanced_charts.sql` do `admin-app`. Endpoints públicos não executam DDL em tempo de requisição. A implantação deve aplicar as migrations antes de habilitar a nova versão; ausência de schema falha de modo fechado e auditável.
+As tabelas avançadas são criadas pela migration `016_bigdata_astrologo_advanced_charts.sql` do `admin-app`. A versão 02.22.00 também depende da migration `017_astrologo_saved_map_claims.sql`, que acrescenta `save_claim_hash`, executa o backfill histórico inequívoco, cria `astrologo/auth-read` e indexa claims ainda ativos. O preflight 2.0 do `admin-app` reconcilia e verifica essas garantias idempotentemente antes do deploy. Endpoints públicos não executam DDL em tempo de requisição; ausência ou incompatibilidade de schema falha de modo fechado e auditável.

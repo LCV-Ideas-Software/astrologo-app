@@ -19,6 +19,7 @@ import {
   enforceRateLimit,
   getCorsHeaders,
   hasDisallowedOrigin,
+  hashToken,
   jsonResponse,
   securityHeaders,
 } from './_shared/requestSecurity';
@@ -517,10 +518,12 @@ export async function onRequestPost(context: Context) {
       );
     }
     const natalSourceHash = await sha256Hex(JSON.stringify({ source: dadosPosicionaisV2, natalSupplementV1 }));
+    const saveClaim = crypto.randomUUID();
+    const saveClaimHash = await hashToken(saveClaim);
     try {
       if (env.BIGDATA_DB) {
         await env.BIGDATA_DB.prepare(
-          `INSERT INTO astrologo_mapas (id, nome, data_nascimento, hora_nascimento, local_nascimento, dados_astronomica, dados_tropical, dados_globais, dados_posicionais_v2) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO astrologo_mapas (id, nome, data_nascimento, hora_nascimento, local_nascimento, dados_astronomica, dados_tropical, dados_globais, dados_posicionais_v2, save_claim_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
           .bind(
             idUnico,
@@ -532,6 +535,7 @@ export async function onRequestPost(context: Context) {
             JSON.stringify(dadosTropical),
             JSON.stringify(dadosGlobais),
             JSON.stringify(dadosPosicionaisV2),
+            saveClaimHash,
           )
           .run();
         await persistReadyNatalArtifact(env.BIGDATA_DB, {
@@ -563,6 +567,7 @@ export async function onRequestPost(context: Context) {
       JSON.stringify({
         success: true,
         id: idUnico,
+        saveClaim,
         dadosGlobais,
         dadosAstronomica,
         dadosTropical,

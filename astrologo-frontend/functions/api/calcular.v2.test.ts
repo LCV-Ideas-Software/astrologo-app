@@ -3,7 +3,7 @@ import { load, type SwissEph } from '@fusionstrings/swiss-eph';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { NatalChartAnalysisV1 } from './_shared/natalChartAnalysisV1';
 import type { DadosPosicionaisV2 } from './_shared/positionV2';
-import type { D1DatabaseLike, D1Statement } from './_shared/requestSecurity';
+import { type D1DatabaseLike, type D1Statement, hashToken } from './_shared/requestSecurity';
 
 let swiss: SwissEph;
 
@@ -21,6 +21,7 @@ interface ExecutedStatement {
 
 interface CalculationResponse {
   readonly success: boolean;
+  readonly saveClaim: string;
   readonly dadosGlobais: {
     readonly tatwa: {
       readonly schemaVersion: string;
@@ -167,9 +168,13 @@ describe('/api/calcular v2', () => {
 
     const insert = executed.find(({ query }) => query.includes('INSERT INTO astrologo_mapas'));
     expect(insert?.query).toContain('dados_posicionais_v2');
-    expect(insert?.bindings).toHaveLength(9);
+    expect(insert?.query).toContain('save_claim_hash');
+    expect(insert?.bindings).toHaveLength(10);
     expect(JSON.parse(String(insert?.bindings[7]))).toEqual(payload.dadosGlobais);
     expect(JSON.parse(String(insert?.bindings[8]))).toEqual(payload.dadosPosicionaisV2);
+    expect(payload.saveClaim).toMatch(/^[0-9a-f-]{36}$/u);
+    expect(insert?.bindings[9]).toBe(await hashToken(payload.saveClaim));
+    expect(insert?.bindings[9]).not.toBe(payload.saveClaim);
 
     const artifactInsert = executed.find(({ query }) => query.includes('INSERT INTO astrologo_artifacts'));
     expect(artifactInsert?.bindings).toHaveLength(9);

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 // Módulo: astrologo-frontend/src/App.tsx
-// Versão: v02.21.00
+// Versão: v02.22.00
 // Descrição: Frontend principal do Oráculo Celestial com análise astrológica via Gemini.
 
 import DOMPurify from 'dompurify';
@@ -50,6 +50,7 @@ import { CurrentSkyPanel } from './components/CurrentSkyPanel';
 import { LocalityPanel } from './components/LocalityPanel';
 import { NatalAnalysisPanel } from './components/NatalAnalysisPanel';
 import { useNotification } from './components/Notification';
+import { SavedMapArchiveButton } from './components/SavedMapArchiveButton';
 import { SynastryPanel, type SynastryViewResult } from './components/SynastryPanel';
 import { getInfoContent, type InfoContentContext, type InfoTopic } from './infoContent';
 import {
@@ -65,11 +66,12 @@ import {
   renderNatalChartAnalysisEmailHtml,
   renderNatalChartAnalysisText,
 } from './natalAnalysisV1';
+import { isCanonicalHydrationEnvelope, mergeCanonicalArtifacts } from './savedMapRehydration';
 import { isSynastryRunV1, renderSynastryRunEmailHtml, renderSynastryRunText } from './synastryRunV1';
 import { formatTatwaDurationPtBr, presentTatwa, renderTatwaEmailCautionHtml } from './tatwaPresentation';
 import { isTransitRunV1, renderTransitRunEmailHtml, renderTransitRunText, type TransitRunV1 } from './transitRunV1';
 
-const APP_VERSION = 'APP v02.21.00';
+const APP_VERSION = 'APP v02.22.00';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (value: string): boolean => emailRegex.test(value.trim());
@@ -130,6 +132,7 @@ interface DadosSistema {
 }
 interface ResultData {
   id: string;
+  saveClaim?: string;
   query: { nome: string; localNascimento: string; dataNascimento: string; horaNascimento: string };
   dadosGlobais: DadosGlobais;
   dadosAstronomica: DadosSistema;
@@ -196,6 +199,17 @@ interface AmbiguousTimeCandidate {
 
 type AuthMode = 'save' | 'retrieve' | 'delete' | null;
 type AuthStep = 'email' | 'token';
+type SavedMapHydrationFailureKind = 'session-expired' | 'invalid-canonical-data' | 'temporarily-unavailable';
+
+class SavedMapHydrationError extends Error {
+  override readonly name = 'SavedMapHydrationError';
+  readonly kind: SavedMapHydrationFailureKind;
+
+  constructor(kind: SavedMapHydrationFailureKind) {
+    super(kind);
+    this.kind = kind;
+  }
+}
 
 const formatarData = (dataStr: string): string => {
   if (!dataStr) return '';
@@ -1126,15 +1140,9 @@ export const ResultView: React.FC<ResultViewProps> = ({
 }) => {
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [transitRun, setTransitRun] = useState<TransitRunV1 | null>(() =>
-    isTransitRunV1(result.transitRunV1) ? result.transitRunV1 : null,
-  );
-  const [synastryResult, setSynastryResult] = useState<SynastryViewResult | null>(() =>
-    isSynastryViewResult(result.synastryResult) ? result.synastryResult : null,
-  );
-  const [localityMap, setLocalityMap] = useState<LocalityMapV1 | null>(() =>
-    isLocalityMapV1(result.localityMapV1) ? result.localityMapV1 : null,
-  );
+  const transitRun = isTransitRunV1(result.transitRunV1) ? result.transitRunV1 : null;
+  const synastryResult = isSynastryViewResult(result.synastryResult) ? result.synastryResult : null;
+  const localityMap = isLocalityMapV1(result.localityMapV1) ? result.localityMapV1 : null;
   const natalAnalysis = isNatalChartAnalysisV1(result.natalChartAnalysisV1) ? result.natalChartAnalysisV1 : null;
   const { showNotification } = useNotification();
   const tatwaPresentation = presentTatwa(result.dadosGlobais.tatwa);
@@ -1605,7 +1613,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
           mapaId={result.id}
           run={transitRun}
           onRunChange={(run) => {
-            setTransitRun(run);
             onResultEnhance?.({ transitRunV1: run });
           }}
           openInfoModal={openInfoModal}
@@ -1619,7 +1626,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
           primaryName={result.query.nome}
           result={synastryResult}
           onResultChange={(nextSynastry) => {
-            setSynastryResult(nextSynastry);
             onResultEnhance?.({ synastryResult: nextSynastry });
           }}
           openInfoModal={openInfoModal}
@@ -1632,7 +1638,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
           mapaId={result.id}
           data={localityMap}
           onDataChange={(data) => {
-            setLocalityMap(data);
             onResultEnhance?.({ localityMapV1: data });
           }}
           openInfoModal={openInfoModal}
@@ -1699,6 +1704,8 @@ export default function App() {
   const [authToken, setAuthToken] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [mapasSalvos, setMapasSalvos] = useState<ResultData[]>([]);
+  const savedMapArtifactsRequestRef = useRef<AbortController | null>(null);
+  const [rehydratingMapId, setRehydratingMapId] = useState<string | null>(null);
   const [showLicenses, setShowLicenses] = useState(false);
 
   // ── Contato State ──
@@ -1717,15 +1724,94 @@ export default function App() {
       .then((res) => res.json())
       .then((data) => {
         const payload = data as { ok: boolean; dados?: { mapasSalvos?: ResultData[] }; sessionToken?: string };
-        if (payload.ok && payload.dados?.mapasSalvos) {
-          setMapasSalvos(payload.dados.mapasSalvos);
-          sessionStorage.setItem('astrologo_session_token', payload.sessionToken!);
+        if (payload.ok) {
+          setMapasSalvos(payload.dados?.mapasSalvos ?? []);
+          if (payload.sessionToken) sessionStorage.setItem('astrologo_session_token', payload.sessionToken);
         } else {
           sessionStorage.removeItem('astrologo_session_token');
         }
       })
       .catch(() => {});
   }, []);
+
+  useEffect(
+    () => () => {
+      savedMapArtifactsRequestRef.current?.abort();
+    },
+    [],
+  );
+
+  const handleSavedMapOpen = (savedMap: ResultData) => {
+    savedMapArtifactsRequestRef.current?.abort();
+    const controller = new AbortController();
+    savedMapArtifactsRequestRef.current = controller;
+    setRehydratingMapId(savedMap.id);
+
+    setResult(savedMap);
+    setAnaliseIa(savedMap.analiseIa ?? '');
+    window.scrollTo({ top: 300, behavior: 'smooth' });
+
+    const sessionToken = sessionStorage.getItem('astrologo_session_token');
+    if (!sessionToken) {
+      savedMapArtifactsRequestRef.current = null;
+      setRehydratingMapId(null);
+      setAuthMode('retrieve');
+      setAuthStep('email');
+      setAuthToken('');
+      showNotification('Sua sessão expirou. Informe seu e-mail para restaurar os dados avançados.', 'info');
+      return;
+    }
+
+    void fetch('/api/astrologo-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'session-map-artifacts', token: sessionToken, mapaId: savedMap.id }),
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (savedMapArtifactsRequestRef.current !== controller) return;
+        const payload: unknown = await response.json();
+        if (savedMapArtifactsRequestRef.current !== controller) return;
+        if (!response.ok) {
+          if (response.status === 401) {
+            sessionStorage.removeItem('astrologo_session_token');
+            throw new SavedMapHydrationError('session-expired');
+          }
+          throw new SavedMapHydrationError(
+            response.status === 409 ? 'invalid-canonical-data' : 'temporarily-unavailable',
+          );
+        }
+        if (!isCanonicalHydrationEnvelope(payload, savedMap.id)) {
+          throw new SavedMapHydrationError('invalid-canonical-data');
+        }
+        setResult((current) => mergeCanonicalArtifacts(current, payload.calculationId, payload.artifacts));
+        setMapasSalvos((current) =>
+          current.map((saved) => mergeCanonicalArtifacts(saved, payload.calculationId, payload.artifacts) ?? saved),
+        );
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        if (savedMapArtifactsRequestRef.current !== controller) return;
+        if (error instanceof SavedMapHydrationError && error.kind === 'session-expired') {
+          setAuthMode('retrieve');
+          setAuthStep('email');
+          setAuthToken('');
+          showNotification('Sua sessão expirou. Informe seu e-mail para restaurar os dados avançados.', 'info');
+          return;
+        }
+        if (error instanceof SavedMapHydrationError && error.kind === 'invalid-canonical-data') {
+          showNotification('Os dados avançados canônicos deste mapa estão inconsistentes.', 'error');
+          return;
+        }
+        showNotification('Os dados avançados deste mapa não puderam ser restaurados com segurança.', 'error');
+      })
+      .finally(() => {
+        if (savedMapArtifactsRequestRef.current === controller) {
+          savedMapArtifactsRequestRef.current = null;
+          setRehydratingMapId(null);
+        }
+      });
+  };
 
   const handleContatoSubmit = async () => {
     setContatoSending(true);
@@ -2143,18 +2229,13 @@ export default function App() {
               </h3>
               <div className="grid sm:grid-cols-2 bg-white/60 backdrop-blur-xl p-4 md:p-6 rounded-4xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] gap-4">
                 {mapasSalvos.map((m) => (
-                  <div
+                  <SavedMapArchiveButton
                     key={m.id}
-                    className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col gap-1"
-                    onClick={() => {
-                      setResult(m);
-                      setAnaliseIa(m.analiseIa ?? '');
-                      window.scrollTo({ top: 300, behavior: 'smooth' });
-                    }}
-                  >
-                    <strong className="text-slate-800 truncate block text-base">{m.query.nome}</strong>
-                    <span className="text-xs text-slate-500">{formatBirthForDisplay(m)}</span>
-                  </div>
+                    consultantName={m.query.nome}
+                    birthLabel={formatBirthForDisplay(m)}
+                    rehydrating={rehydratingMapId === m.id}
+                    onOpen={() => handleSavedMapOpen(m)}
+                  />
                 ))}
               </div>
             </div>
