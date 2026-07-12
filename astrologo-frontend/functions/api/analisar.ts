@@ -3,7 +3,15 @@
 // Descrição: API de análise astrológica via Gemini v1beta com token counting, structured outputs, e caching otimizado.
 
 import { GoogleGenAI, HarmBlockThreshold, HarmCategory } from '@google/genai';
+import {
+  appendAdvancedAnalysisPrompt,
+  loadCanonicalLocalityMapV1,
+  loadCanonicalNatalAnalysisV1,
+  loadCanonicalSynastryRunV1,
+  loadCanonicalTransitRunV1,
+} from './_shared/advancedAnalysisPrompt';
 import { buildAnalysisPrompt, loadCanonicalAnalysisV2, V2_SYSTEM_INSTRUCTION } from './_shared/analysisPrompt';
+import { loadConfiguredAstrologerModel } from './_shared/modelConfig';
 import {
   type D1DatabaseLike,
   enforceRateLimit,
@@ -57,16 +65,6 @@ function logAiUsage(
   if (!db || typeof db.prepare !== 'function') return;
   (async () => {
     try {
-      await (
-        db.prepare(`
-        CREATE TABLE IF NOT EXISTS ai_usage_logs (
-          id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT NOT NULL DEFAULT (datetime('now')),
-          module TEXT NOT NULL, model TEXT NOT NULL, input_tokens INTEGER DEFAULT 0,
-          output_tokens INTEGER DEFAULT 0, latency_ms INTEGER DEFAULT 0,
-          status TEXT DEFAULT 'ok', error_detail TEXT
-        )
-      `) as { run(): Promise<unknown> }
-      ).run();
       await db
         .prepare(`
         INSERT INTO ai_usage_logs (module, model, input_tokens, output_tokens, latency_ms, status, error_detail)
@@ -209,10 +207,15 @@ export async function onRequestPost(context: Context) {
 
     // O navegador nunca é autoridade para fatos v2. O servidor reidrata pelo id;
     // mapas legados sem o bloco persistido continuam naturalmente no prompt v1.
-    const [canonicalV2, canonicalTatwa] = await Promise.all([
-      loadCanonicalAnalysisV2(env.BIGDATA_DB, id),
-      loadCanonicalTatwa(env.BIGDATA_DB, id),
-    ]);
+    const [canonicalV2, canonicalTatwa, canonicalNatal, canonicalTransit, canonicalSynastry, canonicalLocality] =
+      await Promise.all([
+        loadCanonicalAnalysisV2(env.BIGDATA_DB, id),
+        loadCanonicalTatwa(env.BIGDATA_DB, id),
+        loadCanonicalNatalAnalysisV1(env.BIGDATA_DB, id),
+        loadCanonicalTransitRunV1(env.BIGDATA_DB, id),
+        loadCanonicalSynastryRunV1(env.BIGDATA_DB, id),
+        loadCanonicalLocalityMapV1(env.BIGDATA_DB, id),
+      ]);
     if (!canonicalTatwa) {
       return jsonResponse(
         {
@@ -228,27 +231,15 @@ export async function onRequestPost(context: Context) {
     const submittedGlobals = isRecord(dadosGlobais) ? dadosGlobais : {};
     const globalsForAnalysis = buildAnalysisGlobalsWithCanonicalTatwa(submittedGlobals, canonicalTatwa);
     const dadosAnalise = `Sistema Tropical: ${JSON.stringify(dadosTropical)} | Sistema Astronômico Constelacional: ${JSON.stringify(dadosAstronomica)} | Globais (Tatwas e Numerologia): ${JSON.stringify(globalsForAnalysis)}`;
-    const prompt = buildAnalysisPrompt(dadosAnalise, query, canonicalV2, canonicalTatwa);
+    const prompt = appendAdvancedAnalysisPrompt(buildAnalysisPrompt(dadosAnalise, query, canonicalV2, canonicalTatwa), {
+      natal: canonicalNatal,
+      transit: canonicalTransit,
+      synastry: canonicalSynastry,
+      locality: canonicalLocality,
+    });
 
     // ==== DYNAMIC MODEL CONFIGURATION VIA BIGDATA_DB ====
-    let selectedModel = GEMINI_CONFIG_DEFAULTS.model;
-    if (env.BIGDATA_DB && typeof env.BIGDATA_DB.prepare === 'function') {
-      try {
-        const configRow = (await env.BIGDATA_DB.prepare(
-          "SELECT config_json FROM admin_config_store WHERE config_key = 'astrologo-config' LIMIT 1",
-        ).first()) as { config_json?: string } | null;
-        if (configRow?.config_json) {
-          const parsedConfig = JSON.parse(configRow.config_json);
-          if (parsedConfig && typeof parsedConfig.modeloIA === 'string' && parsedConfig.modeloIA.trim()) {
-            selectedModel = parsedConfig.modeloIA.trim();
-          }
-        }
-      } catch (err) {
-        structuredLog('WARN', 'Falha ao recuperar astrologo-config de BIGDATA_DB, usando fallback', {
-          error: String(err),
-        });
-      }
-    }
+    const selectedModel = await loadConfiguredAstrologerModel(env.BIGDATA_DB, GEMINI_CONFIG_DEFAULTS.model);
 
     // Inicializa a instância do SDK de vanguarda
     const envRec = env as unknown as Record<string, unknown>;

@@ -22,10 +22,22 @@
 | vite | ^8.0.3 | MIT | Não | https://registry.npmjs.org/vite/-/vite-8.0.3.tgz |
 | vitest | ^4.1.2 | MIT | Não | https://registry.npmjs.org/vitest/-/vitest-4.1.2.tgz |
 | astronomy-engine | 2.1.19 | MIT | Não | https://github.com/cosinekitty/astronomy/tree/v2.1.19 |
+| d3-geo | 3.1.1 | ISC; incorpora GeographicLib sob MIT | Não | https://github.com/d3/d3-geo/tree/v3.1.1 |
+| d3-array (dependência transitiva de runtime de d3-geo) | 3.2.4 | ISC | Não | https://github.com/d3/d3-array/tree/v3.2.4 |
+| internmap (dependência transitiva de runtime de d3-array) | 2.0.3 | ISC | Não | https://github.com/mbostock/internmap/tree/v2.0.3 |
+| topojson-client | 3.1.0 | ISC | Não | https://github.com/topojson/topojson-client/tree/v3.1.0 |
+| commander (dependência transitiva de runtime de topojson-client) | 2.20.3 | MIT | Não | https://github.com/tj/commander.js/tree/v2.20.3 |
+| world-atlas | 2.0.2 | ISC; dados Natural Earth em domínio público | Não | https://github.com/topojson/world-atlas/tree/v2.0.2 |
 | @js-temporal/polyfill | 0.5.1 | ISC | Não | https://github.com/js-temporal/temporal-polyfill/tree/v0.5.1 |
 | jsbi (dependência transitiva de runtime de @js-temporal/polyfill) | 4.3.2 | Apache-2.0 | Não | https://github.com/GoogleChromeLabs/jsbi/tree/5382367c7e3199858d36bb620977e1f90605bcb9 |
 | @fusionstrings/swiss-eph (dependência de build e origem do módulo WASM) | 0.1.1 | AGPL-3.0-only (manifesto upstream: `AGPL-3.0`) | Não; o módulo é consumido sem alteração | https://github.com/fusionstrings/swiss-eph/tree/e7a7a9311d3058f337b73b72f45ea6d80cffa5f0 |
 | Swiss Ephemeris incorporada no WASM | `swe_version() = 2.10.03`; fonte `5ae0bce00dbc66c6315c86da20518e3dd138255b` | AGPL-3.0-only, conforme a opção AGPL da licença dual | Não pelo projeto Astrologo | https://github.com/aloistr/swisseph/tree/5ae0bce00dbc66c6315c86da20518e3dd138255b |
+
+## Cartografia local e dados Natural Earth
+
+O mapa planetário de localidade é renderizado no navegador com `d3-geo@3.1.1`, `topojson-client@3.1.0` e o arquivo `countries-110m.json` de `world-atlas@2.0.2`. As três dependências estão fixadas exatamente no manifesto e no lockfile. O arquivo cartográfico deriva dos limites administrativos Natural Earth 4.1.0 em escala 1:110m. Segundo os termos oficiais em https://www.naturalearthdata.com/about/terms-of-use/, os dados vetoriais e raster Natural Earth são de domínio público.
+
+A base é empacotada no aplicativo. A renderização não solicita tiles nem envia dados natais ou de navegação a provedores cartográficos externos. “Natural Earth” identifica a proveniência do mapa-base, não endossa as interpretações ou o aplicativo.
 
 ## Integridade e proveniência dos novos artefatos
 
@@ -67,6 +79,140 @@ Esses endereços devem continuar disponíveis, gratuitamente e sem autenticaçã
 O aviso especial da Swiss Ephemeris deve ser preservado integralmente; ele está reproduzido em `NOTICE`. Os nomes ali contidos não podem ser usados para promover o aplicativo ou o serviço sem autorização escrita.
 
 ## Avisos de licenças permissivas
+
+### d3-geo 3.1.1 — ISC e GeographicLib — MIT
+
+```text
+Copyright 2010-2024 Mike Bostock
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+
+This license applies to GeographicLib, versions 1.12 and later.
+
+Copyright 2008-2012 Charles Karney
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+### topojson-client 3.1.0 — ISC
+
+```text
+Copyright 2012-2019 Michael Bostock
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+```
+
+### d3-array 3.2.4 — ISC
+
+```text
+Copyright 2010-2023 Mike Bostock
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+```
+
+### internmap 2.0.3 — ISC
+
+```text
+Copyright 2021 Mike Bostock
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+```
+
+### commander 2.20.3 — MIT
+
+```text
+Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+### world-atlas 2.0.2 — ISC
+
+```text
+Copyright 2013-2019 Michael Bostock
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+```
 
 ### Astronomy Engine 2.1.19 — MIT
 

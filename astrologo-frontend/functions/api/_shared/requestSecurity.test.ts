@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getClientIp, getCorsHeaders, hasDisallowedOrigin, isAllowedLcvOrigin } from './requestSecurity';
+import type { D1DatabaseLike, D1Statement } from './requestSecurity';
+import {
+  enforceRateLimit,
+  getClientIp,
+  getCorsHeaders,
+  hasDisallowedOrigin,
+  isAllowedLcvOrigin,
+} from './requestSecurity';
 
 const createRequest = (origin?: string, extraHeaders: Record<string, string> = {}) => {
   const headers = new Headers(extraHeaders);
@@ -38,5 +45,32 @@ describe('requestSecurity', () => {
     expect(getClientIp(createRequest(undefined, { 'X-Forwarded-For': '5.6.7.8, 9.9.9.9' }))).toBe('5.6.7.8');
   });
 
-  // enforceRateLimit and generic rate-limiting logic was moved out to Cloudflare WAF
+  it('aplica as políticas dos módulos avançados sem executar DDL durante a requisição', async () => {
+    const queries: string[] = [];
+    const db: D1DatabaseLike = {
+      prepare: <TFirst>(query: string) => {
+        queries.push(query);
+        const statement: D1Statement<TFirst> = {
+          bind: () => statement,
+          first: async () =>
+            (query.includes('astrologo_rate_limit_policies')
+              ? { enabled: 1, max_requests: 4, window_minutes: 15 }
+              : { request_count: 0 }) as TFirst,
+          run: async () => ({ success: true }),
+          all: async () => ({ results: [] }),
+        };
+        return statement;
+      },
+    };
+
+    await expect(
+      enforceRateLimit(
+        db,
+        createRequest('https://mapa-astral.lcv.app.br', { 'CF-Connecting-IP': '1.2.3.4' }),
+        'astrologo/sinastria',
+      ),
+    ).resolves.toBeNull();
+    expect(queries.some((query) => /CREATE\s+TABLE/i.test(query))).toBe(false);
+    expect(queries.some((query) => query.includes('INSERT INTO astrologo_api_rate_limits'))).toBe(true);
+  });
 });

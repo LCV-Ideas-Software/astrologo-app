@@ -79,41 +79,6 @@ async function sendTokenEmail(email: string, token: string, apiKey: string): Pro
   }
 }
 
-async function ensureTables(db: D1DatabaseLike): Promise<void> {
-  await db
-    .prepare(`
-    CREATE TABLE IF NOT EXISTS astrologo_user_data (
-      id TEXT PRIMARY KEY,
-      email TEXT NOT NULL,
-      dados_json TEXT NOT NULL,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    )
-  `)
-    .run();
-
-  await db
-    .prepare(`
-    CREATE TABLE IF NOT EXISTS astrologo_auth_tokens (
-      id TEXT PRIMARY KEY,
-      email TEXT NOT NULL,
-      token TEXT NOT NULL,
-      action TEXT NOT NULL,
-      dados_json TEXT,
-      expires_at TEXT NOT NULL,
-      used INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now'))
-    )
-  `)
-    .run();
-
-  try {
-    await db.prepare(`ALTER TABLE astrologo_mapas ADD COLUMN email TEXT DEFAULT ''`).run();
-  } catch {
-    /* exists */
-  }
-}
-
 async function stampEmailOnRecords(db: D1DatabaseLike, email: string, dadosJson: string): Promise<void> {
   try {
     const dados = JSON.parse(dadosJson);
@@ -161,8 +126,6 @@ export async function onRequestPost(context: Context) {
   if (!apiKey) {
     return getCorsResponse(request, { ok: false, error: 'RESEND_API_KEY não configurada.' }, 503);
   }
-
-  await ensureTables(db);
 
   try {
     const body = (await request.json()) as { action: string; email?: string; token?: string; dados?: unknown };

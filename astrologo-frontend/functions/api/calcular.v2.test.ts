@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { load, type SwissEph } from '@fusionstrings/swiss-eph';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import type { NatalChartAnalysisV1 } from './_shared/natalChartAnalysisV1';
 import type { DadosPosicionaisV2 } from './_shared/positionV2';
 import type { D1DatabaseLike, D1Statement } from './_shared/requestSecurity';
 
@@ -39,6 +40,7 @@ interface CalculationResponse {
     readonly umbanda: readonly unknown[];
   };
   readonly dadosPosicionaisV2: DadosPosicionaisV2;
+  readonly natalChartAnalysisV1: NatalChartAnalysisV1;
 }
 
 const createDb = () => {
@@ -124,6 +126,18 @@ describe('/api/calcular v2', () => {
     expect(payload.dadosAstronomica.astrologia).toHaveLength(4);
     expect(payload.dadosAstronomica.umbanda).toHaveLength(6);
     expect(payload.dadosPosicionaisV2.positions).toHaveLength(10);
+    expect(payload.natalChartAnalysisV1).toMatchObject({
+      schemaId: 'urn:astrologo:natal-chart-analysis',
+      schemaVersion: '1.0.0',
+      source: { calculationId: payload.dadosPosicionaisV2.calculationId },
+    });
+    expect(payload.natalChartAnalysisV1.movements.every(({ status }) => status === 'available')).toBe(true);
+    expect(
+      payload.natalChartAnalysisV1.houseOccupancies.every(
+        ({ occupancy, mundaneDegreeWithinHouse }) =>
+          occupancy.status !== 'available' || mundaneDegreeWithinHouse.status === 'available',
+      ),
+    ).toBe(true);
     expect(payload.dadosPosicionaisV2.birthContext.timeResolution.timeZoneIana).toBe('America/Sao_Paulo');
     expect(payload.dadosGlobais.tatwa).toMatchObject({
       schemaVersion: '2.0.0',
@@ -156,5 +170,13 @@ describe('/api/calcular v2', () => {
     expect(insert?.bindings).toHaveLength(9);
     expect(JSON.parse(String(insert?.bindings[7]))).toEqual(payload.dadosGlobais);
     expect(JSON.parse(String(insert?.bindings[8]))).toEqual(payload.dadosPosicionaisV2);
+
+    const artifactInsert = executed.find(({ query }) => query.includes('INSERT INTO astrologo_artifacts'));
+    expect(artifactInsert?.bindings).toHaveLength(9);
+    expect(artifactInsert?.bindings[2]).toBe('natal_chart_analysis');
+    expect(artifactInsert?.bindings[3]).toBe('urn:astrologo:natal-chart-analysis');
+    expect(artifactInsert?.bindings[4]).toBe('1.0.0');
+    expect(artifactInsert?.bindings[5]).toMatch(/^[0-9a-f]{64}$/);
+    expect(JSON.parse(String(artifactInsert?.bindings[6]))).toEqual(payload.natalChartAnalysisV1);
   });
 });

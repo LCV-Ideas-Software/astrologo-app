@@ -1,5 +1,37 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.21.00] - 2026-07-12
+
+### Adicionado
+
+- Roda natal SVG com cúspides, corpos, ângulos e aspectos, acompanhada por quadros de Aspectos Natais e Análise das 12 Casas Placidus.
+- Céu Atual com posições tropicais e regiões constelacionais IAU, aspectos trânsito–natal, fases e aperfeiçoamentos geométricos verificados.
+- Sinastria com consentimento, dados brasileiros de nascimento, resolução de ambiguidades de horário, aspectos intermapa e casas recíprocas.
+- Mapa Planetário de Localidade com linhas MC, IC, ASC e DSC, filtros por planeta e mapa Natural Earth empacotado.
+- Botão **Saiba mais** e explicação leiga em cada novo quadro.
+
+### Melhorado
+
+- Adendos cumulativos da IA cobrem os quatro novos módulos sem alterar ou resumir o prompt anterior.
+- Relatório copiado, WhatsApp, e-mail e mapas salvos incluem os resultados avançados em português do Brasil e Hora oficial de Brasília.
+- Cartografia carregada sob demanda: o bundle inicial de produção permanece abaixo de 500 kB e o mapa usa um chunk independente.
+- Modelo do Astrólogo passa a respeitar a configuração canônica do Admin, mantendo fallback para registros legados.
+
+### Segurança e confiabilidade
+
+- Contratos estritos, hashes, diagnósticos e persistência fail-closed ligam execuções e artefatos; respostas incompletas não chegam à renderização.
+- Endpoints não criam nem alteram tabelas durante requisições. O schema avançado e os rate limits são providos pelas migrations administrativas.
+- Sinastria exige consentimento explícito; localidade não envia dados para serviços de mapa e não recomenda relocação.
+
+### Documentado
+
+- Metodologia, pesquisa comparativa, referenciais e limites em `../docs/METODOLOGIA_MAPAS_AVANCADOS.md`.
+- Licenças ISC/MIT e proveniência pública da nova pilha cartográfica adicionadas aos avisos exibidos no aplicativo.
+
+### Preservado
+
+- Mapa básico, Dados Posicionais V2, Tatwas, Numerologia, angelologia, autenticação, registros legados e prompt histórico continuam compatíveis.
+
 ## [v02.20.00] - 2026-07-11
 
 ### Adicionado

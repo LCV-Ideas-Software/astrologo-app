@@ -2,6 +2,39 @@
 
 ## [Unreleased]
 
+## [v02.21.00] - 2026-07-12
+
+### Adicionado
+
+- **Mapa natal completo** — roda SVG responsiva com signos, cúspides, dez corpos, ASC/DSC/MC/FC e linhas de aspectos; quadros próprios detalham aspectos natais, fases comprovadas, ocupações das 12 Casas Placidus e grau mundano somente quando derivado do `swe_house_pos`.
+- **Céu atual e trânsitos** — posições calculadas pelo relógio UTC do servidor, projeções tropical e constelacional IAU com guarda de fronteira, sobreposição nas casas natais, aspectos vigentes, fase por snapshot posterior e aperfeiçoamento geométrico verificado dentro do horizonte escolhido.
+- **Sinastria consentida** — cálculo entre dois mapas completos, 100 pares planetários examinados, aspectos intermapa e sobreposições recíprocas A→B e B→A; o segundo mapa só é persistido após consentimento explícito e não recebe pontuação determinista de compatibilidade.
+- **Mapa Planetário de Localidade** — 40 linhas MC, IC, ASC e DSC calculadas após transformar EQJ/J2000 em EQD verdadeiro da data; mapa-múndi SVG filtrável sobre Natural Earth 1:110m, sem tiles, rastreamento ou chamadas cartográficas externas.
+- **Ajuda contextual para usuários leigos** — cada novo quadro inclui **Saiba mais**, explicando separação, orbe, fase, reciprocidade, referenciais, limitações, incerteza e o caráter simbólico das interpretações.
+- **Contratos e persistência avançada** — artefatos natais, execuções de trânsitos, sinastrias e localidade ganham schemas estritos, hashes SHA-256, diagnósticos, vínculos auditáveis e estados fail-closed no `bigdata_db`.
+
+### Melhorado
+
+- **Agente de IA cumulativo** — o prompt vigente permanece integral e recebe, ao final, adendos autônomos para aspectos/casas, trânsitos, sinastria e localidade; os dados são reidratados do D1 validado e a narrativa é proibida de inventar graus IAU, datas, raios de influência, compatibilidade ou destinos.
+- **Relatórios, e-mail e mapas salvos** — todos os novos dados têm apresentação textual e HTML em português do Brasil; instantes visíveis usam `America/Sao_Paulo`, e resultados calculados na sessão acompanham o mapa quando ele é salvo e reaberto.
+- **Desempenho cartográfico** — D3, TopoJSON e o mapa-base foram isolados em carregamento sob demanda; o bundle inicial de produção caiu de 534,07 kB para 400,63 kB, deixando o chunk cartográfico separado.
+- **Configuração administrativa da IA** — a seleção dinâmica do modelo passa a ler a configuração canônica de `admin_module_configs`, com fallback compatível para o armazenamento legado.
+
+### Segurança e confiabilidade
+
+- Endpoints públicos deixam de executar DDL durante requisições; migrations versionadas tornam-se pré-condição explícita de implantação e as políticas de rate limit são semeadas administrativamente.
+- Reidratação de trânsitos, sinastrias e localidade exige execução `ready`, artefato `ready` e vínculo recíproco; sinastrias são encontradas tanto pelo mapa primário quanto pelo secundário.
+- Consumidores de rede rejeitam respostas estruturalmente incompletas antes de renderizar. O Swiss Ephemeris continua materializado sob demanda, verificado por tamanho e SHA-256 e ausente do índice Git.
+
+### Documentado
+
+- `docs/METODOLOGIA_MAPAS_AVANCADOS.md` registra fórmulas, referenciais, perfis versionados, pesquisa comparativa de mercado, escolhas de UX, limites interpretativos e estratégia de implantação.
+- Avisos de terceiros passam a incluir `d3-geo@3.1.1`, `topojson-client@3.1.0`, `world-atlas@2.0.2`, o trecho MIT da GeographicLib e a condição de domínio público dos dados Natural Earth.
+
+### Preservado
+
+- Dados Posicionais V2, Tatwas, Numerologia, angelologia tropical, Anjo Regente do Consulente, autenticação, mapas legados e o corpo histórico do prompt permanecem compatíveis e não são recalculados silenciosamente.
+
 ## [v02.20.00] - 2026-07-11
 
 ### Adicionado

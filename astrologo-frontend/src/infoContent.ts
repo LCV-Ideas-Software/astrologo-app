@@ -7,7 +7,13 @@ export type InfoTopic =
   | 'numerologia'
   | 'detailedMap'
   | 'celestialDistribution'
-  | 'mapCorrespondences';
+  | 'mapCorrespondences'
+  | 'natalWheel'
+  | 'natalAspects'
+  | 'houseInfluences'
+  | 'currentSky'
+  | 'synastry'
+  | 'localityMap';
 
 export interface NumerologyInfoContext {
   readonly expressao: number;
@@ -245,6 +251,156 @@ const mapCorrespondencesContent: InfoContent = {
     'Leia a falange como um mapa de correspondências dentro da metodologia declarada, distinguindo-a tanto da astronomia quanto de outras escolas espirituais.',
 };
 
+const natalWheelContent: InfoContent = {
+  title: 'Como ler a Roda do Mapa Natal',
+  introduction:
+    'A roda é uma representação visual do mesmo cálculo detalhado. Ela coloca o Ascendente à esquerda e organiza, em camadas, os 12 signos tropicais, as Casas Placidus, os planetas e as linhas de aspectos.',
+  sections: [
+    {
+      title: 'Do lado de fora para o centro',
+      items: [
+        'A faixa externa mostra símbolos e cores dos 12 signos tropicais. As linhas numeradas marcam o início e a extensão visual das 12 Casas Placidus.',
+        'Os símbolos planetários mantêm a longitude calculada. Quando vários corpos estão muito próximos, eles podem ocupar anéis ligeiramente diferentes para continuar legíveis; essa separação gráfica não muda os graus do mapa.',
+        'As linhas no centro ligam os pares que atendem ao perfil de aspectos declarado. Cor e tracejado ajudam a distinguir cada tipo, mas a lista textual continua sendo a referência para valores exatos e acessibilidade.',
+      ],
+    },
+    {
+      title: 'Por que o céu IAU não aparece como outro disco',
+      items: [
+        'As constelações oficiais são áreas bidimensionais irregulares e não são 13 setores iguais. Desenhar um segundo zodíaco regular daria uma impressão geométrica falsa.',
+        'A classificação astronômica real permanece disponível nos cartões e na alternativa textual, corpo por corpo, sem ser convertida artificialmente em fatias iguais.',
+      ],
+    },
+  ],
+  closing:
+    'Use a roda para reconhecer relações espaciais e consulte a alternativa textual para graus, orbes, indisponibilidades e metodologia completa.',
+};
+
+const natalAspectsContent: InfoContent = {
+  title: 'Como ler os Aspectos do Mapa Natal',
+  introduction:
+    'Um aspecto compara a distância angular entre dois pontos da roda. O aplicativo calcula essa geometria uma única vez nas longitudes eclípticas e depois oferece leituras simbólicas pelas perspectivas declaradas.',
+  sections: [
+    {
+      title: 'Ângulo exato, separação e orbe',
+      items: [
+        'Conjunção, Sextil, Quadratura, Trígono, Quincúncio e Oposição correspondem a ângulos exatos definidos pela metodologia. O aspecto observado raramente coincide com o valor perfeito.',
+        'O orbe é a diferença entre a separação observada e o ângulo exato. Quanto menor o orbe, mais próxima está a geometria do aspecto; isso não é uma medida científica de destino, personalidade ou intensidade psicológica.',
+        'Os limites aceitos pertencem a um perfil metodológico versionado. Assim, o aplicativo consegue explicar e reproduzir por que um par entrou ou não na lista, sem trocar regras silenciosamente.',
+      ],
+    },
+    {
+      title: 'Corpos e ângulos considerados',
+      items: [
+        'A versão inicial compara os dez corpos já presentes no mapa e os ângulos Ascendente e Meio do Céu. Descendente e Fundo do Céu são desenhados como eixos opostos, sem duplicar automaticamente todos os aspectos.',
+        'Tropical e Astronômico Constelacional não criam duas geometrias diferentes: os mesmos aspectos podem receber leituras distintas, mas conservam a separação angular calculada.',
+      ],
+    },
+  ],
+  closing:
+    'Leia aspectos como relações simbólicas entre posições, nunca como diagnóstico, garantia de comportamento ou acontecimento inevitável.',
+};
+
+const houseInfluencesContent: InfoContent = {
+  title: 'Como ler as Casas e o grau mundano',
+  introduction:
+    'As casas descrevem uma divisão local do movimento aparente do céu. Para cada corpo, o aplicativo distingue a Casa Placidus ocupada, a longitude zodiacal e, quando o motor fornece o dado, a posição proporcional dentro da própria casa.',
+  sections: [
+    {
+      title: 'Três números que não devem ser confundidos',
+      items: [
+        'O grau no signo vem da longitude tropical. O grau da cúspide marca o começo zodiacal de uma casa. O grau mundano indica o avanço do corpo dentro da divisão Placidus e usa uma escala própria de 0 a menos de 30 graus.',
+        'O grau mundano é preservado a partir da posição fracionária retornada por swe_house_pos. Ele não é estimado pelo tamanho do arco entre duas cúspides, porque essa aproximação confundiria geometrias diferentes.',
+        'Mapas antigos não guardam o valor fracionário. Neles, ou quando Placidus não pode ser calculado com segurança, o grau mundano aparece como indisponível em vez de ser inventado.',
+      ],
+    },
+    {
+      title: 'O que a análise interpreta',
+      items: [
+        'O painel agrupa os corpos por casa e apresenta temas simbólicos tradicionalmente associados a cada setor, sempre junto dos dados que sustentam a leitura.',
+        'Hora e lugar afetam fortemente as casas. Se o horário natal for aproximado, interprete ocupações próximas de cúspides com cautela.',
+      ],
+    },
+  ],
+  closing:
+    'Casa, signo e constelação respondem a referências diferentes; a leitura fica mais clara quando cada medida conserva seu próprio significado.',
+};
+
+const currentSkyContent: InfoContent = {
+  title: 'Como ler o Céu Atual e os Trânsitos',
+  introduction:
+    'O céu atual é calculado para um instante de referência explícito. Os trânsitos comparam essas posições móveis às posições fixadas no mapa natal, sem alterar nem sobrescrever o nascimento.',
+  sections: [
+    {
+      title: 'O que é comparado',
+      items: [
+        'Um aspecto trânsito–natal liga um corpo no instante atual a um corpo ou ângulo natal. A lista informa o aspecto, a separação, o orbe e o intervalo de tempo considerado.',
+        'As posições do céu e o instante usado ficam versionados com os motores do cálculo. Na interface, datas e horários são sempre convertidos para a Hora oficial de Brasília.',
+        'Quando houver uma janela futura, ela é limitada e declarada. O sistema não completa datas ausentes nem transforma uma aproximação num momento exato.',
+      ],
+    },
+    {
+      title: 'Limites da linguagem preditiva',
+      items: [
+        'A análise descreve temas e possibilidades dentro da tradição astrológica. Ela não é uma previsão inevitável, não garante eventos e não substitui decisões médicas, jurídicas, financeiras ou pessoais.',
+        'Um trânsito pode ser lido de formas diferentes conforme a escola. O aplicativo identifica o perfil de aspectos adotado para permitir comparação e revisão.',
+      ],
+    },
+  ],
+  closing:
+    'Use os trânsitos como um calendário reflexivo de influências simbólicas, mantendo espaço para contexto, escolha e incerteza.',
+};
+
+const synastryContent: InfoContent = {
+  title: 'Como ler a Sinastria',
+  introduction:
+    'A sinastria compara dois mapas natais completos, calculados separadamente com data, hora e local de cada pessoa. Ela não reduz a relação a uma soma de signos solares.',
+  sections: [
+    {
+      title: 'Uma comparação em duas direções',
+      items: [
+        'Os aspectos intermapa medem a distância angular entre um corpo de A e um corpo de B, usando um perfil de orbes próprio e versionado.',
+        'As sobreposições mostram os corpos de A nas Casas de B e os corpos de B nas Casas de A. As duas direções são mantidas porque as casas e os contextos natais não são intercambiáveis.',
+        'Os nomes A e B servem apenas para identificar os sujeitos no cálculo; não criam hierarquia nem atribuem automaticamente papéis na relação.',
+      ],
+    },
+    {
+      title: 'O que o resultado não decide',
+      items: [
+        'A sinastria não mede compatibilidade como porcentagem científica, não diagnostica vínculos e não determina sucesso, fracasso, segurança ou duração de uma relação.',
+        'Dados da segunda pessoa exigem conhecimento e consentimento apropriados. O aplicativo registra a proveniência e não deve expor informações pessoais desnecessárias no relatório.',
+      ],
+    },
+  ],
+  closing:
+    'Leia o resultado como um vocabulário simbólico de afinidades, contrastes e experiências possíveis, não como sentença sobre duas pessoas.',
+};
+
+const localityMapContent: InfoContent = {
+  title: 'Como ler o Mapa Planetário de Localidade',
+  introduction:
+    'O mapa de localidade projeta sobre a Terra onde cada corpo estava angular no instante natal: nascendo, se pondo, culminando ou no ponto oposto da culminação.',
+  sections: [
+    {
+      title: 'Quatro famílias de linhas',
+      items: [
+        'Cada corpo pode gerar linhas de Ascendente, Descendente, Meio do Céu e Fundo do Céu. Elas derivam do mesmo instante natal; mudar o local de exibição não recalcula outra data de nascimento.',
+        'As linhas são geometrias globais. Segmentos podem ser interrompidos no antimeridiano para que a passagem entre 180° leste e 180° oeste não desenhe um risco falso atravessando todo o mapa.',
+        'A legenda identifica corpo, ângulo, versão geométrica e eventuais regiões onde uma solução fica indisponível. Aproximar o mapa não aumenta a precisão astronômica original.',
+      ],
+    },
+    {
+      title: 'Como usar com cautela',
+      items: [
+        'A proximidade de uma linha é apresentada como referência interpretativa, não como fronteira física nem campo mensurável.',
+        'O mapa não recomenda mudança, viagem, investimento ou escolha de moradia. Decisões reais também dependem de segurança, saúde, vínculos, legislação, custo e condições locais.',
+      ],
+    },
+  ],
+  closing:
+    'Use a cartografia como uma lente simbólica adicional e confira sempre a escala, o ângulo e a proveniência da linha selecionada.',
+};
+
 export const getInfoContent = (topic: InfoTopic, context: InfoContentContext = {}): InfoContent => {
   switch (topic) {
     case 'tropical':
@@ -261,5 +417,17 @@ export const getInfoContent = (topic: InfoTopic, context: InfoContentContext = {
       return celestialDistributionContent;
     case 'mapCorrespondences':
       return mapCorrespondencesContent;
+    case 'natalWheel':
+      return natalWheelContent;
+    case 'natalAspects':
+      return natalAspectsContent;
+    case 'houseInfluences':
+      return houseInfluencesContent;
+    case 'currentSky':
+      return currentSkyContent;
+    case 'synastry':
+      return synastryContent;
+    case 'localityMap':
+      return localityMapContent;
   }
 };

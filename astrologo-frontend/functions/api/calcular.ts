@@ -1,3 +1,4 @@
+import { persistReadyNatalArtifact, sha256Hex } from './_shared/artifactPersistence';
 import {
   type AstroInfo,
   calcExpressionNumber,
@@ -9,6 +10,8 @@ import {
 } from './_shared/astroCore';
 import { type BirthTimeDisambiguation, resolveBirthCivilTime } from './_shared/birthTime';
 import { resolveBirthPlace } from './_shared/location';
+import { calculateNatalChartAnalysisSupplementV1, calculateNatalChartAnalysisV1 } from './_shared/natalChartAnalysisV1';
+import { validateNatalChartAnalysisV1 } from './_shared/natalChartAnalysisV1Schema';
 import { calculateDadosPosicionaisV2 } from './_shared/positionV2';
 import { validateDadosPosicionaisV2 } from './_shared/positionV2Schema';
 import {
@@ -498,6 +501,22 @@ export async function onRequestPost(context: Context) {
         corsHeaders,
       );
     }
+    const natalSupplementV1 = calculateNatalChartAnalysisSupplementV1(dadosPosicionaisV2, swissEphemeris);
+    const natalChartAnalysisV1 = calculateNatalChartAnalysisV1(dadosPosicionaisV2, natalSupplementV1);
+    const natalValidation = validateNatalChartAnalysisV1(natalChartAnalysisV1);
+    if (!natalValidation.valid) {
+      console.error('Contrato natal v1 inválido.', natalValidation.errors);
+      return jsonResponse(
+        {
+          success: false,
+          code: 'NATAL_ANALYSIS_SCHEMA_VALIDATION_FAILED',
+          error: 'A análise geométrica natal não passou pelos invariantes de segurança.',
+        },
+        500,
+        corsHeaders,
+      );
+    }
+    const natalSourceHash = await sha256Hex(JSON.stringify({ source: dadosPosicionaisV2, natalSupplementV1 }));
     try {
       if (env.BIGDATA_DB) {
         await env.BIGDATA_DB.prepare(
@@ -515,6 +534,16 @@ export async function onRequestPost(context: Context) {
             JSON.stringify(dadosPosicionaisV2),
           )
           .run();
+        await persistReadyNatalArtifact(env.BIGDATA_DB, {
+          id: `natal:${idUnico}:v1`,
+          calculationId: idUnico,
+          artifactType: 'natal_chart_analysis',
+          schemaId: natalChartAnalysisV1.schemaId,
+          schemaVersion: natalChartAnalysisV1.schemaVersion,
+          sourceHash: natalSourceHash,
+          payload: natalChartAnalysisV1,
+          diagnostics: natalChartAnalysisV1.diagnostics,
+        });
       }
     } catch (error) {
       console.error('Falha ao gravar no BD.');
@@ -538,6 +567,7 @@ export async function onRequestPost(context: Context) {
         dadosAstronomica,
         dadosTropical,
         dadosPosicionaisV2,
+        natalChartAnalysisV1,
         query: { nome, dataNascimento, horaNascimento, localNascimento },
       }),
       { headers: { 'Content-Type': 'application/json', ...corsHeaders, ...securityHeaders } },

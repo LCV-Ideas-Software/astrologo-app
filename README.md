@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.20.00**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.21.00**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.21.00`**                      | **Mapas avançados.** Acrescenta roda natal com aspectos e casas, céu atual tropical e IAU com trânsitos, sinastria consentida e mapa planetário de localidade, todos com contratos auditáveis, ajuda contextual, relatórios, e-mail, IA cumulativa e persistência D1. |
 | **`v02.20.00`**                      | **Ajuda contextual dos dados posicionais.** Acrescenta explicações leigas à leitura detalhada, às Cúspides Placidus e à Falange Angelical, distinguindo posições tropicais, regiões IAU, casas, quinários e regência solar sem alterar os cálculos. |
 | **`v02.19.00`**                      | **Tatwas v2 e ajuda contextual.** Corrige a âncora solar e a precisão temporal, adota a ordem fixa em novos mapas, identifica a perspectiva legada, comunica fronteiras e proveniência e acrescenta explicações leigas de Tatwas, Numerologia e dos dois sistemas astrológicos. |
 | **`v02.18.02`**                      | **Correção CodeQL CWE-367.** A materialização do Swiss Ephemeris elimina a checagem separada do destino e passa a removê-lo sem seguir links simbólicos antes da publicação atômica da cópia verificada. |
@@ -47,6 +48,11 @@ Aplicação para gerar análises astrológicas a partir de dados de nascimento (
 Funcionalidades adicionais:
 
 - **Metodologia auditável**: [Tatwas e Numerologia](./docs/METODOLOGIA_TATWAS_E_NUMEROLOGIA.md) e [leitura dos dados posicionais](./docs/GUIA_LEITURA_DADOS_POSICIONAIS.md), com fontes, regras e limites interpretativos.
+- **Mapa natal completo**: roda SVG, aspectos versionados, movimentos, Casas Placidus e grau mundano somente quando comprovado pelo Swiss Ephemeris.
+- **Céu atual e trânsitos**: posições tropicais e regiões IAU, aspectos trânsito–natal, fase por snapshot posterior e aperfeiçoamento geométrico verificado dentro do horizonte escolhido.
+- **Sinastria consentida**: aspectos entre dois mapas e sobreposições recíprocas de Casas Placidus, sem pontuação determinista de compatibilidade.
+- **Mapa planetário de localidade**: linhas MC, IC, ASC e DSC em SVG sobre Natural Earth empacotado, sem tiles ou rastreamento cartográfico externo.
+- **Metodologia dos mapas avançados**: [contratos, fórmulas, pesquisa comparativa e limites](./docs/METODOLOGIA_MAPAS_AVANCADOS.md).
 - **Rate limiting por D1** (`requestSecurity.ts`): proteção contra abuso de endpoints públicos via janelas deslizantes persistidas.
 - **Auth opcional**: endpoint de resgate por e-mail/código para acesso a análises previamente salvas.
 - **Compliance** (`functions/_middleware.ts`): redirect canônico para domínio público + headers de segurança baseline.
@@ -65,9 +71,9 @@ Browser -> Cloudflare Pages (React build)
                 v                       v
             D1: BIGDATA_DB        External APIs:
             (astrologo_*          - Gemini AI (análise)
-             tables: rate
-             limit, sessions,
-             saved analyses)
+             maps, artifacts,     - Geocoding/time-zone
+             runs, rate limits,
+             sessions, saved data)
 ```
 
 ## Deploy your own fork
@@ -111,9 +117,9 @@ npx wrangler d1 create example_db
 }
 ```
 
-### 4. Apply schema (auto-bootstrap)
+### 4. Apply schema migrations
 
-The Pages Functions self-bootstrap their tables via `CREATE TABLE IF NOT EXISTS` on first hit. A clean D1 will populate the necessary tables on the first request that needs them.
+Apply the versioned migrations before serving requests. Pages Functions deliberately do not execute DDL at request time. In the LCV deployment, migrations `015_bigdata_astrologo_schema_regularization.sql` and `016_bigdata_astrologo_advanced_charts.sql` live in `admin-app/db/migrations` because `bigdata_db` is shared and administratively governed there. A fork must apply equivalent schema to its own D1 before enabling the endpoints.
 
 ### 5. Configure Gemini secret
 
@@ -135,7 +141,7 @@ npx wrangler pages deploy dist --project-name=astrologo-frontend
 This repo uses a sub-project structure:
 
 - `astrologo-frontend/` — React + Vite app + Pages Functions (the actual deployable surface; contains its own `wrangler.json` with D1 binding).
-- `migrations/` — SQL migrations for D1 schema evolution (auto-bootstrap via Functions covers the baseline; migrations are for incremental changes).
+- `migrations/` — historical SQL migrations. The authoritative shared `bigdata_db` migrations are governed by `admin-app/db/migrations` and must be applied before deployment.
 - `LICENSE`, `NOTICE`, `THIRDPARTY.md`, `SECURITY.md`, `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md` — repo conventions at root.
 - `.github/workflows/deploy.yml` — CI: install + build + jq inject D1 ID + wrangler pages deploy.
 

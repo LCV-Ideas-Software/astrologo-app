@@ -23,6 +23,9 @@ const DEFAULT_RATE_POLICIES = {
   'astrologo/enviar-email': { enabled: 1, max_requests: 4, window_minutes: 60 },
   'astrologo/contato': { enabled: 1, max_requests: 5, window_minutes: 30 },
   'astrologo/auth': { enabled: 1, max_requests: 8, window_minutes: 15 },
+  'astrologo/transitos': { enabled: 1, max_requests: 6, window_minutes: 15 },
+  'astrologo/sinastria': { enabled: 1, max_requests: 4, window_minutes: 15 },
+  'astrologo/localidade': { enabled: 1, max_requests: 4, window_minutes: 30 },
 } as const;
 
 export const jsonResponse = (body: unknown, status = 200, extraHeaders: Record<string, string> = {}) =>
@@ -67,44 +70,7 @@ export const getClientIp = (request: Request): string => {
   return 'unknown';
 };
 
-async function ensureRateLimitTables(db: D1DatabaseLike) {
-  await db
-    .prepare(`
-    CREATE TABLE IF NOT EXISTS astrologo_rate_limit_policies (
-      route TEXT PRIMARY KEY,
-      enabled INTEGER NOT NULL DEFAULT 1,
-      max_requests INTEGER NOT NULL,
-      window_minutes INTEGER NOT NULL,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `)
-    .run();
-
-  await db
-    .prepare(`
-    CREATE TABLE IF NOT EXISTS astrologo_api_rate_limits (
-      key TEXT PRIMARY KEY,
-      route TEXT NOT NULL,
-      window_start INTEGER NOT NULL,
-      request_count INTEGER NOT NULL DEFAULT 0,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `)
-    .run();
-
-  for (const [route, policy] of Object.entries(DEFAULT_RATE_POLICIES)) {
-    await db
-      .prepare(`
-      INSERT OR IGNORE INTO astrologo_rate_limit_policies (route, enabled, max_requests, window_minutes)
-      VALUES (?, ?, ?, ?)
-    `)
-      .bind(route, policy.enabled, policy.max_requests, policy.window_minutes)
-      .run();
-  }
-}
-
 async function getRateLimitPolicy(db: D1DatabaseLike, route: keyof typeof DEFAULT_RATE_POLICIES) {
-  await ensureRateLimitTables(db);
   const fallback = DEFAULT_RATE_POLICIES[route];
   const row = await db
     .prepare<{ enabled?: number; max_requests?: number; window_minutes?: number }>(`

@@ -97,4 +97,54 @@ describe('conteúdo leigo dos botões Saiba mais', () => {
     expect(text).toContain('não foi adaptado às 13 constelações');
     expect(text).toContain('correspondência simbólica');
   });
+
+  it('explica a roda natal sem desenhar constelações IAU como setores iguais', () => {
+    const text = flatten('natalWheel');
+    expect(text).toContain('Ascendente');
+    expect(text).toContain('12 signos tropicais');
+    expect(text).toContain('Casas Placidus');
+    expect(text).toContain('não são 13 setores iguais');
+    expect(text).toContain('alternativa textual');
+  });
+
+  it('explica aspectos, ângulos exatos e orbes em linguagem leiga', () => {
+    const text = flatten('natalAspects');
+    expect(text).toContain('distância angular');
+    expect(text).toContain('orbe');
+    expect(text).toContain('Conjunção');
+    expect(text).toContain('Ascendente e Meio do Céu');
+    expect(text).toContain('perfil metodológico versionado');
+  });
+
+  it('distingue casa, cúspide e grau mundano', () => {
+    const text = flatten('houseInfluences');
+    expect(text).toContain('grau mundano');
+    expect(text).toContain('swe_house_pos');
+    expect(text).toContain('não é estimado pelo tamanho do arco');
+    expect(text).toContain('indisponível');
+  });
+
+  it('explica céu atual e trânsitos sem prometer acontecimentos', () => {
+    const text = flatten('currentSky');
+    expect(text).toContain('instante de referência');
+    expect(text).toContain('Hora oficial de Brasília');
+    expect(text).toContain('trânsito–natal');
+    expect(text).toContain('não é uma previsão inevitável');
+  });
+
+  it('explica sinastria como comparação recíproca e não como sentença relacional', () => {
+    const text = flatten('synastry');
+    expect(text).toContain('dois mapas natais completos');
+    expect(text).toContain('A nas Casas de B');
+    expect(text).toContain('B nas Casas de A');
+    expect(text).toContain('não mede compatibilidade');
+  });
+
+  it('explica linhas astrocartográficas e seus limites geográficos', () => {
+    const text = flatten('localityMap');
+    expect(text).toContain('Ascendente, Descendente, Meio do Céu e Fundo do Céu');
+    expect(text).toContain('instante natal');
+    expect(text).toContain('antimeridiano');
+    expect(text).toContain('não recomenda mudança');
+  });
 });

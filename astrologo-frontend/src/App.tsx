@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 // Módulo: astrologo-frontend/src/App.tsx
-// Versão: v02.20.00
+// Versão: v02.21.00
 // Descrição: Frontend principal do Oráculo Celestial com análise astrológica via Gemini.
 
 import DOMPurify from 'dompurify';
@@ -46,12 +46,30 @@ import {
   renderPositionalV2Text,
 } from './astrologyV2';
 import { ComplianceBanner } from './components/ComplianceBanner';
+import { CurrentSkyPanel } from './components/CurrentSkyPanel';
+import { LocalityPanel } from './components/LocalityPanel';
+import { NatalAnalysisPanel } from './components/NatalAnalysisPanel';
 import { useNotification } from './components/Notification';
+import { SynastryPanel, type SynastryViewResult } from './components/SynastryPanel';
 import { getInfoContent, type InfoContentContext, type InfoTopic } from './infoContent';
+import {
+  isLocalityMapV1,
+  type LocalityMapV1,
+  renderLocalityMapEmailHtml,
+  renderLocalityMapText,
+} from './localityMapV1';
 import { LicencasModule } from './modules/compliance/LicencasModule';
+import {
+  isNatalChartAnalysisV1,
+  type NatalChartAnalysisV1,
+  renderNatalChartAnalysisEmailHtml,
+  renderNatalChartAnalysisText,
+} from './natalAnalysisV1';
+import { isSynastryRunV1, renderSynastryRunEmailHtml, renderSynastryRunText } from './synastryRunV1';
 import { formatTatwaDurationPtBr, presentTatwa, renderTatwaEmailCautionHtml } from './tatwaPresentation';
+import { isTransitRunV1, renderTransitRunEmailHtml, renderTransitRunText, type TransitRunV1 } from './transitRunV1';
 
-const APP_VERSION = 'APP v02.20.00';
+const APP_VERSION = 'APP v02.21.00';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (value: string): boolean => emailRegex.test(value.trim());
@@ -63,6 +81,19 @@ const formatPhone = (val: string) => {
   if (v.length <= 3) return `(${v.slice(0, 2)}) ${v.slice(2)}`;
   if (v.length <= 7) return `(${v.slice(0, 2)}) ${v.slice(2, 3)} ${v.slice(3)}`;
   return `(${v.slice(0, 2)}) ${v.slice(2, 3)} ${v.slice(3, 7)}-${v.slice(7)}`;
+};
+
+const isSynastryViewResult = (value: unknown): value is SynastryViewResult => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const candidate = value as Partial<SynastryViewResult>;
+  return (
+    isSynastryRunV1(candidate.run) &&
+    typeof candidate.names?.A === 'string' &&
+    candidate.names.A.trim().length > 0 &&
+    typeof candidate.names?.B === 'string' &&
+    candidate.names.B.trim().length > 0 &&
+    (candidate.secondaryMapId === undefined || typeof candidate.secondaryMapId === 'string')
+  );
 };
 const sanitizeRichHtml = (html: string): string =>
   DOMPurify.sanitize(html, {
@@ -104,6 +135,10 @@ interface ResultData {
   dadosAstronomica: DadosSistema;
   dadosTropical: DadosSistema;
   dadosPosicionaisV2?: DadosPosicionaisV2;
+  natalChartAnalysisV1?: NatalChartAnalysisV1;
+  transitRunV1?: TransitRunV1;
+  synastryResult?: SynastryViewResult;
+  localityMapV1?: LocalityMapV1;
   analiseIa?: string;
 }
 interface ModalProps {
@@ -135,6 +170,7 @@ interface ResultViewProps {
   onSolicitarAnalise?: () => void;
   loadingAi?: boolean;
   openInfoModal: (topic: InfoTopic) => void;
+  onResultEnhance?: (patch: Partial<ResultData>) => void;
 }
 interface GeoResult {
   id?: number;
@@ -254,6 +290,42 @@ const INFO_MODAL_THEME: Record<
     borderColor: 'border-fuchsia-300',
     titleColor: 'text-fuchsia-700',
     sectionColor: 'text-fuchsia-700',
+  },
+  natalWheel: {
+    icon: <Compass className="h-7 w-7 text-indigo-500" />,
+    borderColor: 'border-indigo-300',
+    titleColor: 'text-indigo-700',
+    sectionColor: 'text-indigo-700',
+  },
+  natalAspects: {
+    icon: <Sparkles className="h-7 w-7 text-rose-500" />,
+    borderColor: 'border-rose-300',
+    titleColor: 'text-rose-700',
+    sectionColor: 'text-rose-700',
+  },
+  houseInfluences: {
+    icon: <Hash className="h-7 w-7 text-emerald-500" />,
+    borderColor: 'border-emerald-300',
+    titleColor: 'text-emerald-700',
+    sectionColor: 'text-emerald-700',
+  },
+  currentSky: {
+    icon: <Clock className="h-7 w-7 text-sky-500" />,
+    borderColor: 'border-sky-300',
+    titleColor: 'text-sky-700',
+    sectionColor: 'text-sky-700',
+  },
+  synastry: {
+    icon: <User className="h-7 w-7 text-pink-500" />,
+    borderColor: 'border-pink-300',
+    titleColor: 'text-pink-700',
+    sectionColor: 'text-pink-700',
+  },
+  localityMap: {
+    icon: <MapPin className="h-7 w-7 text-amber-500" />,
+    borderColor: 'border-amber-300',
+    titleColor: 'text-amber-700',
+    sectionColor: 'text-amber-700',
   },
 };
 
@@ -1050,9 +1122,20 @@ export const ResultView: React.FC<ResultViewProps> = ({
   onSolicitarAnalise,
   loadingAi,
   openInfoModal,
+  onResultEnhance,
 }) => {
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [transitRun, setTransitRun] = useState<TransitRunV1 | null>(() =>
+    isTransitRunV1(result.transitRunV1) ? result.transitRunV1 : null,
+  );
+  const [synastryResult, setSynastryResult] = useState<SynastryViewResult | null>(() =>
+    isSynastryViewResult(result.synastryResult) ? result.synastryResult : null,
+  );
+  const [localityMap, setLocalityMap] = useState<LocalityMapV1 | null>(() =>
+    isLocalityMapV1(result.localityMapV1) ? result.localityMapV1 : null,
+  );
+  const natalAnalysis = isNatalChartAnalysisV1(result.natalChartAnalysisV1) ? result.natalChartAnalysisV1 : null;
   const { showNotification } = useNotification();
   const tatwaPresentation = presentTatwa(result.dadosGlobais.tatwa);
 
@@ -1117,6 +1200,26 @@ export const ResultView: React.FC<ResultViewProps> = ({
     if (result.dadosPosicionaisV2) {
       t += divider;
       t += `${renderPositionalV2Text(result.dadosPosicionaisV2)}\n`;
+    }
+
+    if (natalAnalysis) {
+      t += divider;
+      t += `${renderNatalChartAnalysisText(natalAnalysis)}\n`;
+    }
+
+    if (transitRun) {
+      t += divider;
+      t += `${renderTransitRunText(transitRun)}\n`;
+    }
+
+    if (synastryResult) {
+      t += divider;
+      t += `${renderSynastryRunText(synastryResult.run, synastryResult.names)}\n`;
+    }
+
+    if (localityMap) {
+      t += divider;
+      t += `${renderLocalityMapText(localityMap)}\n`;
     }
 
     if (analiseIa) {
@@ -1262,6 +1365,10 @@ export const ResultView: React.FC<ResultViewProps> = ({
             ${renderBlocoAstrologicoEmail('Módulo II: Astronômico Constelacional', result.dadosAstronomica.astrologia, result.dadosAstronomica.umbanda, false)}
 
             ${result.dadosPosicionaisV2 ? renderPositionalV2EmailHtml(result.dadosPosicionaisV2) : ''}
+            ${natalAnalysis ? renderNatalChartAnalysisEmailHtml(natalAnalysis) : ''}
+            ${transitRun ? renderTransitRunEmailHtml(transitRun) : ''}
+            ${synastryResult ? renderSynastryRunEmailHtml(synastryResult.run, synastryResult.names) : ''}
+            ${localityMap ? renderLocalityMapEmailHtml(localityMap) : ''}
 
             ${
               analiseSanitizada
@@ -1483,6 +1590,54 @@ export const ResultView: React.FC<ResultViewProps> = ({
           Mapa legado: graus, Casas Placidus e falange angelical não estão disponíveis. O horário legado não possui fuso
           verificável e não será relabelado como horário de Brasília.
         </p>
+      )}
+
+      {result.dadosPosicionaisV2 && natalAnalysis && (
+        <NatalAnalysisPanel
+          positional={result.dadosPosicionaisV2}
+          analysis={natalAnalysis}
+          openInfoModal={openInfoModal}
+        />
+      )}
+
+      {result.dadosPosicionaisV2 && (
+        <CurrentSkyPanel
+          mapaId={result.id}
+          run={transitRun}
+          onRunChange={(run) => {
+            setTransitRun(run);
+            onResultEnhance?.({ transitRunV1: run });
+          }}
+          openInfoModal={openInfoModal}
+          notify={showNotification}
+        />
+      )}
+
+      {result.dadosPosicionaisV2 && (
+        <SynastryPanel
+          primaryMapId={result.id}
+          primaryName={result.query.nome}
+          result={synastryResult}
+          onResultChange={(nextSynastry) => {
+            setSynastryResult(nextSynastry);
+            onResultEnhance?.({ synastryResult: nextSynastry });
+          }}
+          openInfoModal={openInfoModal}
+          notify={showNotification}
+        />
+      )}
+
+      {result.dadosPosicionaisV2 && (
+        <LocalityPanel
+          mapaId={result.id}
+          data={localityMap}
+          onDataChange={(data) => {
+            setLocalityMap(data);
+            onResultEnhance?.({ localityMapV1: data });
+          }}
+          openInfoModal={openInfoModal}
+          notify={showNotification}
+        />
       )}
 
       {!analiseIa && onSolicitarAnalise && (
@@ -1945,11 +2100,13 @@ export default function App() {
 
           {result && (
             <ResultView
+              key={result.id}
               result={result}
               analiseIa={analiseIa}
               onSolicitarAnalise={solicitarAnalise}
               loadingAi={loadingAi}
               openInfoModal={setModalType}
+              onResultEnhance={(patch) => setResult((current) => (current ? { ...current, ...patch } : current))}
             />
           )}
 

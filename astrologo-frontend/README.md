@@ -19,12 +19,13 @@ Currently, two official plugins are available:
 
 ## Change History
 
-**Status.** Stable. Current release: **v02.20.00**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.21.00**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release     | Notes                                                                                                                                      |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `v02.21.00` | Roda natal, aspectos e casas; céu atual tropical e IAU; sinastria consentida; mapa planetário de localidade; IA, e-mail, ajuda e persistência avançada. |
 | `v02.20.00` | Novos “Saiba mais” na leitura detalhada, nas Cúspides Placidus e na Falange Angelical, com explicações leigas das camadas e limitações. |
 | `v02.19.00` | Tatwas v2 com ordem fixa nos mapas novos, legado identificado, âncora solar auditável, incerteza e novos “Saiba mais” para Tatwas, Numerologia e sistemas astrológicos. |
 | `v02.18.02` | Elimina a condição de corrida CodeQL no destino materializado sem seguir links simbólicos e preserva a publicação atômica do WASM verificado. |
@@ -35,6 +36,8 @@ The version history at a glance:
 Consulte a [metodologia de Tatwas e Numerologia](../docs/METODOLOGIA_TATWAS_E_NUMEROLOGIA.md) para as regras, fontes, variantes e limitações desta versão.
 
 O [guia de leitura dos dados posicionais](../docs/GUIA_LEITURA_DADOS_POSICIONAIS.md) documenta posições, Casas Placidus, regiões IAU e correspondências angelicais exibidas nos novos diálogos.
+
+A [metodologia dos mapas avançados](../docs/METODOLOGIA_MAPAS_AVANCADOS.md) documenta os contratos de aspectos, trânsitos, sinastria e localidade, os referenciais astronômicos, a pesquisa comparativa e os limites interpretativos.
 
 ## React Compiler
 
