@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 // Módulo: astrologo-frontend/src/App.tsx
-// Versão: v02.22.02
+// Versão: v02.22.03
 // Descrição: Frontend principal do Oráculo Celestial com análise astrológica via Gemini.
 
 import DOMPurify from 'dompurify';
@@ -71,7 +71,7 @@ import { isSynastryRunV1, renderSynastryRunEmailHtml, renderSynastryRunText } fr
 import { formatTatwaDurationPtBr, presentTatwa, renderTatwaEmailCautionHtml } from './tatwaPresentation';
 import { isTransitRunV1, renderTransitRunEmailHtml, renderTransitRunText, type TransitRunV1 } from './transitRunV1';
 
-const APP_VERSION = 'APP v02.22.02';
+const APP_VERSION = 'APP v02.22.03';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (value: string): boolean => emailRegex.test(value.trim());
@@ -184,6 +184,7 @@ interface AnalysisProgress {
 interface AnalysisJobResponse {
   success: boolean;
   analise?: string;
+  code?: string;
   error?: string;
   httpStatus: number;
   job?: {
@@ -205,7 +206,7 @@ interface GeoResult {
   country?: string;
 }
 
-const ANALYSIS_REQUEST_TIMEOUT_MS = 100_000;
+const ANALYSIS_REQUEST_TIMEOUT_MS = 110_000;
 
 const waitForNextAnalysisStep = (milliseconds: number): Promise<void> =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds));
@@ -237,7 +238,7 @@ const requestAnalysisJob = async (body: Record<string, unknown>): Promise<Analys
     return { ...(parsed as Omit<AnalysisJobResponse, 'httpStatus'>), httpStatus: response.status };
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('Uma parte da análise ultrapassou o limite de 100 segundos do navegador.', { cause: error });
+      throw new Error('Uma parte da análise ultrapassou o limite de 110 segundos do navegador.', { cause: error });
     }
     throw error;
   } finally {

@@ -1,8 +1,8 @@
 // Módulo: astrologo-frontend/functions/api/analisar.ts
-// Versão: v02.22.02
+// Versão: v02.22.03
 // Descrição: API Gemini reentrante, com uma única etapa de geração por requisição HTTP.
 
-import { GoogleGenAI, HarmBlockThreshold, HarmCategory } from '@google/genai';
+import { GoogleGenAI, HarmBlockThreshold, HarmCategory, ThinkingLevel } from '@google/genai';
 import sanitizeHtml from 'sanitize-html';
 import {
   appendAdvancedAnalysisPrompt,
@@ -144,7 +144,7 @@ const LONG_ANALYSIS_PROMPT_VERSION = 'astrologo-long-analysis-v1';
 const LONG_ANALYSIS_DIRECT_TOKEN_CEILING = 6_000;
 const LONG_ANALYSIS_FRAGMENT_TOKEN_CEILING = 48_000;
 const MAX_ANALYSIS_FRAGMENT_STEPS = 40;
-const GEMINI_REQUEST_TIMEOUT_MS = 65_000;
+const GEMINI_REQUEST_TIMEOUT_MS = 80_000;
 const D1_MAX_ROW_BYTES = 2_000_000;
 const D1_ROW_SAFETY_MARGIN_BYTES = 131_072;
 const D1_ABSOLUTE_ANALYSIS_CEILING_BYTES = 1_500_000;
@@ -181,6 +181,7 @@ interface GeminiModelLimits {
 interface AiUsageTotals {
   inputTokens: number;
   outputTokens: number;
+  thinkingTokens: number;
   calls: number;
 }
 
@@ -208,11 +209,129 @@ class GeminiStepAttemptError extends Error {
   constructor(
     message: string,
     readonly finishReason?: unknown,
+    readonly category: 'validation' | 'transport' = 'transport',
     options?: ErrorOptions,
   ) {
     super(message, options);
   }
 }
+
+const sanitizeDiagnosticText = (value: unknown): string =>
+  String(value)
+    .replace(/AIza[0-9A-Za-z_-]{20,}/gu, '[REDACTED]')
+    .replace(/([?&](?:key|api_key|token)=)[^&\s]+/giu, '$1[REDACTED]')
+    .replace(/((?:authorization|x-goog-api-key)\s*[:=]\s*)(?:bearer\s+)?[^\s,;}]+/giu, '$1[REDACTED]')
+    .replace(
+      /((?:"|')?(?:apiKey|api_key|token|authorization|x-goog-api-key)(?:"|')?\s*:\s*(?:"|'))[^"']+/giu,
+      '$1[REDACTED]',
+    )
+    .replace(/\s+/gu, ' ')
+    .trim();
+
+const describeErrorChain = (error: unknown, finishReason?: unknown): string => {
+  const parts: string[] = [];
+  if (finishReason !== undefined) parts.push(`finishReason=${sanitizeDiagnosticText(finishReason)}`);
+  let current: unknown = error;
+  const visited = new Set<unknown>();
+  for (let depth = 0; current !== undefined && current !== null && depth < 4; depth += 1) {
+    if (visited.has(current)) break;
+    visited.add(current);
+    if (current instanceof Error) {
+      const record = current as Error & {
+        readonly status?: unknown;
+        readonly statusCode?: unknown;
+        readonly code?: unknown;
+      };
+      const status = record.status ?? record.statusCode;
+      const statusDetail =
+        typeof status === 'number' || typeof status === 'string' ? ` status=${sanitizeDiagnosticText(status)}` : '';
+      const codeDetail =
+        typeof record.code === 'number' || typeof record.code === 'string'
+          ? ` code=${sanitizeDiagnosticText(record.code)}`
+          : '';
+      parts.push(`${current.name}: ${sanitizeDiagnosticText(current.message)}${statusDetail}${codeDetail}`);
+      current = current.cause;
+      continue;
+    }
+    if (isRecord(current)) {
+      const name = typeof current.name === 'string' ? current.name : 'ProviderError';
+      const message = typeof current.message === 'string' ? current.message : 'Falha sem mensagem.';
+      const status =
+        typeof current.status === 'number' || typeof current.status === 'string' ? current.status : undefined;
+      const code = typeof current.code === 'number' || typeof current.code === 'string' ? current.code : undefined;
+      parts.push(
+        `${sanitizeDiagnosticText(name)}: ${sanitizeDiagnosticText(message)}${status !== undefined ? ` status=${sanitizeDiagnosticText(status)}` : ''}${code !== undefined ? ` code=${sanitizeDiagnosticText(code)}` : ''}`,
+      );
+      current = current.cause;
+      continue;
+    }
+    parts.push(sanitizeDiagnosticText(current));
+    break;
+  }
+  return parts.join(' <- ').slice(0, 2_000);
+};
+
+const isRetryableTransportError = (error: unknown): boolean => {
+  let current: unknown = error;
+  const visited = new Set<unknown>();
+  for (let depth = 0; current !== undefined && current !== null && depth < 4; depth += 1) {
+    if (visited.has(current)) break;
+    visited.add(current);
+    if (current instanceof Error) {
+      const record = current as Error & {
+        readonly status?: unknown;
+        readonly statusCode?: unknown;
+        readonly code?: unknown;
+      };
+      const statusCandidate = record.status ?? record.statusCode;
+      const numericStatus =
+        typeof statusCandidate === 'number'
+          ? statusCandidate
+          : typeof statusCandidate === 'string' && /^\d{3}$/u.test(statusCandidate)
+            ? Number(statusCandidate)
+            : undefined;
+      if (numericStatus !== undefined) {
+        return numericStatus === 408 || numericStatus === 409 || numericStatus === 429 || numericStatus >= 500;
+      }
+      const code = typeof record.code === 'string' ? record.code : '';
+      if (/TIMEOUT|ABORT|ECONNRESET|ECONNREFUSED|EAI_AGAIN|ENETUNREACH/iu.test(code)) return true;
+      if (/timeout|timed out|abort|network|fetch failed/iu.test(current.message)) return true;
+      current = current.cause;
+      continue;
+    }
+    if (isRecord(current)) {
+      const statusCandidate = current.status ?? current.statusCode;
+      const numericStatus =
+        typeof statusCandidate === 'number'
+          ? statusCandidate
+          : typeof statusCandidate === 'string' && /^\d{3}$/u.test(statusCandidate)
+            ? Number(statusCandidate)
+            : undefined;
+      if (numericStatus !== undefined) {
+        return numericStatus === 408 || numericStatus === 409 || numericStatus === 429 || numericStatus >= 500;
+      }
+      const code = typeof current.code === 'string' ? current.code : '';
+      if (/TIMEOUT|ABORT|ECONNRESET|ECONNREFUSED|EAI_AGAIN|ENETUNREACH/iu.test(code)) return true;
+      current = current.cause;
+      continue;
+    }
+    break;
+  }
+  return true;
+};
+
+const geminiThinkingConfig = (
+  model: string,
+  level: 'low' | 'medium',
+): { readonly thinkingConfig: { readonly thinkingLevel: ThinkingLevel } } | Record<string, never> =>
+  /^gemini-3(?:[.-]|$)/iu.test(model)
+    ? {
+        thinkingConfig: {
+          thinkingLevel:
+            level === 'medium' && /^gemini-3\.\d+/iu.test(model) ? ThinkingLevel.MEDIUM : ThinkingLevel.LOW,
+        },
+      }
+    : {};
 
 const loadSafeAnalysisPersistenceBudget = async (db: D1DatabaseLike, calculationId: string): Promise<number> => {
   const row = await db
@@ -299,11 +418,19 @@ const candidateEnvelope = (text: unknown, finishReason: unknown): GeneratedCandi
 
 const addUsage = (
   totals: AiUsageTotals,
-  usage: { readonly promptTokenCount?: number; readonly candidatesTokenCount?: number } | undefined,
+  usage:
+    | {
+        readonly promptTokenCount?: number;
+        readonly candidatesTokenCount?: number;
+        readonly thoughtsTokenCount?: number;
+      }
+    | undefined,
 ): void => {
   totals.calls += 1;
   totals.inputTokens += usage?.promptTokenCount ?? 0;
-  totals.outputTokens += usage?.candidatesTokenCount ?? 0;
+  const thinkingTokens = usage?.thoughtsTokenCount ?? 0;
+  totals.thinkingTokens += thinkingTokens;
+  totals.outputTokens += (usage?.candidatesTokenCount ?? 0) + thinkingTokens;
 };
 
 const generateValidated = async <T>(options: {
@@ -317,6 +444,7 @@ const generateValidated = async <T>(options: {
   readonly usageTotals: AiUsageTotals;
   readonly validate: (candidate: GeneratedCandidateEnvelope) => T;
   readonly stage: string;
+  readonly thinkingLevel?: 'low' | 'medium';
 }): Promise<T> => {
   const maxOutputTokens = Math.min(options.initialMaxOutputTokens, options.modelOutputTokenLimit);
   try {
@@ -327,6 +455,7 @@ const generateValidated = async <T>(options: {
         ...(options.systemInstruction ? { systemInstruction: options.systemInstruction } : {}),
         maxOutputTokens,
         temperature: 1.0,
+        ...geminiThinkingConfig(options.model, options.thinkingLevel ?? 'medium'),
         safetySettings: [...SAFETY_SETTINGS],
         httpOptions: { timeout: GEMINI_REQUEST_TIMEOUT_MS },
         ...(options.responseJsonSchema
@@ -342,47 +471,113 @@ const generateValidated = async <T>(options: {
       throw new GeminiStepAttemptError(
         `A resposta da etapa ${options.stage} não passou pela validação integral.`,
         generated.finishReason,
+        'validation',
         { cause: validationError },
       );
     }
   } catch (error) {
     if (error instanceof GeminiStepAttemptError) throw error;
-    throw new GeminiStepAttemptError(`A chamada da etapa ${options.stage} falhou.`, undefined, { cause: error });
+    throw new GeminiStepAttemptError(`A chamada da etapa ${options.stage} falhou.`, undefined, 'transport', {
+      cause: error,
+    });
   }
 };
 
-const fragmentResponseSchema = (fragment: PackedAnalysisFragment, plan: PackedAnalysisPlan): unknown => ({
+const parseContentOnlyEnvelope = (
+  generated: GeneratedCandidateEnvelope,
+  expectedKeys: readonly string[],
+): Record<string, unknown> => {
+  if (generated.finishReason !== 'STOP') {
+    throw new GeminiGenerationValidationError('A geração só é completa quando finishReason é STOP.');
+  }
+  if (typeof generated.text !== 'string' || generated.text.length === 0) {
+    throw new GeminiGenerationValidationError('A geração concluída não forneceu conteúdo estruturado.');
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(generated.text);
+  } catch (error) {
+    throw new GeminiGenerationValidationError('A resposta de conteúdo não é JSON válido.', { cause: error });
+  }
+  if (!isRecord(parsed)) throw new GeminiGenerationValidationError('A resposta de conteúdo deve ser um objeto JSON.');
+  const actualKeys = Object.keys(parsed).sort();
+  const requiredKeys = [...expectedKeys].sort();
+  if (actualKeys.length !== requiredKeys.length || actualKeys.some((key, index) => key !== requiredKeys[index])) {
+    throw new GeminiGenerationValidationError('A resposta de conteúdo contém campos ausentes ou inesperados.');
+  }
+  return parsed;
+};
+
+const attachFragmentEnvelope = (
+  generated: GeneratedCandidateEnvelope,
+  plan: PackedAnalysisPlan,
+  fragment: PackedAnalysisFragment,
+): GeneratedCandidateEnvelope => {
+  const content = parseContentOnlyEnvelope(generated, ['html', 'synthesisNotes', 'warnings']);
+  return {
+    finishReason: generated.finishReason,
+    text: JSON.stringify({
+      schemaId: 'urn:astrologo:ai-analysis-fragment',
+      schemaVersion: '1.0.0',
+      rootInputHash: plan.manifest.rootInputHash,
+      promptVersion: plan.manifest.promptVersion,
+      fragmentId: fragment.fragmentId,
+      ordinal: fragment.ordinal,
+      domain: fragment.domain,
+      inputHash: fragment.inputHash,
+      coveredEvidenceIds: fragment.coveredEvidenceIds,
+      html: content.html,
+      synthesisNotes: content.synthesisNotes,
+      warnings: content.warnings,
+    }),
+  };
+};
+
+const attachReductionEnvelope = (
+  generated: GeneratedCandidateEnvelope,
+  plan: PackedAnalysisPlan,
+  expected: AnalysisReductionExpectation,
+): GeneratedCandidateEnvelope => {
+  const content = parseContentOnlyEnvelope(generated, ['synthesisNotes', 'warnings']);
+  return {
+    finishReason: generated.finishReason,
+    text: JSON.stringify({
+      schemaId: 'urn:astrologo:ai-analysis-reduction',
+      schemaVersion: '1.0.0',
+      rootInputHash: plan.manifest.rootInputHash,
+      promptVersion: plan.manifest.promptVersion,
+      ...expected,
+      synthesisNotes: content.synthesisNotes,
+      warnings: content.warnings,
+    }),
+  };
+};
+
+const attachSynthesisEnvelope = (
+  generated: GeneratedCandidateEnvelope,
+  plan: PackedAnalysisPlan,
+): GeneratedCandidateEnvelope => {
+  const content = parseContentOnlyEnvelope(generated, ['html', 'warnings']);
+  return {
+    finishReason: generated.finishReason,
+    text: JSON.stringify({
+      schemaId: 'urn:astrologo:ai-analysis-synthesis',
+      schemaVersion: '1.0.0',
+      rootInputHash: plan.manifest.rootInputHash,
+      promptVersion: plan.manifest.promptVersion,
+      fragmentIds: plan.fragments.map(({ fragmentId }) => fragmentId),
+      coveredEvidenceIds: plan.coverage.evidenceIds,
+      html: content.html,
+      warnings: content.warnings,
+    }),
+  };
+};
+
+const fragmentResponseSchema = (fragment: PackedAnalysisFragment): unknown => ({
   type: 'object',
   additionalProperties: false,
-  required: [
-    'schemaId',
-    'schemaVersion',
-    'rootInputHash',
-    'promptVersion',
-    'fragmentId',
-    'ordinal',
-    'domain',
-    'inputHash',
-    'coveredEvidenceIds',
-    'html',
-    'synthesisNotes',
-    'warnings',
-  ],
+  required: ['html', 'synthesisNotes', 'warnings'],
   properties: {
-    schemaId: { type: 'string', enum: ['urn:astrologo:ai-analysis-fragment'] },
-    schemaVersion: { type: 'string', enum: ['1.0.0'] },
-    rootInputHash: { type: 'string', enum: [plan.manifest.rootInputHash] },
-    promptVersion: { type: 'string', enum: [plan.manifest.promptVersion] },
-    fragmentId: { type: 'string', enum: [fragment.fragmentId] },
-    ordinal: { type: 'integer', enum: [fragment.ordinal] },
-    domain: { type: 'string', enum: [fragment.domain] },
-    inputHash: { type: 'string', enum: [fragment.inputHash] },
-    coveredEvidenceIds: {
-      type: 'array',
-      minItems: fragment.coveredEvidenceIds.length,
-      maxItems: fragment.coveredEvidenceIds.length,
-      items: { type: 'string', enum: [...fragment.coveredEvidenceIds] },
-    },
     html: { type: 'string' },
     synthesisNotes: {
       type: 'array',
@@ -405,42 +600,11 @@ const fragmentResponseSchema = (fragment: PackedAnalysisFragment, plan: PackedAn
   },
 });
 
-const reductionResponseSchema = (plan: PackedAnalysisPlan, expected: AnalysisReductionExpectation): unknown => ({
+const reductionResponseSchema = (expected: AnalysisReductionExpectation): unknown => ({
   type: 'object',
   additionalProperties: false,
-  required: [
-    'schemaId',
-    'schemaVersion',
-    'rootInputHash',
-    'promptVersion',
-    'reductionId',
-    'level',
-    'ordinal',
-    'fragmentIds',
-    'coveredEvidenceIds',
-    'synthesisNotes',
-    'warnings',
-  ],
+  required: ['synthesisNotes', 'warnings'],
   properties: {
-    schemaId: { type: 'string', enum: ['urn:astrologo:ai-analysis-reduction'] },
-    schemaVersion: { type: 'string', enum: ['1.0.0'] },
-    rootInputHash: { type: 'string', enum: [plan.manifest.rootInputHash] },
-    promptVersion: { type: 'string', enum: [plan.manifest.promptVersion] },
-    reductionId: { type: 'string', enum: [expected.reductionId] },
-    level: { type: 'integer', enum: [expected.level] },
-    ordinal: { type: 'integer', enum: [expected.ordinal] },
-    fragmentIds: {
-      type: 'array',
-      minItems: expected.fragmentIds.length,
-      maxItems: expected.fragmentIds.length,
-      items: { type: 'string', enum: [...expected.fragmentIds] },
-    },
-    coveredEvidenceIds: {
-      type: 'array',
-      minItems: expected.coveredEvidenceIds.length,
-      maxItems: expected.coveredEvidenceIds.length,
-      items: { type: 'string', enum: [...expected.coveredEvidenceIds] },
-    },
     synthesisNotes: {
       type: 'array',
       minItems: 1,
@@ -463,36 +627,11 @@ const reductionResponseSchema = (plan: PackedAnalysisPlan, expected: AnalysisRed
   },
 });
 
-const synthesisResponseSchema = (plan: PackedAnalysisPlan): unknown => ({
+const synthesisResponseSchema = (): unknown => ({
   type: 'object',
   additionalProperties: false,
-  required: [
-    'schemaId',
-    'schemaVersion',
-    'rootInputHash',
-    'promptVersion',
-    'fragmentIds',
-    'coveredEvidenceIds',
-    'html',
-    'warnings',
-  ],
+  required: ['html', 'warnings'],
   properties: {
-    schemaId: { type: 'string', enum: ['urn:astrologo:ai-analysis-synthesis'] },
-    schemaVersion: { type: 'string', enum: ['1.0.0'] },
-    rootInputHash: { type: 'string', enum: [plan.manifest.rootInputHash] },
-    promptVersion: { type: 'string', enum: [plan.manifest.promptVersion] },
-    fragmentIds: {
-      type: 'array',
-      minItems: plan.fragments.length,
-      maxItems: plan.fragments.length,
-      items: { type: 'string', enum: plan.fragments.map(({ fragmentId }) => fragmentId) },
-    },
-    coveredEvidenceIds: {
-      type: 'array',
-      minItems: plan.coverage.evidenceIds.length,
-      maxItems: plan.coverage.evidenceIds.length,
-      items: { type: 'string', enum: [...plan.coverage.evidenceIds] },
-    },
     html: { type: 'string' },
     warnings: { type: 'array', items: { type: 'string' } },
   },
@@ -629,23 +768,16 @@ ${JSON.stringify(
 
 Use o conteúdo das unidades com esses sourceEvidenceIds como se permanecesse dentro do delimitador histórico correspondente. Um sourceEvidenceId terminado em .* representa todas as unidades e janelas descendentes com esse prefixo. Não exponha este mapa na resposta.`;
 
-const buildFragmentGenerationInput = (fragment: PackedAnalysisFragment, plan: PackedAnalysisPlan): string =>
+const buildFragmentGenerationInput = (fragment: PackedAnalysisFragment): string =>
   `${fragment.inputText}
 
-ENVELOPE_DE_RESPOSTA_DESTA_ETAPA — VALORES OBRIGATÓRIOS
+COBERTURA SEMÂNTICA DESTA ETAPA — USO INTERNO
 ${JSON.stringify({
-  schemaId: 'urn:astrologo:ai-analysis-fragment',
-  schemaVersion: '1.0.0',
-  rootInputHash: plan.manifest.rootInputHash,
-  promptVersion: plan.manifest.promptVersion,
-  fragmentId: fragment.fragmentId,
-  ordinal: fragment.ordinal,
   domain: fragment.domain,
-  inputHash: fragment.inputHash,
   coveredEvidenceIds: fragment.coveredEvidenceIds,
 })}
 
-Retorne exatamente esses valores de identidade e cobertura. Preencha html, synthesisNotes e warnings conforme o schema. As synthesisNotes devem, em conjunto, referenciar cada coveredEvidenceId exatamente dentro desta etapa.`;
+Retorne somente html, synthesisNotes e warnings conforme o schema. Não repita hashes, IDs de fragmento, ordinal, versão nem qualquer outra identidade técnica: o servidor anexará esses valores imutáveis. As synthesisNotes devem, em conjunto, referenciar todos os coveredEvidenceIds recebidos, sem alterar seus textos.`;
 
 const buildSynthesisGenerationInput = (
   fixedInstructionPrefix: string,
@@ -676,7 +808,7 @@ ${JSON.stringify({
 })}
 DADOS_DA_SINTESE_DE_ANALISE_LONGA — FIM
 
-Como exceção exclusivamente de transporte interno, retorne o envelope JSON solicitado. No campo html, escreva somente a síntese integrada final em português do Brasil. Reproduza exatamente rootInputHash, promptVersion, fragmentIds e coveredEvidenceIds na ordem recebida.`;
+Como exceção exclusivamente de transporte interno, retorne somente html e warnings no objeto JSON solicitado. No campo html, escreva apenas a síntese integrada final em português do Brasil. Não repita hashes, IDs, versões nem cobertura técnica: o servidor anexará esses valores imutáveis.`;
 
 const createReductionExpectation = async (
   plan: PackedAnalysisPlan,
@@ -720,7 +852,7 @@ ${JSON.stringify({
 })}
 DADOS_DA_REDUCAO_DE_ANALISE_LONGA — FIM
 
-Retorne exclusivamente o envelope JSON solicitado. Reproduza literalmente os valores de identidade, fragmentIds e coveredEvidenceIds recebidos. As synthesisNotes devem cobrir todas as evidências e cada texto deve ter no máximo 1.024 caracteres.`;
+Retorne exclusivamente synthesisNotes e warnings no objeto JSON solicitado. Não crie campos superiores de identidade, fragmentIds ou coveredEvidenceIds: o servidor anexará esses valores imutáveis. Dentro de cada synthesisNote, mantenha o campo evidenceIds exigido pelo schema; a união desses campos deve cobrir todas as evidências recebidas. Cada texto deve ter no máximo 1.024 caracteres.`;
 
 const assertSynthesisSourceCoverage = (sources: readonly AnalysisSynthesisSource[], plan: PackedAnalysisPlan): void => {
   const fragmentIds = sources.flatMap(({ fragmentIds: ids }) => ids);
@@ -875,7 +1007,7 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
 
     const shouldPartition =
       tokenCount > directTokenCeiling || (tokenCount < 0 && new TextEncoder().encode(prompt).byteLength > 48_000);
-    const usageTotals: AiUsageTotals = { inputTokens: 0, outputTokens: 0, calls: 0 };
+    const usageTotals: AiUsageTotals = { inputTokens: 0, outputTokens: 0, thinkingTokens: 0, calls: 0 };
     const analysisMode: 'single' | 'partitioned' = shouldPartition ? 'partitioned' : 'single';
     let fragmentCount = 1;
     let analise: string;
@@ -959,7 +1091,7 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
         const units = await extractSemanticAnalysisUnits(sources);
         const manifest = await createAnalysisManifest(extractedPrompt.snapshot, units, LONG_ANALYSIS_PROMPT_VERSION);
         const fixedInstructionPrefix = `${extractedPrompt.fixedInstructionPrefix}${LONG_ANALYSIS_OPERATIONAL_INSTRUCTION}${buildDeferredPayloadMapInstruction(extractedPrompt.payloads)}`;
-        const fragmentOutputBudget = Math.min(4_096, modelLimits.outputTokenLimit);
+        const fragmentOutputBudget = Math.min(GEMINI_CONFIG_DEFAULTS.maxOutputTokens, modelLimits.outputTokenLimit);
         const availableInputTokens = modelLimits.inputTokenLimit - fragmentOutputBudget - 2_048;
         const fragmentInputBudget = Math.min(
           LONG_ANALYSIS_FRAGMENT_TOKEN_CEILING,
@@ -990,14 +1122,20 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
           const parsed = await generateValidated({
             ai,
             model: selectedModel,
-            contents: buildFragmentGenerationInput(fragment, plan),
+            contents: buildFragmentGenerationInput(fragment),
             systemInstruction: LONG_ANALYSIS_SYSTEM_INSTRUCTION,
             initialMaxOutputTokens: fragmentOutputBudget,
             modelOutputTokenLimit: modelLimits.outputTokenLimit,
-            responseJsonSchema: fragmentResponseSchema(fragment, plan),
+            responseJsonSchema: fragmentResponseSchema(fragment),
             usageTotals,
             stage: `fragmento ${fragment.ordinal}/${plan.fragments.length}`,
-            validate: (generated) => parseGeneratedAnalysisFragment(generated, plan.manifest, fragment),
+            thinkingLevel: 'low',
+            validate: (generated) =>
+              parseGeneratedAnalysisFragment(
+                attachFragmentEnvelope(generated, plan, fragment),
+                plan.manifest,
+                fragment,
+              ),
           });
           return {
             ...parsed,
@@ -1042,10 +1180,16 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
               systemInstruction: LONG_ANALYSIS_SYSTEM_INSTRUCTION,
               initialMaxOutputTokens: fragmentOutputBudget,
               modelOutputTokenLimit: modelLimits.outputTokenLimit,
-              responseJsonSchema: reductionResponseSchema(plan, expected),
+              responseJsonSchema: reductionResponseSchema(expected),
               usageTotals,
               stage: `redução hierárquica ${level}.${index + 1}`,
-              validate: (generated) => parseGeneratedAnalysisReduction(generated, plan.manifest, expected),
+              thinkingLevel: 'low',
+              validate: (generated) =>
+                parseGeneratedAnalysisReduction(
+                  attachReductionEnvelope(generated, plan, expected),
+                  plan.manifest,
+                  expected,
+                ),
             });
             return {
               sourceId: parsed.reductionId,
@@ -1073,10 +1217,11 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
           systemInstruction: LONG_ANALYSIS_SYSTEM_INSTRUCTION,
           initialMaxOutputTokens: fragmentOutputBudget,
           modelOutputTokenLimit: modelLimits.outputTokenLimit,
-          responseJsonSchema: synthesisResponseSchema(plan),
+          responseJsonSchema: synthesisResponseSchema(),
           usageTotals,
           stage: 'síntese integrada',
-          validate: (generated) => parseGeneratedAnalysisSynthesis(generated, plan),
+          thinkingLevel: 'medium',
+          validate: (generated) => parseGeneratedAnalysisSynthesis(attachSynthesisEnvelope(generated, plan), plan),
         });
         const synthesis: AnalysisSynthesisV1 = {
           ...parsedSynthesis,
@@ -1387,6 +1532,22 @@ const publicProgressMessage = (job: AnalysisJobRecord): string => {
   }
 };
 
+const publicFailureMessage = (job: AnalysisJobRecord): string => {
+  switch (job.error_code) {
+    case 'AI_STEP_VALIDATION_FAILED':
+      return 'Uma parte da análise não retornou conteúdo integralmente válido. Solicite uma nova análise.';
+    case 'AI_PROVIDER_REQUEST_FAILED':
+      return (
+        'O provedor de Inteligência não concluiu uma parte da análise dentro das condições seguras. ' +
+        'Solicite uma nova análise.'
+      );
+    case 'ANALYSIS_ORCHESTRATION_FAILED':
+      return 'A preparação técnica da análise não pôde ser concluída com segurança. Solicite uma nova análise.';
+    default:
+      return 'Uma parte da análise não pôde ser concluída integralmente. Solicite uma nova análise.';
+  }
+};
+
 const analysisJobResponse = async (
   db: D1DatabaseLike,
   job: AnalysisJobRecord,
@@ -1421,7 +1582,7 @@ const analysisJobResponse = async (
         ...(options.busy ? { busy: true } : {}),
       },
       ...(job.status === 'failed'
-        ? { error: 'Uma etapa da análise falhou após três tentativas separadas. Solicite uma nova análise.' }
+        ? { code: job.error_code ?? 'AI_ANALYSIS_FAILED', error: publicFailureMessage(job) }
         : {}),
     },
     status,
@@ -1470,7 +1631,7 @@ const planReentrantAnalysis = async (env: EnvBindings, job: AnalysisJobRecord, l
     Math.floor(modelLimits.inputTokenLimit * 0.75),
   );
   const shouldPartition = tokenCount < 0 || tokenCount > directTokenCeiling;
-  const outputBudget = Math.min(4_096, modelLimits.outputTokenLimit);
+  const outputBudget = Math.min(GEMINI_CONFIG_DEFAULTS.maxOutputTokens, modelLimits.outputTokenLimit);
   const synthesisInputBudget = Math.min(
     LONG_ANALYSIS_FRAGMENT_TOKEN_CEILING,
     modelLimits.inputTokenLimit - outputBudget - 2_048,
@@ -1640,7 +1801,7 @@ const executeOneAnalysisStep = async (options: {
   const packedPlan = plan.packedPlan ? hydratePackedPlan(plan.packedPlan) : undefined;
   const payload = loadStepPayload(options.step);
   const ai = await createGeminiClient(options.env);
-  const usageTotals: AiUsageTotals = { inputTokens: 0, outputTokens: 0, calls: 0 };
+  const usageTotals: AiUsageTotals = { inputTokens: 0, outputTokens: 0, thinkingTokens: 0, calls: 0 };
   const startedAt = Date.now();
   let result: unknown;
 
@@ -1672,14 +1833,20 @@ const executeOneAnalysisStep = async (options: {
       const parsed = await generateValidated({
         ai,
         model: plan.model,
-        contents: buildFragmentGenerationInput(fragment, packedPlan),
+        contents: buildFragmentGenerationInput(fragment),
         systemInstruction: LONG_ANALYSIS_SYSTEM_INSTRUCTION,
         initialMaxOutputTokens: payload.maxOutputTokens,
         modelOutputTokenLimit: plan.modelOutputTokenLimit,
-        responseJsonSchema: fragmentResponseSchema(fragment, packedPlan),
+        responseJsonSchema: fragmentResponseSchema(fragment),
         usageTotals,
         stage: `fragmento ${fragment.ordinal}/${packedPlan.fragments.length}`,
-        validate: (generated) => parseGeneratedAnalysisFragment(generated, packedPlan.manifest, fragment),
+        thinkingLevel: 'low',
+        validate: (generated) =>
+          parseGeneratedAnalysisFragment(
+            attachFragmentEnvelope(generated, packedPlan, fragment),
+            packedPlan.manifest,
+            fragment,
+          ),
       });
       result = {
         kind: 'fragment',
@@ -1705,10 +1872,16 @@ const executeOneAnalysisStep = async (options: {
         systemInstruction: LONG_ANALYSIS_SYSTEM_INSTRUCTION,
         initialMaxOutputTokens: payload.maxOutputTokens,
         modelOutputTokenLimit: plan.modelOutputTokenLimit,
-        responseJsonSchema: reductionResponseSchema(packedPlan, payload.expected),
+        responseJsonSchema: reductionResponseSchema(payload.expected),
         usageTotals,
         stage: `redução hierárquica ${payload.level}.${payload.expected.ordinal}`,
-        validate: (generated) => parseGeneratedAnalysisReduction(generated, packedPlan.manifest, payload.expected),
+        thinkingLevel: 'low',
+        validate: (generated) =>
+          parseGeneratedAnalysisReduction(
+            attachReductionEnvelope(generated, packedPlan, payload.expected),
+            packedPlan.manifest,
+            payload.expected,
+          ),
       });
       result = {
         kind: 'reduction',
@@ -1731,10 +1904,12 @@ const executeOneAnalysisStep = async (options: {
         systemInstruction: LONG_ANALYSIS_SYSTEM_INSTRUCTION,
         initialMaxOutputTokens: payload.maxOutputTokens,
         modelOutputTokenLimit: plan.modelOutputTokenLimit,
-        responseJsonSchema: synthesisResponseSchema(packedPlan),
+        responseJsonSchema: synthesisResponseSchema(),
         usageTotals,
         stage: 'síntese integrada',
-        validate: (generated) => parseGeneratedAnalysisSynthesis(generated, packedPlan),
+        thinkingLevel: 'medium',
+        validate: (generated) =>
+          parseGeneratedAnalysisSynthesis(attachSynthesisEnvelope(generated, packedPlan), packedPlan),
       });
       result = {
         kind: 'synthesis',
@@ -1764,7 +1939,7 @@ const executeOneAnalysisStep = async (options: {
     });
     return { kind: payload.kind, completed: true };
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
+    const detail = describeErrorChain(error, error instanceof GeminiStepAttemptError ? error.finishReason : undefined);
     const retryPayload =
       error instanceof GeminiStepAttemptError &&
       error.finishReason === 'MAX_TOKENS' &&
@@ -1777,8 +1952,17 @@ const executeOneAnalysisStep = async (options: {
       leaseOwner: options.leaseOwner,
       step: options.step,
       payload: retryPayload,
-      errorCode: error instanceof GeminiStepAttemptError ? 'AI_STEP_ATTEMPT_FAILED' : 'AI_STEP_INVALID',
+      errorCode:
+        error instanceof GeminiStepAttemptError
+          ? error.category === 'validation'
+            ? 'AI_STEP_VALIDATION_FAILED'
+            : 'AI_PROVIDER_REQUEST_FAILED'
+          : 'AI_STEP_INVALID',
       errorDetail: detail,
+      retryable:
+        !(error instanceof GeminiStepAttemptError) ||
+        error.category === 'validation' ||
+        isRetryableTransportError(error.cause),
       inputTokens: usageTotals.inputTokens,
       outputTokens: usageTotals.outputTokens,
     });
@@ -1791,7 +1975,8 @@ const executeOneAnalysisStep = async (options: {
       status: retryState === 'retry' ? `retry-${payload.kind}` : `failed-${payload.kind}`,
       error_detail: detail.slice(0, 200),
     });
-    return { kind: payload.kind, completed: false, ...(retryState === 'retry' ? { retryAfterMs: 1_000 } : {}) };
+    const retryAfterMs = 1_000 * 2 ** Math.max(0, options.step.attempts - 1);
+    return { kind: payload.kind, completed: false, ...(retryState === 'retry' ? { retryAfterMs } : {}) };
   }
 };
 

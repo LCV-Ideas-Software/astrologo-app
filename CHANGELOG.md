@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [v02.22.03] - 2026-07-12
+
+### Corrigido
+
+- **Falha 422 no primeiro fragmento da IA** — a resposta estruturada deixa de exigir que o Gemini copie hashes, IDs, ordinais e listas em ordem literal. O modelo produz somente o conteúdo narrativo; o servidor anexa a identidade imutável do plano e mantém a mesma validação integral antes de aceitar cada parte.
+- **Timeout do Gemini 3.1 Pro** — fragmentos e reduções usam explicitamente `thinkingLevel=LOW`; síntese e caminho direto usam `MEDIUM`. O orçamento inicial de saída das partes passa a 8.192 tokens e o timeout do provedor a 80 segundos, com leases de 115/118 segundos e limite do navegador de 110 segundos, todos ainda abaixo do proxy Cloudflare.
+
+### Melhorado
+
+- A telemetria contabiliza os tokens de raciocínio na saída, registra separadamente falhas de validação e do provedor e persiste a cadeia causal e o `finishReason` com credenciais redigidas.
+- Repetições transitórias usam espera exponencial e erros HTTP determinísticos do provedor não são repetidos inutilmente.
+- O teste reentrante agora força de fato o caminho acima de 6.000 tokens e comprova resposta de conteúdo, identidade anexada pelo servidor, `thinking` controlado e exatamente uma geração por requisição.
+
+### Preservado
+
+- O prompt histórico e todos os adendos cumulativos permanecem integrais. Cobertura, hashes, ordem canônica, sanitização, persistência final, UI em pt-BR, e-mail, PDF e cálculos não foram reduzidos nem flexibilizados.
+
 ## [v02.22.02] - 2026-07-12
 
 ### Corrigido

@@ -3,22 +3,54 @@ import type { D1DatabaseLike, D1Statement } from './_shared/requestSecurity';
 
 const runtime = vi.hoisted(() => ({
   generateCalls: 0,
+  generateRequests: [] as Array<Record<string, unknown>>,
+  generateErrors: [] as Array<Error & { status?: number }>,
   finishReasons: ['STOP'] as string[],
+  totalTokens: 100,
+  model: 'gemini-3.1-pro-preview',
   job: null as Record<string, unknown> | null,
   step: null as Record<string, unknown> | null,
+  lastRetryOptions: null as Record<string, unknown> | null,
 }));
 
 vi.mock('@google/genai', () => ({
   GoogleGenAI: class {
     readonly models = {
       get: async () => ({ inputTokenLimit: 1_000_000, outputTokenLimit: 65_536 }),
-      countTokens: async () => ({ totalTokens: 100 }),
-      generateContent: async () => {
+      countTokens: async () => ({ totalTokens: runtime.totalTokens }),
+      generateContent: async (request: Record<string, unknown>) => {
         runtime.generateCalls += 1;
+        runtime.generateRequests.push(request);
+        const generateError = runtime.generateErrors.shift();
+        if (generateError) throw generateError;
+        const config = request.config as
+          | {
+              responseJsonSchema?: {
+                properties?: {
+                  synthesisNotes?: {
+                    items?: { properties?: { evidenceIds?: { items?: { enum?: string[] } } } };
+                  };
+                };
+              };
+            }
+          | undefined;
+        const evidenceIds =
+          config?.responseJsonSchema?.properties?.synthesisNotes?.items?.properties?.evidenceIds?.items?.enum;
         return {
-          text: '<p>Análise direta validada.</p>',
+          text: evidenceIds
+            ? JSON.stringify({
+                html: '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>',
+                synthesisNotes: [
+                  {
+                    textPtBr: 'Síntese factual da parte validada.',
+                    evidenceIds,
+                  },
+                ],
+                warnings: [],
+              })
+            : '<p>Análise direta validada.</p>',
           candidates: [{ finishReason: runtime.finishReasons.shift() ?? 'STOP' }],
-          usageMetadata: { promptTokenCount: 1_000, candidatesTokenCount: 100 },
+          usageMetadata: { promptTokenCount: 1_000, candidatesTokenCount: 100, thoughtsTokenCount: 50 },
         };
       },
     };
@@ -31,6 +63,7 @@ vi.mock('@google/genai', () => ({
     HARM_CATEGORY_SEXUALLY_EXPLICIT: 'SEXUALLY_EXPLICIT',
     HARM_CATEGORY_CIVIC_INTEGRITY: 'CIVIC_INTEGRITY',
   },
+  ThinkingLevel: { LOW: 'LOW', MEDIUM: 'MEDIUM' },
 }));
 
 vi.mock('./_shared/advancedAnalysisPrompt', async (importOriginal) => {
@@ -50,7 +83,7 @@ vi.mock('./_shared/analysisPrompt', async (importOriginal) => {
 });
 
 vi.mock('./_shared/modelConfig', () => ({
-  loadConfiguredAstrologerModel: async () => 'gemini-test',
+  loadConfiguredAstrologerModel: async () => runtime.model,
 }));
 
 vi.mock('./_shared/tatwaPrompt', async (importOriginal) => {
@@ -144,15 +177,32 @@ vi.mock('./_shared/analysisJobRepository', () => {
         output_tokens: Number(runtime.job.output_tokens) + options.outputTokens,
       };
     },
-    retryOrFailAnalysisStep: async (options: { step: { attempts: number }; payload: unknown }) => {
+    retryOrFailAnalysisStep: async (options: {
+      step: { attempts: number };
+      payload: unknown;
+      retryable?: boolean;
+      errorCode: string;
+      errorDetail: string;
+    }) => {
       if (!runtime.job || !runtime.step) throw new Error('estado ausente');
-      const retry = options.step.attempts < 3;
+      runtime.lastRetryOptions = options;
+      const retry = options.retryable !== false && options.step.attempts < 3;
       runtime.step = {
         ...runtime.step,
         status: retry ? 'pending' : 'failed',
         payload_json: JSON.stringify(options.payload),
+        error_code: options.errorCode,
+        error_detail: options.errorDetail,
       };
-      if (!retry) runtime.job = { ...runtime.job, status: 'failed', phase: 'failed' };
+      if (!retry) {
+        runtime.job = {
+          ...runtime.job,
+          status: 'failed',
+          phase: 'failed',
+          error_code: options.errorCode,
+          error_detail: options.errorDetail,
+        };
+      }
       return retry ? 'retry' : 'failed';
     },
     listAnalysisSteps: async () => (runtime.step ? [runtime.step] : []),
@@ -224,9 +274,14 @@ const context = (body: Record<string, unknown>) => ({
 
 beforeEach(() => {
   runtime.generateCalls = 0;
+  runtime.generateRequests = [];
+  runtime.generateErrors = [];
   runtime.finishReasons = ['STOP'];
+  runtime.totalTokens = 100;
+  runtime.model = 'gemini-3.1-pro-preview';
   runtime.job = null;
   runtime.step = null;
+  runtime.lastRetryOptions = null;
 });
 
 afterEach(() => vi.clearAllMocks());
@@ -266,5 +321,99 @@ describe('/api/analisar — protocolo reentrante', () => {
     const secondAttempt = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
     expect(secondAttempt.status).toBe(200);
     expect(runtime.generateCalls).toBe(2);
+  });
+
+  it('fragmenta acima de 6.000 tokens, injeta a identidade no servidor e usa thinking LOW em uma única geração', async () => {
+    runtime.totalTokens = 6_001;
+    const { onRequestPost } = await import('./analisar');
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    const planned = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(planned.status).toBe(202);
+    expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
+      mode: 'partitioned',
+      model: 'gemini-3.1-pro-preview',
+    });
+    expect(runtime.step).toMatchObject({ kind: 'fragment', status: 'pending', attempts: 0 });
+    expect(runtime.generateCalls).toBe(0);
+
+    const advanced = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(advanced.status).toBe(202);
+    expect(runtime.generateCalls).toBe(1);
+    expect(runtime.generateRequests).toHaveLength(1);
+    expect(runtime.generateRequests[0]).toMatchObject({
+      model: 'gemini-3.1-pro-preview',
+      config: {
+        thinkingConfig: { thinkingLevel: 'LOW' },
+        responseMimeType: 'application/json',
+      },
+    });
+    const responseSchema = (
+      runtime.generateRequests[0]?.config as { responseJsonSchema?: { required?: string[] } } | undefined
+    )?.responseJsonSchema;
+    expect(responseSchema?.required).toEqual(['html', 'synthesisNotes', 'warnings']);
+
+    const storedResult = JSON.parse(String(runtime.step?.result_json)) as {
+      fragment: Record<string, unknown>;
+    };
+    expect(storedResult.fragment).toMatchObject({
+      schemaId: 'urn:astrologo:ai-analysis-fragment',
+      schemaVersion: '1.0.0',
+      html: '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>',
+    });
+    expect(storedResult.fragment.rootInputHash).toMatch(/^[0-9a-f]{64}$/u);
+    expect(storedResult.fragment.inputHash).toMatch(/^[0-9a-f]{64}$/u);
+    expect(storedResult.fragment.fragmentId).toEqual(expect.any(String));
+    expect(storedResult.fragment.coveredEvidenceIds).toEqual(expect.any(Array));
+    expect(runtime.job?.output_tokens).toBe(150);
+  });
+
+  it('preserva de modo seguro o finishReason e a causa estrutural da tentativa particionada', async () => {
+    runtime.totalTokens = 6_001;
+    runtime.finishReasons = ['SAFETY'];
+    const { onRequestPost } = await import('./analisar');
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    const attempted = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(attempted.status).toBe(202);
+    expect(runtime.generateCalls).toBe(1);
+    expect(runtime.lastRetryOptions?.errorDetail).toEqual(expect.stringContaining('SAFETY'));
+    expect(runtime.lastRetryOptions?.errorDetail).toEqual(
+      expect.stringContaining('A geração só é completa quando finishReason é STOP.'),
+    );
+  });
+
+  it('não repete erro HTTP determinístico do provedor', async () => {
+    runtime.generateErrors = [
+      Object.assign(
+        new Error(
+          'Invalid API request x-goog-api-key: AIza123456789012345678901234567890 apiKey":"secondary-secret" ' +
+            '{"Authorization":"Bearer serialized-auth","x-goog-api-key":"serialized-key"}',
+        ),
+        { status: 400 },
+      ),
+    ];
+    const { onRequestPost } = await import('./analisar');
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    const attempted = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(attempted.status).toBe(422);
+    expect(runtime.generateCalls).toBe(1);
+    expect(runtime.lastRetryOptions).toMatchObject({
+      retryable: false,
+      errorCode: 'AI_PROVIDER_REQUEST_FAILED',
+    });
+    expect(runtime.lastRetryOptions?.errorDetail).toEqual(expect.stringContaining('status=400'));
+    expect(runtime.lastRetryOptions?.errorDetail).toEqual(expect.stringContaining('[REDACTED]'));
+    expect(runtime.lastRetryOptions?.errorDetail).not.toContain('AIza123456789012345678901234567890');
+    expect(runtime.lastRetryOptions?.errorDetail).not.toContain('secondary-secret');
+    expect(runtime.lastRetryOptions?.errorDetail).not.toContain('serialized-auth');
+    expect(runtime.lastRetryOptions?.errorDetail).not.toContain('serialized-key');
   });
 });

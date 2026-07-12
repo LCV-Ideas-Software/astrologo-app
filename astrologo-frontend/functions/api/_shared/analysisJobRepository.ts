@@ -188,7 +188,7 @@ export const claimAnalysisJob = async (
   const job = await db
     .prepare<AnalysisJobRecord>(
       `UPDATE astrologo_ai_analysis_jobs
-       SET lease_owner = ?, lease_expires_at = datetime('now', '+95 seconds'), updated_at = datetime('now')
+       SET lease_owner = ?, lease_expires_at = datetime('now', '+118 seconds'), updated_at = datetime('now')
        WHERE id = ?
          AND capability_hash = ?
          AND status = 'running'
@@ -281,7 +281,7 @@ export const claimNextAnalysisStep = async (
     .prepare<AnalysisStepRecord>(
       `UPDATE astrologo_ai_analysis_steps
        SET status = 'running', attempts = attempts + 1, lease_owner = ?,
-           lease_expires_at = datetime('now', '+90 seconds'),
+           lease_expires_at = datetime('now', '+115 seconds'),
            started_at = COALESCE(started_at, datetime('now')), updated_at = datetime('now')
        WHERE job_id = ?
          AND step_key = (
@@ -353,10 +353,11 @@ export const retryOrFailAnalysisStep = async (options: {
   readonly payload: unknown;
   readonly errorCode: string;
   readonly errorDetail: string;
+  readonly retryable?: boolean;
   readonly inputTokens: number;
   readonly outputTokens: number;
 }): Promise<'retry' | 'failed'> => {
-  const retry = options.step.attempts < 3;
+  const retry = options.retryable !== false && options.step.attempts < 3;
   const batch = requireBatch(options.db);
   const statements = [
     assertJobLeaseStatement(options.db, options.jobId, options.leaseOwner),

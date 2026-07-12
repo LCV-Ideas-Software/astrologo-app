@@ -1,5 +1,18 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.22.03] - 2026-07-12
+
+### Corrigido
+
+- A análise em partes não depende mais de a IA reproduzir hashes, IDs e listas técnicas: o backend anexa esses valores imutáveis e valida integralmente o conteúdo devolvido.
+- O Gemini 3.1 Pro usa raciocínio `LOW` nos fragmentos e reduções, evitando o `thinking` alto implícito que consumia tempo até o timeout; síntese e análise direta usam `MEDIUM`, e as partes recebem orçamento inicial de 8.192 tokens de saída.
+- Os prazos coordenados passam a 80 segundos no provedor, 115 segundos na etapa, 118 segundos no job e 110 segundos no navegador, evitando uma nova posse enquanto a requisição anterior ainda encerra.
+
+### Observabilidade
+
+- Falhas registram `finishReason`, cadeia causal sanitizada, categoria de validação ou transporte e tokens de raciocínio, sem expor credenciais ao D1.
+- O teste de regressão percorre realmente o modo particionado e garante uma única geração por requisição.
+
 ## [v02.22.02] - 2026-07-12
 
 ### Corrigido
