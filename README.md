@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.22.01**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.22.02**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.22.02`**                      | **IA reentrante sem 524.** Processa uma única parte por requisição, persiste progresso e tentativas no D1, retoma pela mesma aba e só apresenta o relatório depois da síntese e cobertura integrais.                                                                                                                                                                |
 | **`v02.22.01`**                      | **Sanitização estrutural da IA.** Substitui a remoção de tags por regex pelo parser `sanitize-html` com allowlist, fechando o alerta CodeQL de sanitização incompleta sem alterar o conteúdo funcional da análise.                                                                                                                                                  |
 | **`v02.22.00`**                      | **Reidratação e IA integral.** Restaura artefatos canônicos de mapas salvos com autorização por proprietário e processa contextos extensos em fragmentos semanticamente completos, validados e reunidos antes da persistência.                                                                                                                                    |
 | **`v02.21.00`**                      | **Mapas avançados.** Acrescenta roda natal com aspectos e casas, céu atual tropical e IAU com trânsitos, sinastria consentida e mapa planetário de localidade, todos com contratos auditáveis, ajuda contextual, relatórios, e-mail, IA cumulativa e persistência D1.                                                                                             |

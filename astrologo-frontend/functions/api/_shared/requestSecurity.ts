@@ -27,6 +27,7 @@ export interface D1DatabaseLike {
 const DEFAULT_RATE_POLICIES = {
   'astrologo/calcular': { enabled: 1, max_requests: 10, window_minutes: 10 },
   'astrologo/analisar': { enabled: 1, max_requests: 6, window_minutes: 15 },
+  'astrologo/analisar-etapa': { enabled: 1, max_requests: 240, window_minutes: 60 },
   'astrologo/enviar-email': { enabled: 1, max_requests: 4, window_minutes: 60 },
   'astrologo/contato': { enabled: 1, max_requests: 5, window_minutes: 30 },
   'astrologo/auth': { enabled: 1, max_requests: 8, window_minutes: 15 },

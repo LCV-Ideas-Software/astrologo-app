@@ -19,12 +19,13 @@ Currently, two official plugins are available:
 
 ## Change History
 
-**Status.** Stable. Current release: **v02.22.01**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.22.02**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release     | Notes                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v02.22.02` | Protocolo reentrante da IA: uma parte por requisição, progresso persistido, retomada, timeout abaixo do 524 e síntese somente após cobertura integral.                   |
 | `v02.22.01` | Sanitização estrutural do HTML da IA com `sanitize-html`, eliminando a vulnerabilidade de remoção incompleta por regex sem alterar os fluxos funcionais.                |
 | `v02.22.00` | Reidratação autenticada dos mapas salvos e análise extensa em partes com hashes, cobertura integral, respostas estruturadas e síntese fail-closed.                      |
 | `v02.21.00` | Roda natal, aspectos e casas; céu atual tropical e IAU; sinastria consentida; mapa planetário de localidade; IA, e-mail, ajuda e persistência avançada.                 |

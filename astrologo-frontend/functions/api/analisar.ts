@@ -1,6 +1,6 @@
 // Módulo: astrologo-frontend/functions/api/analisar.ts
-// Versão: v02.22.00
-// Descrição: API Gemini com caminho direto compatível e orquestração longa por fragmentos validados.
+// Versão: v02.22.02
+// Descrição: API Gemini reentrante, com uma única etapa de geração por requisição HTTP.
 
 import { GoogleGenAI, HarmBlockThreshold, HarmCategory } from '@google/genai';
 import sanitizeHtml from 'sanitize-html';
@@ -11,6 +11,26 @@ import {
   loadCanonicalSynastryRunV1,
   loadCanonicalTransitRunV1,
 } from './_shared/advancedAnalysisPrompt';
+import {
+  AnalysisJobAlreadyActiveError,
+  type AnalysisJobRecord,
+  type AnalysisStepInput,
+  type AnalysisStepRecord,
+  appendAnalysisSteps,
+  claimAnalysisJob,
+  claimNextAnalysisStep,
+  completeAnalysisJob,
+  completeAnalysisStep,
+  createAnalysisJob,
+  failAnalysisJob,
+  listAnalysisSteps,
+  loadAnalysisJob,
+  parseStoredJson,
+  releaseAnalysisJob,
+  resetExpiredAnalysisSteps,
+  retryOrFailAnalysisStep,
+  storeAnalysisPlan,
+} from './_shared/analysisJobRepository';
 import {
   buildAnalysisPrompt,
   loadCanonicalAnalysisV2,
@@ -28,12 +48,15 @@ import {
   parseGeneratedAnalysisSynthesis,
 } from './_shared/longAnalysisContracts';
 import {
+  type AnalysisDomain,
+  type AnalysisManifest,
   createAnalysisManifest,
   extractMonolithicPromptPayloads,
   extractSemanticAnalysisUnits,
   type LongAnalysisSourceBundle,
   type PackedAnalysisFragment,
   type PackedAnalysisPlan,
+  type PackedCoverageManifest,
   packAnalysisUnits,
   restoreMonolithicPromptPayloads,
   sha256Text,
@@ -77,7 +100,7 @@ function structuredLog(level: 'INFO' | 'WARN' | 'ERROR', message: string, contex
 }
 
 // ── Telemetria: registra uso de AI no BIGDATA_DB ──
-function logAiUsage(
+async function logAiUsage(
   db: D1DatabaseLike | undefined,
   entry: {
     module: string;
@@ -90,27 +113,25 @@ function logAiUsage(
   },
 ) {
   if (!db || typeof db.prepare !== 'function') return;
-  (async () => {
-    try {
-      await db
-        .prepare(`
+  try {
+    await db
+      .prepare(`
         INSERT INTO ai_usage_logs (module, model, input_tokens, output_tokens, latency_ms, status, error_detail)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `)
-        .bind(
-          entry.module,
-          entry.model,
-          entry.input_tokens,
-          entry.output_tokens,
-          entry.latency_ms,
-          entry.status,
-          entry.error_detail || null,
-        )
-        .run();
-    } catch (err) {
-      console.warn('[telemetry] ai_usage_logs INSERT failed:', err instanceof Error ? err.message : err);
-    }
-  })();
+      .bind(
+        entry.module,
+        entry.model,
+        entry.input_tokens,
+        entry.output_tokens,
+        entry.latency_ms,
+        entry.status,
+        entry.error_detail || null,
+      )
+      .run();
+  } catch (err) {
+    console.warn('[telemetry] ai_usage_logs INSERT failed:', err instanceof Error ? err.message : err);
+  }
 }
 
 // Configuração de modelo e valores de geração otimizados (Gemini v1beta)
@@ -120,8 +141,10 @@ const GEMINI_CONFIG_DEFAULTS = {
 };
 
 const LONG_ANALYSIS_PROMPT_VERSION = 'astrologo-long-analysis-v1';
-const LONG_ANALYSIS_DIRECT_TOKEN_CEILING = 120_000;
-const LONG_ANALYSIS_FRAGMENT_TOKEN_CEILING = 96_000;
+const LONG_ANALYSIS_DIRECT_TOKEN_CEILING = 6_000;
+const LONG_ANALYSIS_FRAGMENT_TOKEN_CEILING = 48_000;
+const MAX_ANALYSIS_FRAGMENT_STEPS = 40;
+const GEMINI_REQUEST_TIMEOUT_MS = 65_000;
 const D1_MAX_ROW_BYTES = 2_000_000;
 const D1_ROW_SAFETY_MARGIN_BYTES = 131_072;
 const D1_ABSOLUTE_ANALYSIS_CEILING_BYTES = 1_500_000;
@@ -179,6 +202,18 @@ class GeminiGenerationValidationError extends Error {
   override readonly name = 'GeminiGenerationValidationError';
 }
 
+class GeminiStepAttemptError extends Error {
+  override readonly name = 'GeminiStepAttemptError';
+
+  constructor(
+    message: string,
+    readonly finishReason?: unknown,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+  }
+}
+
 const loadSafeAnalysisPersistenceBudget = async (db: D1DatabaseLike, calculationId: string): Promise<number> => {
   const row = await db
     .prepare<{ occupied_bytes?: number | null }>(
@@ -217,7 +252,7 @@ const pause = async (milliseconds: number): Promise<void> =>
 
 const loadGeminiModelLimits = async (ai: GoogleGenAI, model: string): Promise<GeminiModelLimits> => {
   try {
-    const metadata = await ai.models.get({ model });
+    const metadata = await ai.models.get({ model, config: { httpOptions: { timeout: 20_000 } } });
     const inputTokenLimit = metadata.inputTokenLimit;
     const outputTokenLimit = metadata.outputTokenLimit;
     if (
@@ -241,7 +276,11 @@ const countTokensStrict = async (ai: GoogleGenAI, prompt: string, model: string)
   let lastError: unknown = new Error('Contagem de tokens indisponível.');
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      const response = await ai.models.countTokens({ model, contents: prompt });
+      const response = await ai.models.countTokens({
+        model,
+        contents: prompt,
+        config: { httpOptions: { timeout: 20_000 } },
+      });
       const tokens = response.totalTokens;
       if (Number.isSafeInteger(tokens) && Number(tokens) > 0) return Number(tokens);
       lastError = new Error('A API retornou uma contagem de tokens inválida.');
@@ -279,48 +318,37 @@ const generateValidated = async <T>(options: {
   readonly validate: (candidate: GeneratedCandidateEnvelope) => T;
   readonly stage: string;
 }): Promise<T> => {
-  let lastError: unknown = new Error('Geração não iniciada.');
-  let maxOutputTokens = Math.min(options.initialMaxOutputTokens, options.modelOutputTokenLimit);
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      const response = await options.ai.models.generateContent({
-        model: options.model,
-        contents: options.contents,
-        config: {
-          ...(options.systemInstruction ? { systemInstruction: options.systemInstruction } : {}),
-          maxOutputTokens,
-          temperature: 1.0,
-          safetySettings: [...SAFETY_SETTINGS],
-          ...(options.responseJsonSchema
-            ? { responseMimeType: 'application/json', responseJsonSchema: options.responseJsonSchema }
-            : {}),
-        },
-      });
-      addUsage(options.usageTotals, response.usageMetadata);
-      const generated = candidateEnvelope(response.text, response.candidates?.[0]?.finishReason);
-      try {
-        return options.validate(generated);
-      } catch (validationError) {
-        lastError = validationError;
-        if (generated.finishReason === 'MAX_TOKENS' && maxOutputTokens < options.modelOutputTokenLimit) {
-          maxOutputTokens = Math.min(options.modelOutputTokenLimit, maxOutputTokens * 2);
-        }
-      }
-    } catch (error) {
-      lastError = error;
-    }
-
-    structuredLog('WARN', `Tentativa ${attempt + 1}/3 falhou na etapa Gemini`, {
-      stage: options.stage,
-      error: String(lastError),
+  const maxOutputTokens = Math.min(options.initialMaxOutputTokens, options.modelOutputTokenLimit);
+  try {
+    const response = await options.ai.models.generateContent({
+      model: options.model,
+      contents: options.contents,
+      config: {
+        ...(options.systemInstruction ? { systemInstruction: options.systemInstruction } : {}),
+        maxOutputTokens,
+        temperature: 1.0,
+        safetySettings: [...SAFETY_SETTINGS],
+        httpOptions: { timeout: GEMINI_REQUEST_TIMEOUT_MS },
+        ...(options.responseJsonSchema
+          ? { responseMimeType: 'application/json', responseJsonSchema: options.responseJsonSchema }
+          : {}),
+      },
     });
-    if (attempt < 2) await pause(400 * 2 ** attempt);
+    addUsage(options.usageTotals, response.usageMetadata);
+    const generated = candidateEnvelope(response.text, response.candidates?.[0]?.finishReason);
+    try {
+      return options.validate(generated);
+    } catch (validationError) {
+      throw new GeminiStepAttemptError(
+        `A resposta da etapa ${options.stage} não passou pela validação integral.`,
+        generated.finishReason,
+        { cause: validationError },
+      );
+    }
+  } catch (error) {
+    if (error instanceof GeminiStepAttemptError) throw error;
+    throw new GeminiStepAttemptError(`A chamada da etapa ${options.stage} falhou.`, undefined, { cause: error });
   }
-
-  throw new GeminiGenerationValidationError(`A etapa ${options.stage} falhou após três tentativas.`, {
-    cause: lastError,
-  });
 };
 
 const fragmentResponseSchema = (fragment: PackedAnalysisFragment, plan: PackedAnalysisPlan): unknown => ({
@@ -553,6 +581,7 @@ const estimateTokenCount = async (ai: GoogleGenAI, prompt: string, model: string
     const resp = await ai.models.countTokens({
       model,
       contents: prompt,
+      config: { httpOptions: { timeout: 20_000 } },
     });
     return resp.totalTokens ?? -1;
   } catch (err) {
@@ -560,6 +589,12 @@ const estimateTokenCount = async (ai: GoogleGenAI, prompt: string, model: string
     return -1;
   }
 };
+
+// Every tokenizer token consumes at least one UTF-8 byte. Treating the byte
+// length as a token count is deliberately conservative and keeps planning
+// local, deterministic and bounded to the current HTTP request.
+const conservativeLocalTokenUpperBound = (input: string): number =>
+  Math.max(1, new TextEncoder().encode(input).byteLength);
 
 const serializePromptPayload = (value: unknown, label: string): string => {
   const serialized = JSON.stringify(value);
@@ -743,7 +778,7 @@ export async function onRequestOptions(context: Context) {
   });
 }
 
-export async function onRequestPost(context: Context) {
+export async function legacySynchronousAnalysisRequest(context: Context) {
   const { request, env } = context;
   const corsHeaders = getCorsHeaders(request, 'https://mapa-astral.lcv.app.br');
 
@@ -839,7 +874,7 @@ export async function onRequestPost(context: Context) {
     }
 
     const shouldPartition =
-      tokenCount > directTokenCeiling || (tokenCount < 0 && new TextEncoder().encode(prompt).byteLength > 300_000);
+      tokenCount > directTokenCeiling || (tokenCount < 0 && new TextEncoder().encode(prompt).byteLength > 48_000);
     const usageTotals: AiUsageTotals = { inputTokens: 0, outputTokens: 0, calls: 0 };
     const analysisMode: 'single' | 'partitioned' = shouldPartition ? 'partitioned' : 'single';
     let fragmentCount = 1;
@@ -1166,4 +1201,956 @@ export async function onRequestPost(context: Context) {
       headers: { 'Content-Type': 'application/json', ...corsHeaders, ...securityHeaders },
     });
   }
+}
+
+interface StoredAnalysisMapRow {
+  readonly id: string;
+  readonly nome: string;
+  readonly data_nascimento: string;
+  readonly hora_nascimento: string;
+  readonly local_nascimento: string;
+  readonly dados_astronomica: string;
+  readonly dados_tropical: string;
+  readonly dados_globais: string;
+}
+
+interface PersistedFragmentDescriptor {
+  readonly fragmentId: string;
+  readonly ordinal: number;
+  readonly domain: AnalysisDomain;
+  readonly inputHash: string;
+  readonly coveredEvidenceIds: readonly string[];
+}
+
+interface PersistedPackedPlan {
+  readonly manifest: AnalysisManifest;
+  readonly coverage: PackedCoverageManifest;
+  readonly fragments: readonly PersistedFragmentDescriptor[];
+}
+
+interface PersistedAnalysisJobPlan {
+  readonly schemaId: 'urn:astrologo:ai-analysis-job-plan';
+  readonly schemaVersion: '1.0.0';
+  readonly state: 'planned';
+  readonly mode: 'single' | 'partitioned';
+  readonly model: string;
+  readonly modelInputTokenLimit: number;
+  readonly modelOutputTokenLimit: number;
+  readonly fragmentOutputBudget: number;
+  readonly synthesisInputBudget: number;
+  readonly inputHash: string;
+  readonly promptVersion: string;
+  readonly canonicalV2: boolean;
+  readonly reductionLevel: number;
+  readonly packedPlan?: PersistedPackedPlan;
+}
+
+interface DirectStepPayload {
+  readonly kind: 'direct';
+  readonly contents: string;
+  readonly systemInstruction?: string;
+  readonly maxOutputTokens: number;
+}
+
+interface FragmentStepPayload {
+  readonly kind: 'fragment';
+  readonly fragment: Omit<PackedAnalysisFragment, 'units'>;
+  readonly maxOutputTokens: number;
+}
+
+interface ReductionStepPayload {
+  readonly kind: 'reduction';
+  readonly level: number;
+  readonly sources: readonly AnalysisSynthesisSource[];
+  readonly expected: AnalysisReductionExpectation;
+  readonly maxOutputTokens: number;
+}
+
+interface SynthesisStepPayload {
+  readonly kind: 'synthesis';
+  readonly sources: readonly AnalysisSynthesisSource[];
+  readonly maxOutputTokens: number;
+}
+
+type PersistedStepPayload = DirectStepPayload | FragmentStepPayload | ReductionStepPayload | SynthesisStepPayload;
+
+interface StepExecutionResult {
+  readonly kind: PersistedStepPayload['kind'];
+  readonly completed: boolean;
+  readonly retryAfterMs?: number;
+}
+
+const parseRequiredJsonObject = (value: string, label: string): Record<string, unknown> => {
+  const parsed = parseStoredJson<unknown>(value, label);
+  if (!isRecord(parsed)) throw new TypeError(`${label} não contém um objeto JSON.`);
+  return parsed;
+};
+
+const parseStoredAnalysisMap = async (db: D1DatabaseLike, mapaId: string): Promise<StoredAnalysisMapRow> => {
+  const row = await db
+    .prepare<StoredAnalysisMapRow>(
+      `SELECT id, nome, data_nascimento, hora_nascimento, local_nascimento,
+              dados_astronomica, dados_tropical, dados_globais
+       FROM astrologo_mapas WHERE id = ? LIMIT 1`,
+    )
+    .bind(mapaId)
+    .first();
+  if (!row) throw new Error('Mapa não encontrado para iniciar a análise.');
+  for (const [field, value] of Object.entries(row)) {
+    if (typeof value !== 'string' || value.length === 0) throw new TypeError(`Campo persistido inválido: ${field}.`);
+  }
+  return row;
+};
+
+const createGeminiClient = async (env: EnvBindings): Promise<GoogleGenAI> => {
+  const envRec = env as unknown as Record<string, unknown>;
+  const apiKeyRaw = env.GEMINI_API_KEY || envRec.GEMINI_APP_KEY || envRec['gemini-api-key'] || envRec['gemini-app-key'];
+  const apiKey =
+    apiKeyRaw && typeof apiKeyRaw === 'object' && 'get' in apiKeyRaw
+      ? await (apiKeyRaw as { get(): Promise<string> }).get()
+      : String(apiKeyRaw || '');
+  if (!apiKey) throw new Error('Credencial da IA indisponível.');
+  return new GoogleGenAI({ apiKey });
+};
+
+const toPersistedPackedPlan = (plan: PackedAnalysisPlan): PersistedPackedPlan => ({
+  manifest: plan.manifest,
+  coverage: plan.coverage,
+  fragments: plan.fragments.map(({ fragmentId, ordinal, domain, inputHash, coveredEvidenceIds }) => ({
+    fragmentId,
+    ordinal,
+    domain,
+    inputHash,
+    coveredEvidenceIds,
+  })),
+});
+
+const hydratePackedPlan = (persisted: PersistedPackedPlan): PackedAnalysisPlan => ({
+  manifest: persisted.manifest,
+  coverage: persisted.coverage,
+  fragments: persisted.fragments.map((fragment) => ({
+    ...fragment,
+    inputText: '',
+    inputTokens: 0,
+    units: [],
+  })),
+});
+
+const loadPersistedJobPlan = (job: AnalysisJobRecord): PersistedAnalysisJobPlan => {
+  const value = parseRequiredJsonObject(job.plan_json, 'Plano do trabalho');
+  if (
+    value.schemaId !== 'urn:astrologo:ai-analysis-job-plan' ||
+    value.schemaVersion !== '1.0.0' ||
+    value.state !== 'planned' ||
+    (value.mode !== 'single' && value.mode !== 'partitioned') ||
+    typeof value.model !== 'string' ||
+    !Number.isSafeInteger(value.modelInputTokenLimit) ||
+    !Number.isSafeInteger(value.modelOutputTokenLimit) ||
+    !Number.isSafeInteger(value.fragmentOutputBudget) ||
+    !Number.isSafeInteger(value.synthesisInputBudget) ||
+    typeof value.inputHash !== 'string' ||
+    !/^[0-9a-f]{64}$/u.test(value.inputHash) ||
+    typeof value.promptVersion !== 'string' ||
+    typeof value.canonicalV2 !== 'boolean' ||
+    !Number.isSafeInteger(value.reductionLevel)
+  ) {
+    throw new TypeError('O plano persistido da análise é incompatível.');
+  }
+  if (value.mode === 'partitioned' && !isRecord(value.packedPlan)) {
+    throw new TypeError('O plano particionado persistido está ausente.');
+  }
+  return value as unknown as PersistedAnalysisJobPlan;
+};
+
+const loadStepPayload = (step: AnalysisStepRecord): PersistedStepPayload => {
+  const payload = parseRequiredJsonObject(step.payload_json, `Payload da etapa ${step.step_key}`);
+  if (payload.kind !== step.kind || !Number.isSafeInteger(payload.maxOutputTokens)) {
+    throw new TypeError(`Payload incompatível com a etapa ${step.step_key}.`);
+  }
+  return payload as unknown as PersistedStepPayload;
+};
+
+const publicProgressMessage = (job: AnalysisJobRecord): string => {
+  switch (job.phase) {
+    case 'planning':
+      return 'Preparando as partes da análise...';
+    case 'analyzing':
+      return 'Analisando cada parte do mapa, uma por vez...';
+    case 'reducing':
+      return 'Integrando as conexões entre as partes analisadas...';
+    case 'synthesizing':
+      return 'Montando a síntese final do mapa...';
+    case 'completed':
+      return 'Análise completa concluída.';
+    case 'failed':
+      return 'A análise não pôde ser concluída integralmente.';
+  }
+};
+
+const analysisJobResponse = async (
+  db: D1DatabaseLike,
+  job: AnalysisJobRecord,
+  status: number,
+  corsHeaders: Record<string, string>,
+  options: { readonly capability?: string; readonly retryAfterMs?: number; readonly busy?: boolean } = {},
+): Promise<Response> => {
+  let analise: string | undefined;
+  if (job.status === 'completed' && job.final_result_json) {
+    const result = parseRequiredJsonObject(job.final_result_json, 'Resultado final');
+    if (result.persisted === true && result.mapaId === job.mapa_id) {
+      const stored = await db
+        .prepare<{ analise_ia?: string | null }>('SELECT analise_ia FROM astrologo_mapas WHERE id = ? LIMIT 1')
+        .bind(job.mapa_id)
+        .first();
+      if (typeof stored?.analise_ia === 'string' && stored.analise_ia.length > 0) analise = stored.analise_ia;
+    }
+  }
+  return jsonResponse(
+    {
+      success: job.status !== 'failed' && job.status !== 'cancelled',
+      ...(analise ? { analise } : {}),
+      job: {
+        id: job.id,
+        ...(options.capability ? { capability: options.capability } : {}),
+        status: job.status,
+        phase: job.phase,
+        completedSteps: job.completed_steps,
+        totalSteps: job.total_steps,
+        message: publicProgressMessage(job),
+        ...(options.retryAfterMs ? { retryAfterMs: options.retryAfterMs } : {}),
+        ...(options.busy ? { busy: true } : {}),
+      },
+      ...(job.status === 'failed'
+        ? { error: 'Uma etapa da análise falhou após três tentativas separadas. Solicite uma nova análise.' }
+        : {}),
+    },
+    status,
+    corsHeaders,
+  );
+};
+
+const planReentrantAnalysis = async (env: EnvBindings, job: AnalysisJobRecord, leaseOwner: string): Promise<void> => {
+  const storedMap = await parseStoredAnalysisMap(env.BIGDATA_DB, job.mapa_id);
+  const dadosAstronomica = parseRequiredJsonObject(storedMap.dados_astronomica, 'Sistema astronômico');
+  const dadosTropical = parseRequiredJsonObject(storedMap.dados_tropical, 'Sistema tropical');
+  const dadosGlobais = parseRequiredJsonObject(storedMap.dados_globais, 'Dados globais');
+  const query = {
+    nome: storedMap.nome,
+    dataNascimento: storedMap.data_nascimento,
+    horaNascimento: storedMap.hora_nascimento,
+    localNascimento: storedMap.local_nascimento,
+  };
+
+  const [canonicalV2, canonicalTatwa, canonicalNatal, canonicalTransit, canonicalSynastry, canonicalLocality] =
+    await Promise.all([
+      loadCanonicalAnalysisV2(env.BIGDATA_DB, job.mapa_id),
+      loadCanonicalTatwa(env.BIGDATA_DB, job.mapa_id),
+      loadCanonicalNatalAnalysisV1(env.BIGDATA_DB, job.mapa_id),
+      loadCanonicalTransitRunV1(env.BIGDATA_DB, job.mapa_id),
+      loadCanonicalSynastryRunV1(env.BIGDATA_DB, job.mapa_id),
+      loadCanonicalLocalityMapV1(env.BIGDATA_DB, job.mapa_id),
+    ]);
+  if (!canonicalTatwa) throw new Error('Os Tatwas canônicos deste mapa não estão disponíveis.');
+
+  const globalsForAnalysis = buildAnalysisGlobalsWithCanonicalTatwa(dadosGlobais, canonicalTatwa);
+  const dadosAnalise = `Sistema Tropical: ${JSON.stringify(dadosTropical)} | Sistema Astronômico Constelacional: ${JSON.stringify(dadosAstronomica)} | Globais (Tatwas e Numerologia): ${JSON.stringify(globalsForAnalysis)}`;
+  const prompt = appendAdvancedAnalysisPrompt(buildAnalysisPrompt(dadosAnalise, query, canonicalV2, canonicalTatwa), {
+    natal: canonicalNatal,
+    transit: canonicalTransit,
+    synastry: canonicalSynastry,
+    locality: canonicalLocality,
+  });
+
+  const model = await loadConfiguredAstrologerModel(env.BIGDATA_DB, GEMINI_CONFIG_DEFAULTS.model);
+  const ai = await createGeminiClient(env);
+  const modelLimits = await loadGeminiModelLimits(ai, model);
+  const tokenCount = await estimateTokenCount(ai, prompt, model);
+  const directTokenCeiling = Math.min(
+    LONG_ANALYSIS_DIRECT_TOKEN_CEILING,
+    Math.floor(modelLimits.inputTokenLimit * 0.75),
+  );
+  const shouldPartition = tokenCount < 0 || tokenCount > directTokenCeiling;
+  const outputBudget = Math.min(4_096, modelLimits.outputTokenLimit);
+  const synthesisInputBudget = Math.min(
+    LONG_ANALYSIS_FRAGMENT_TOKEN_CEILING,
+    modelLimits.inputTokenLimit - outputBudget - 2_048,
+  );
+  if (synthesisInputBudget < 4_096) throw new Error('O modelo não oferece contexto suficiente para a análise segura.');
+
+  if (!shouldPartition) {
+    const inputHash = await sha256Text(prompt);
+    const persistedPlan: PersistedAnalysisJobPlan = {
+      schemaId: 'urn:astrologo:ai-analysis-job-plan',
+      schemaVersion: '1.0.0',
+      state: 'planned',
+      mode: 'single',
+      model,
+      modelInputTokenLimit: modelLimits.inputTokenLimit,
+      modelOutputTokenLimit: modelLimits.outputTokenLimit,
+      fragmentOutputBudget: Math.min(GEMINI_CONFIG_DEFAULTS.maxOutputTokens, modelLimits.outputTokenLimit),
+      synthesisInputBudget,
+      inputHash,
+      promptVersion: LONG_ANALYSIS_PROMPT_VERSION,
+      canonicalV2: Boolean(canonicalV2),
+      reductionLevel: 0,
+    };
+    const payload: DirectStepPayload = {
+      kind: 'direct',
+      contents: prompt,
+      ...(canonicalV2 ? { systemInstruction: V2_SYSTEM_INSTRUCTION } : {}),
+      maxOutputTokens: persistedPlan.fragmentOutputBudget,
+    };
+    await storeAnalysisPlan({
+      db: env.BIGDATA_DB,
+      jobId: job.id,
+      leaseOwner,
+      plan: persistedPlan,
+      fixedPromptPrefix: '',
+      steps: [{ stepKey: 'direct:0001', ordinal: 1, kind: 'direct', payload }],
+      reservedFinalSteps: 0,
+    });
+    return;
+  }
+
+  const projectedV2 = projectCanonicalAnalysisV2(canonicalV2);
+  const promptPayloads = [
+    { payloadId: 'legacy.analysis-data', serialized: dadosAnalise },
+    { payloadId: 'legacy.query', serialized: serializePromptPayload(query, 'legacy.query') },
+    { payloadId: 'canonical.tatwa', serialized: serializePromptPayload(canonicalTatwa, 'canonical.tatwa') },
+    ...(projectedV2
+      ? [{ payloadId: 'canonical.v2', serialized: serializePromptPayload(projectedV2, 'canonical.v2') }]
+      : []),
+    ...(canonicalNatal
+      ? [{ payloadId: 'advanced.natal', serialized: serializePromptPayload(canonicalNatal, 'advanced.natal') }]
+      : []),
+    ...(canonicalTransit
+      ? [{ payloadId: 'advanced.transit', serialized: serializePromptPayload(canonicalTransit, 'advanced.transit') }]
+      : []),
+    ...(canonicalSynastry
+      ? [{ payloadId: 'advanced.synastry', serialized: serializePromptPayload(canonicalSynastry, 'advanced.synastry') }]
+      : []),
+    ...(canonicalLocality
+      ? [{ payloadId: 'advanced.locality', serialized: serializePromptPayload(canonicalLocality, 'advanced.locality') }]
+      : []),
+  ];
+  const extractedPrompt = await extractMonolithicPromptPayloads(prompt, promptPayloads);
+  await restoreMonolithicPromptPayloads(extractedPrompt);
+  const sources: LongAnalysisSourceBundle = {
+    legacy: { query, tropical: dadosTropical, astronomical: dadosAstronomica, globals: globalsForAnalysis },
+    canonicalTatwa,
+    ...(projectedV2 ? { canonicalV2: projectedV2 } : {}),
+    ...(canonicalNatal ? { natal: canonicalNatal } : {}),
+    ...(canonicalTransit ? { transit: canonicalTransit } : {}),
+    ...(canonicalSynastry ? { synastry: canonicalSynastry } : {}),
+    ...(canonicalLocality ? { locality: canonicalLocality } : {}),
+  };
+  const units = await extractSemanticAnalysisUnits(sources);
+  const manifest = await createAnalysisManifest(extractedPrompt.snapshot, units, LONG_ANALYSIS_PROMPT_VERSION);
+  const fixedInstructionPrefix = `${extractedPrompt.fixedInstructionPrefix}${LONG_ANALYSIS_OPERATIONAL_INSTRUCTION}${buildDeferredPayloadMapInstruction(extractedPrompt.payloads)}`;
+  const fragmentInputBudget = Math.min(
+    LONG_ANALYSIS_FRAGMENT_TOKEN_CEILING,
+    Math.floor((modelLimits.inputTokenLimit - outputBudget - 2_048) * 0.8),
+  );
+  if (fragmentInputBudget < 4_096) throw new Error('O modelo não oferece contexto suficiente para as partes.');
+  const packedPlan = await packAnalysisUnits({
+    manifest,
+    units,
+    fixedInstructionPrefix,
+    maxInputTokens: fragmentInputBudget,
+    countTokens: async (input) => conservativeLocalTokenUpperBound(input),
+  });
+  if (packedPlan.fragments.length > MAX_ANALYSIS_FRAGMENT_STEPS) {
+    throw new Error(
+      `O mapa exigiria ${packedPlan.fragments.length} partes; o limite operacional seguro é ${MAX_ANALYSIS_FRAGMENT_STEPS}.`,
+    );
+  }
+  const persistedPlan: PersistedAnalysisJobPlan = {
+    schemaId: 'urn:astrologo:ai-analysis-job-plan',
+    schemaVersion: '1.0.0',
+    state: 'planned',
+    mode: 'partitioned',
+    model,
+    modelInputTokenLimit: modelLimits.inputTokenLimit,
+    modelOutputTokenLimit: modelLimits.outputTokenLimit,
+    fragmentOutputBudget: outputBudget,
+    synthesisInputBudget,
+    inputHash: packedPlan.manifest.rootInputHash,
+    promptVersion: packedPlan.manifest.promptVersion,
+    canonicalV2: Boolean(canonicalV2),
+    reductionLevel: 0,
+    packedPlan: toPersistedPackedPlan(packedPlan),
+  };
+  const steps: AnalysisStepInput[] = packedPlan.fragments.map((fragment) => {
+    const persistedFragment: Omit<PackedAnalysisFragment, 'units'> = {
+      fragmentId: fragment.fragmentId,
+      ordinal: fragment.ordinal,
+      domain: fragment.domain,
+      inputHash: fragment.inputHash,
+      inputText: fragment.inputText,
+      inputTokens: fragment.inputTokens,
+      coveredEvidenceIds: fragment.coveredEvidenceIds,
+    };
+    const payload: FragmentStepPayload = {
+      kind: 'fragment',
+      fragment: persistedFragment,
+      maxOutputTokens: outputBudget,
+    };
+    return {
+      stepKey: `fragment:${String(fragment.ordinal).padStart(4, '0')}`,
+      ordinal: fragment.ordinal,
+      kind: 'fragment',
+      payload,
+    };
+  });
+  await storeAnalysisPlan({
+    db: env.BIGDATA_DB,
+    jobId: job.id,
+    leaseOwner,
+    plan: persistedPlan,
+    fixedPromptPrefix: fixedInstructionPrefix,
+    steps,
+    reservedFinalSteps: 1,
+  });
+};
+
+const parseFragmentFromPayload = (payload: FragmentStepPayload): PackedAnalysisFragment => {
+  const fragment = payload.fragment;
+  if (
+    typeof fragment.fragmentId !== 'string' ||
+    !Number.isSafeInteger(fragment.ordinal) ||
+    typeof fragment.domain !== 'string' ||
+    typeof fragment.inputHash !== 'string' ||
+    typeof fragment.inputText !== 'string' ||
+    !Number.isSafeInteger(fragment.inputTokens) ||
+    !Array.isArray(fragment.coveredEvidenceIds)
+  ) {
+    throw new TypeError('Fragmento persistido inválido.');
+  }
+  return { ...fragment, units: [] };
+};
+
+const executeOneAnalysisStep = async (options: {
+  readonly env: EnvBindings;
+  readonly job: AnalysisJobRecord;
+  readonly capability: string;
+  readonly leaseOwner: string;
+  readonly step: AnalysisStepRecord;
+}): Promise<StepExecutionResult> => {
+  const plan = loadPersistedJobPlan(options.job);
+  const packedPlan = plan.packedPlan ? hydratePackedPlan(plan.packedPlan) : undefined;
+  const payload = loadStepPayload(options.step);
+  const ai = await createGeminiClient(options.env);
+  const usageTotals: AiUsageTotals = { inputTokens: 0, outputTokens: 0, calls: 0 };
+  const startedAt = Date.now();
+  let result: unknown;
+
+  try {
+    if (payload.kind === 'direct') {
+      const generatedText = await generateValidated({
+        ai,
+        model: plan.model,
+        contents: payload.contents,
+        ...(payload.systemInstruction ? { systemInstruction: payload.systemInstruction } : {}),
+        initialMaxOutputTokens: payload.maxOutputTokens,
+        modelOutputTokenLimit: plan.modelOutputTokenLimit,
+        usageTotals,
+        stage: 'análise integral direta',
+        validate: (generated) => {
+          if (generated.finishReason !== 'STOP') {
+            throw new GeminiGenerationValidationError('A resposta direta não terminou com STOP.');
+          }
+          if (typeof generated.text !== 'string' || generated.text.trim().length === 0) {
+            throw new GeminiGenerationValidationError('A resposta direta concluída está vazia.');
+          }
+          return generated.text;
+        },
+      });
+      result = { kind: 'direct', html: sanitizeCompleteGeneratedHtml(generatedText, 'análise integral direta') };
+    } else if (payload.kind === 'fragment') {
+      if (!packedPlan) throw new TypeError('Plano ausente para a etapa de fragmento.');
+      const fragment = parseFragmentFromPayload(payload);
+      const parsed = await generateValidated({
+        ai,
+        model: plan.model,
+        contents: buildFragmentGenerationInput(fragment, packedPlan),
+        systemInstruction: LONG_ANALYSIS_SYSTEM_INSTRUCTION,
+        initialMaxOutputTokens: payload.maxOutputTokens,
+        modelOutputTokenLimit: plan.modelOutputTokenLimit,
+        responseJsonSchema: fragmentResponseSchema(fragment, packedPlan),
+        usageTotals,
+        stage: `fragmento ${fragment.ordinal}/${packedPlan.fragments.length}`,
+        validate: (generated) => parseGeneratedAnalysisFragment(generated, packedPlan.manifest, fragment),
+      });
+      result = {
+        kind: 'fragment',
+        fragment: {
+          ...parsed,
+          html: sanitizeCompleteGeneratedHtml(
+            parsed.html,
+            `fragmento ${fragment.ordinal}/${packedPlan.fragments.length}`,
+          ),
+        } satisfies AnalysisFragmentV1,
+      };
+    } else if (payload.kind === 'reduction') {
+      if (!packedPlan) throw new TypeError('Plano ausente para a etapa de redução.');
+      const parsed = await generateValidated({
+        ai,
+        model: plan.model,
+        contents: buildReductionGenerationInput(
+          options.job.fixed_prompt_prefix,
+          packedPlan,
+          payload.sources,
+          payload.expected,
+        ),
+        systemInstruction: LONG_ANALYSIS_SYSTEM_INSTRUCTION,
+        initialMaxOutputTokens: payload.maxOutputTokens,
+        modelOutputTokenLimit: plan.modelOutputTokenLimit,
+        responseJsonSchema: reductionResponseSchema(packedPlan, payload.expected),
+        usageTotals,
+        stage: `redução hierárquica ${payload.level}.${payload.expected.ordinal}`,
+        validate: (generated) => parseGeneratedAnalysisReduction(generated, packedPlan.manifest, payload.expected),
+      });
+      result = {
+        kind: 'reduction',
+        level: payload.level,
+        source: {
+          sourceId: parsed.reductionId,
+          domain: `reduction:${payload.level}`,
+          fragmentIds: parsed.fragmentIds,
+          coveredEvidenceIds: parsed.coveredEvidenceIds,
+          synthesisNotes: parsed.synthesisNotes,
+          warnings: parsed.warnings,
+        } satisfies AnalysisSynthesisSource,
+      };
+    } else {
+      if (!packedPlan) throw new TypeError('Plano ausente para a etapa de síntese.');
+      const parsed = await generateValidated({
+        ai,
+        model: plan.model,
+        contents: buildSynthesisGenerationInput(options.job.fixed_prompt_prefix, packedPlan, payload.sources),
+        systemInstruction: LONG_ANALYSIS_SYSTEM_INSTRUCTION,
+        initialMaxOutputTokens: payload.maxOutputTokens,
+        modelOutputTokenLimit: plan.modelOutputTokenLimit,
+        responseJsonSchema: synthesisResponseSchema(packedPlan),
+        usageTotals,
+        stage: 'síntese integrada',
+        validate: (generated) => parseGeneratedAnalysisSynthesis(generated, packedPlan),
+      });
+      result = {
+        kind: 'synthesis',
+        synthesis: {
+          ...parsed,
+          html: sanitizeCompleteGeneratedHtml(parsed.html, 'síntese integrada'),
+        } satisfies AnalysisSynthesisV1,
+      };
+    }
+
+    await completeAnalysisStep({
+      db: options.env.BIGDATA_DB,
+      jobId: options.job.id,
+      leaseOwner: options.leaseOwner,
+      stepKey: options.step.step_key,
+      result,
+      inputTokens: usageTotals.inputTokens,
+      outputTokens: usageTotals.outputTokens,
+    });
+    await logAiUsage(options.env.BIGDATA_DB, {
+      module: 'astrologo-analisar-etapa',
+      model: plan.model,
+      input_tokens: usageTotals.inputTokens,
+      output_tokens: usageTotals.outputTokens,
+      latency_ms: Date.now() - startedAt,
+      status: `ok-${payload.kind}`,
+    });
+    return { kind: payload.kind, completed: true };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    const retryPayload =
+      error instanceof GeminiStepAttemptError &&
+      error.finishReason === 'MAX_TOKENS' &&
+      payload.maxOutputTokens < plan.modelOutputTokenLimit
+        ? { ...payload, maxOutputTokens: Math.min(plan.modelOutputTokenLimit, payload.maxOutputTokens * 2) }
+        : payload;
+    const retryState = await retryOrFailAnalysisStep({
+      db: options.env.BIGDATA_DB,
+      jobId: options.job.id,
+      leaseOwner: options.leaseOwner,
+      step: options.step,
+      payload: retryPayload,
+      errorCode: error instanceof GeminiStepAttemptError ? 'AI_STEP_ATTEMPT_FAILED' : 'AI_STEP_INVALID',
+      errorDetail: detail,
+      inputTokens: usageTotals.inputTokens,
+      outputTokens: usageTotals.outputTokens,
+    });
+    await logAiUsage(options.env.BIGDATA_DB, {
+      module: 'astrologo-analisar-etapa',
+      model: plan.model,
+      input_tokens: usageTotals.inputTokens,
+      output_tokens: usageTotals.outputTokens,
+      latency_ms: Date.now() - startedAt,
+      status: retryState === 'retry' ? `retry-${payload.kind}` : `failed-${payload.kind}`,
+      error_detail: detail.slice(0, 200),
+    });
+    return { kind: payload.kind, completed: false, ...(retryState === 'retry' ? { retryAfterMs: 1_000 } : {}) };
+  }
+};
+
+const synthesisSourcesFromFragments = (
+  steps: readonly AnalysisStepRecord[],
+  packedPlan: PackedAnalysisPlan,
+): readonly AnalysisSynthesisSource[] => {
+  const byFragmentId = new Map<string, AnalysisFragmentV1>();
+  for (const step of steps.filter(({ kind, status }) => kind === 'fragment' && status === 'completed')) {
+    if (!step.result_json) throw new TypeError(`Resultado ausente em ${step.step_key}.`);
+    const result = parseRequiredJsonObject(step.result_json, `Resultado ${step.step_key}`);
+    const fragment = result.fragment as AnalysisFragmentV1 | undefined;
+    if (!fragment || typeof fragment.fragmentId !== 'string')
+      throw new TypeError(`Fragmento inválido em ${step.step_key}.`);
+    byFragmentId.set(fragment.fragmentId, fragment);
+  }
+  return packedPlan.fragments.map(({ fragmentId }) => {
+    const fragment = byFragmentId.get(fragmentId);
+    if (!fragment) throw new TypeError(`Fragmento concluído ausente: ${fragmentId}.`);
+    return {
+      sourceId: fragment.fragmentId,
+      domain: fragment.domain,
+      fragmentIds: [fragment.fragmentId],
+      coveredEvidenceIds: fragment.coveredEvidenceIds,
+      synthesisNotes: fragment.synthesisNotes,
+      warnings: fragment.warnings,
+    };
+  });
+};
+
+const synthesisSourcesFromReductionLevel = (
+  steps: readonly AnalysisStepRecord[],
+  level: number,
+): readonly AnalysisSynthesisSource[] =>
+  steps
+    .filter(({ kind, status }) => kind === 'reduction' && status === 'completed')
+    .map((step) => {
+      if (!step.result_json) throw new TypeError(`Resultado ausente em ${step.step_key}.`);
+      const result = parseRequiredJsonObject(step.result_json, `Resultado ${step.step_key}`);
+      return result.level === level ? (result.source as AnalysisSynthesisSource) : null;
+    })
+    .filter((source): source is AnalysisSynthesisSource => source !== null);
+
+const prepareNextIntegrationPhase = async (options: {
+  readonly env: EnvBindings;
+  readonly job: AnalysisJobRecord;
+  readonly leaseOwner: string;
+  readonly sources: readonly AnalysisSynthesisSource[];
+}): Promise<void> => {
+  const persistedPlan = loadPersistedJobPlan(options.job);
+  if (!persistedPlan.packedPlan) throw new TypeError('Plano particionado ausente para integração.');
+  const packedPlan = hydratePackedPlan(persistedPlan.packedPlan);
+  assertSynthesisSourceCoverage(options.sources, packedPlan);
+  const countTokens = async (input: string) => conservativeLocalTokenUpperBound(input);
+  const synthesisInput = buildSynthesisGenerationInput(options.job.fixed_prompt_prefix, packedPlan, options.sources);
+  const steps = await listAnalysisSteps(options.env.BIGDATA_DB, options.job.id);
+  const nextOrdinal = (steps.at(-1)?.ordinal ?? 0) + 1;
+  if ((await countTokens(synthesisInput)) <= persistedPlan.synthesisInputBudget) {
+    const payload: SynthesisStepPayload = {
+      kind: 'synthesis',
+      sources: options.sources,
+      maxOutputTokens: persistedPlan.fragmentOutputBudget,
+    };
+    await appendAnalysisSteps({
+      db: options.env.BIGDATA_DB,
+      jobId: options.job.id,
+      leaseOwner: options.leaseOwner,
+      phase: 'synthesizing',
+      steps: [{ stepKey: 'synthesis:final', ordinal: nextOrdinal, kind: 'synthesis', payload }],
+      plan: persistedPlan,
+      reserveWasAlreadyCounted: true,
+    });
+    return;
+  }
+
+  const level = persistedPlan.reductionLevel + 1;
+  if (level > 8) throw new GeminiGenerationValidationError('A integração excedeu oito níveis seguros de redução.');
+  const groups = await packReductionSourceGroups({
+    fixedInstructionPrefix: options.job.fixed_prompt_prefix,
+    plan: packedPlan,
+    sources: options.sources,
+    level,
+    maxInputTokens: persistedPlan.synthesisInputBudget,
+    countTokens,
+  });
+  const reductionSteps: AnalysisStepInput[] = [];
+  for (const [index, group] of groups.entries()) {
+    const expected = await createReductionExpectation(packedPlan, group, level, index + 1);
+    const payload: ReductionStepPayload = {
+      kind: 'reduction',
+      level,
+      sources: group,
+      expected,
+      maxOutputTokens: persistedPlan.fragmentOutputBudget,
+    };
+    reductionSteps.push({
+      stepKey: `reduction:${String(level).padStart(2, '0')}:${String(index + 1).padStart(4, '0')}`,
+      ordinal: nextOrdinal + index,
+      kind: 'reduction',
+      payload,
+    });
+  }
+  await appendAnalysisSteps({
+    db: options.env.BIGDATA_DB,
+    jobId: options.job.id,
+    leaseOwner: options.leaseOwner,
+    phase: 'reducing',
+    steps: reductionSteps,
+    plan: { ...persistedPlan, reductionLevel: level },
+  });
+};
+
+const finalizeReentrantAnalysis = async (options: {
+  readonly env: EnvBindings;
+  readonly job: AnalysisJobRecord;
+  readonly capability: string;
+  readonly leaseOwner: string;
+}): Promise<void> => {
+  const currentJob = await loadAnalysisJob(options.env.BIGDATA_DB, options.job.id, options.capability);
+  if (!currentJob) throw new Error('O trabalho desapareceu antes da montagem final.');
+  const plan = loadPersistedJobPlan(currentJob);
+  const steps = await listAnalysisSteps(options.env.BIGDATA_DB, currentJob.id);
+  let analysisHtml: string;
+  if (plan.mode === 'single') {
+    const direct = steps.find(({ kind, status }) => kind === 'direct' && status === 'completed');
+    if (!direct?.result_json) throw new Error('A etapa direta concluída está ausente.');
+    const result = parseRequiredJsonObject(direct.result_json, 'Resultado direto');
+    if (typeof result.html !== 'string') throw new TypeError('O HTML direto persistido é inválido.');
+    analysisHtml = sanitizeCompleteGeneratedHtml(result.html, 'montagem direta');
+  } else {
+    if (!plan.packedPlan) throw new TypeError('Plano particionado ausente na montagem.');
+    const packedPlan = hydratePackedPlan(plan.packedPlan);
+    const fragments = steps
+      .filter(({ kind, status }) => kind === 'fragment' && status === 'completed')
+      .map((step) => {
+        if (!step.result_json) throw new TypeError(`Resultado ausente em ${step.step_key}.`);
+        const result = parseRequiredJsonObject(step.result_json, `Resultado ${step.step_key}`);
+        return result.fragment as AnalysisFragmentV1;
+      });
+    const synthesisStep = steps.find(({ kind, status }) => kind === 'synthesis' && status === 'completed');
+    if (!synthesisStep?.result_json) throw new Error('A síntese concluída está ausente.');
+    const synthesisResult = parseRequiredJsonObject(synthesisStep.result_json, 'Resultado da síntese');
+    const synthesis = synthesisResult.synthesis as AnalysisSynthesisV1;
+    analysisHtml = sanitizeCompleteGeneratedHtml(
+      assembleLongAnalysisHtml(packedPlan, fragments, synthesis),
+      'montagem integral reentrante',
+    );
+  }
+  const analysisBytes = new TextEncoder().encode(analysisHtml).byteLength;
+  if (analysisBytes > D1_ABSOLUTE_ANALYSIS_CEILING_BYTES) {
+    throw new GeminiGenerationValidationError('A análise montada excede o teto absoluto de persistência.');
+  }
+  const persistenceBudget = await loadSafeAnalysisPersistenceBudget(options.env.BIGDATA_DB, currentJob.mapa_id);
+  if (persistenceBudget <= 0 || analysisBytes > persistenceBudget) {
+    throw new GeminiGenerationValidationError('A linha do mapa não possui orçamento para a análise completa.');
+  }
+  await completeAnalysisJob({
+    db: options.env.BIGDATA_DB,
+    job: currentJob,
+    leaseOwner: options.leaseOwner,
+    analysisHtml,
+    model: plan.model,
+    promptVersion: plan.promptVersion,
+    inputHash: plan.inputHash,
+  });
+};
+
+const advanceClaimedAnalysisJob = async (options: {
+  readonly env: EnvBindings;
+  readonly job: AnalysisJobRecord;
+  readonly capability: string;
+  readonly leaseOwner: string;
+}): Promise<{ readonly retryAfterMs?: number }> => {
+  if (options.job.phase === 'planning') {
+    await planReentrantAnalysis(options.env, options.job, options.leaseOwner);
+    return {};
+  }
+  await resetExpiredAnalysisSteps(options.env.BIGDATA_DB, options.job.id);
+  const plan = loadPersistedJobPlan(options.job);
+  const kinds =
+    options.job.phase === 'analyzing'
+      ? plan.mode === 'single'
+        ? ('direct' as const)
+        : ('fragment' as const)
+      : options.job.phase === 'reducing'
+        ? ('reduction' as const)
+        : ('synthesis' as const);
+  const step = await claimNextAnalysisStep(options.env.BIGDATA_DB, options.job.id, options.leaseOwner, kinds);
+  if (step) {
+    const execution = await executeOneAnalysisStep({ ...options, step });
+    if (!execution.completed) return { ...(execution.retryAfterMs ? { retryAfterMs: execution.retryAfterMs } : {}) };
+    if (execution.kind === 'direct' || execution.kind === 'synthesis') {
+      await finalizeReentrantAnalysis(options);
+    }
+    return {};
+  }
+
+  const steps = await listAnalysisSteps(options.env.BIGDATA_DB, options.job.id);
+  if (steps.some(({ status }) => status === 'running')) return { retryAfterMs: 1_000 };
+  if (steps.some(({ status }) => status === 'failed')) {
+    await failAnalysisJob({
+      db: options.env.BIGDATA_DB,
+      jobId: options.job.id,
+      leaseOwner: options.leaseOwner,
+      errorCode: 'AI_STEP_FAILED',
+      errorDetail: 'Uma etapa persistida esgotou as tentativas.',
+    });
+    return {};
+  }
+  if (options.job.phase === 'analyzing') {
+    if (plan.mode === 'single') {
+      await finalizeReentrantAnalysis(options);
+      return {};
+    }
+    if (!plan.packedPlan) throw new TypeError('Plano particionado ausente após os fragmentos.');
+    const packedPlan = hydratePackedPlan(plan.packedPlan);
+    await prepareNextIntegrationPhase({
+      env: options.env,
+      job: options.job,
+      leaseOwner: options.leaseOwner,
+      sources: synthesisSourcesFromFragments(steps, packedPlan),
+    });
+    return {};
+  }
+  if (options.job.phase === 'reducing') {
+    const sources = synthesisSourcesFromReductionLevel(steps, plan.reductionLevel);
+    if (sources.length === 0) throw new Error('As reduções concluídas não puderam ser recuperadas.');
+    await prepareNextIntegrationPhase({
+      env: options.env,
+      job: options.job,
+      leaseOwner: options.leaseOwner,
+      sources,
+    });
+    return {};
+  }
+  await finalizeReentrantAnalysis(options);
+  return {};
+};
+
+export async function onRequestPost(context: Context) {
+  const { request, env } = context;
+  const corsHeaders = getCorsHeaders(request, 'https://mapa-astral.lcv.app.br');
+  if (hasDisallowedOrigin(request)) {
+    return jsonResponse({ success: false, error: 'Origem não permitida.' }, 403, corsHeaders);
+  }
+
+  let payload: Record<string, unknown>;
+  try {
+    const parsed = (await request.json()) as unknown;
+    if (!isRecord(parsed)) throw new TypeError('Corpo inválido.');
+    payload = parsed;
+  } catch {
+    return jsonResponse({ success: false, error: 'Requisição de análise inválida.' }, 400, corsHeaders);
+  }
+  const action = payload.action === undefined ? 'start' : payload.action;
+
+  if (action === 'start') {
+    const rateLimitError = await enforceRateLimit(env.BIGDATA_DB, request, 'astrologo/analisar');
+    if (rateLimitError) {
+      return new Response(rateLimitError.body, {
+        status: rateLimitError.status,
+        headers: { ...Object.fromEntries(rateLimitError.headers.entries()), ...corsHeaders },
+      });
+    }
+    const mapaId = typeof payload.id === 'string' ? payload.id.trim() : '';
+    if (!/^[0-9a-f-]{36}$/iu.test(mapaId)) {
+      return jsonResponse({ success: false, error: 'Identificador do mapa inválido.' }, 400, corsHeaders);
+    }
+    const exists = await env.BIGDATA_DB.prepare<{ id: string }>('SELECT id FROM astrologo_mapas WHERE id = ? LIMIT 1')
+      .bind(mapaId)
+      .first();
+    if (!exists) return jsonResponse({ success: false, error: 'Mapa não encontrado.' }, 404, corsHeaders);
+    try {
+      const created = await createAnalysisJob(env.BIGDATA_DB, mapaId);
+      return analysisJobResponse(env.BIGDATA_DB, created.job, 202, corsHeaders, {
+        capability: created.capability,
+      });
+    } catch (error) {
+      if (error instanceof AnalysisJobAlreadyActiveError) {
+        return jsonResponse(
+          {
+            success: false,
+            code: 'ANALYSIS_ALREADY_RUNNING',
+            error: 'Este mapa já possui uma análise em andamento em outra aba. Aguarde a etapa atual terminar.',
+          },
+          409,
+          corsHeaders,
+        );
+      }
+      structuredLog('ERROR', 'Falha ao criar o trabalho reentrante', { error: String(error), mapaId });
+      return jsonResponse(
+        { success: false, error: 'A análise não pôde ser iniciada com persistência segura.' },
+        503,
+        corsHeaders,
+      );
+    }
+  }
+
+  if (action !== 'status' && action !== 'advance') {
+    return jsonResponse({ success: false, error: 'Ação de análise inválida.' }, 400, corsHeaders);
+  }
+  const rateLimitError = await enforceRateLimit(env.BIGDATA_DB, request, 'astrologo/analisar-etapa');
+  if (rateLimitError) {
+    return new Response(rateLimitError.body, {
+      status: rateLimitError.status,
+      headers: { ...Object.fromEntries(rateLimitError.headers.entries()), ...corsHeaders },
+    });
+  }
+  const jobId = typeof payload.jobId === 'string' ? payload.jobId : '';
+  const capability = typeof payload.capability === 'string' ? payload.capability : '';
+  const existing = await loadAnalysisJob(env.BIGDATA_DB, jobId, capability);
+  if (!existing)
+    return jsonResponse({ success: false, error: 'Trabalho de análise não encontrado.' }, 404, corsHeaders);
+  if (action === 'status' || existing.status === 'completed' || existing.status === 'failed') {
+    return analysisJobResponse(env.BIGDATA_DB, existing, existing.status === 'failed' ? 422 : 200, corsHeaders);
+  }
+
+  const claimed = await claimAnalysisJob(env.BIGDATA_DB, jobId, capability);
+  if (!claimed) {
+    const current = await loadAnalysisJob(env.BIGDATA_DB, jobId, capability);
+    if (!current) return jsonResponse({ success: false, error: 'Trabalho de análise expirado.' }, 404, corsHeaders);
+    return analysisJobResponse(env.BIGDATA_DB, current, 202, corsHeaders, { retryAfterMs: 1_000, busy: true });
+  }
+
+  let retryAfterMs: number | undefined;
+  try {
+    const result = await advanceClaimedAnalysisJob({
+      env,
+      job: claimed.job,
+      capability,
+      leaseOwner: claimed.leaseOwner,
+    });
+    retryAfterMs = result.retryAfterMs;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    structuredLog('ERROR', 'Falha estrutural no avanço da análise', {
+      jobId,
+      phase: claimed.job.phase,
+      error: detail,
+    });
+    await failAnalysisJob({
+      db: env.BIGDATA_DB,
+      jobId,
+      leaseOwner: claimed.leaseOwner,
+      errorCode: 'ANALYSIS_ORCHESTRATION_FAILED',
+      errorDetail: detail,
+    });
+  } finally {
+    await releaseAnalysisJob(env.BIGDATA_DB, jobId, claimed.leaseOwner);
+  }
+  const updated = await loadAnalysisJob(env.BIGDATA_DB, jobId, capability);
+  if (!updated) return jsonResponse({ success: false, error: 'Trabalho de análise expirado.' }, 404, corsHeaders);
+  return analysisJobResponse(
+    env.BIGDATA_DB,
+    updated,
+    updated.status === 'completed' ? 200 : updated.status === 'failed' ? 422 : 202,
+    corsHeaders,
+    {
+      ...(retryAfterMs ? { retryAfterMs } : {}),
+    },
+  );
 }

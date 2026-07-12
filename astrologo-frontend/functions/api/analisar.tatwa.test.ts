@@ -40,8 +40,8 @@ afterEach(() => {
 
 describe('/api/analisar — autoridade do Tatwa', () => {
   it('falha fechado sem chamar o modelo quando o D1 não fornece Tatwa canônico', async () => {
-    const { onRequestPost } = await import('./analisar');
-    const response = await onRequestPost({
+    const { legacySynchronousAnalysisRequest } = await import('./analisar');
+    const response = await legacySynchronousAnalysisRequest({
       request: new Request('https://mapa-astral.lcv.app.br/api/analisar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Origin: 'https://mapa-astral.lcv.app.br' },

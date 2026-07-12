@@ -96,7 +96,7 @@ Cada artefato possui um estado explícito: `available`, `absent`, `invalid` ou `
 
 ## Análise de IA com contexto extenso
 
-O prompt histórico e todos os adendos permanecem cumulativos. O caminho direto continua sendo usado quando a contagem cabe no menor valor entre 120.000 tokens e 75% do limite de entrada publicado pelo modelo configurado. A resposta direta, que antes era aceita apenas por possuir texto, agora também precisa terminar com `finishReason=STOP`.
+O prompt histórico e todos os adendos permanecem cumulativos. O caminho direto é reservado a entradas de até 6.000 tokens e ainda precisa caber em 75% do limite publicado pelo modelo configurado. Esse teto operacional deliberadamente menor separa mapas avançados mesmo quando o contexto total tecnicamente caberia no modelo, reduzindo latência e risco de timeout. A resposta direta também precisa terminar com `finishReason=STOP`.
 
 Quando o contexto ultrapassa esse teto, o servidor ativa `astrologo-long-analysis-v1`:
 
@@ -105,13 +105,13 @@ Quando o contexto ultrapassa esse teto, o servidor ativa `astrologo-long-analysi
 3. reúne consulta, Tropical, Astronômica, dados globais, Tatwas, V2 e mapa natal no domínio coerente `core`, mantendo trânsitos, sinastria e localidade como domínios próprios;
 4. mantém cada linha cartográfica como unidade indivisível enquanto ela couber; documentos ou linhas isoladamente excessivos são divididos por uma árvore JSON genérica e reversível, com índices e hashes suficientes para comprovar a reconstrução exata;
 5. usa divisão balanceada e consulta `countTokens` somente para grupos finais ou subgrupos que ainda precisam ser divididos, evitando uma chamada remota para cada unidade;
-6. executa no máximo duas gerações simultâneas;
+6. cria um trabalho persistido e executa exatamente uma geração por requisição HTTP, sempre depois que a etapa anterior foi validada e gravada;
 7. valida cada envelope estruturado antes de coletar seu HTML e suas notas de integração;
 8. inicia a síntese apenas quando a cobertura conjunta coincide exatamente com o manifesto;
 9. quando as notas ainda excedem o contexto, executa reduções hierárquicas token-aware que preservam toda a cobertura antes da síntese final;
 10. concatena todos os HTMLs completos na ordem canônica e acrescenta somente o HTML novo da síntese.
 
-O limite operacional de entrada de cada fragmento é no máximo 96.000 tokens, sempre reduzido quando o contexto real do modelo exigir. São reservados tokens para saída e uma margem adicional de 2.048 tokens. Limites de entrada e saída são consultados por `models.get`; a indisponibilidade dessa metainformação usa valores conservadores, mas o empacotamento longo ainda depende de uma contagem válida.
+O empacotamento usa um limite conservador equivalente a no máximo 48.000 bytes UTF-8 por entrada completa da etapa — cada token necessariamente consome ao menos um byte, portanto esse valor é também um limite superior seguro de tokens e, em português/JSON usuais, resulta em muito menos tokens reais. São reservados tokens para saída e uma margem adicional de 2.048 tokens. A contagem remota inicial decide entre caminho direto e particionado; toda divisão posterior usa o limite local em bytes, evitando várias chamadas remotas de planejamento dentro da mesma requisição. O plano admite no máximo 40 fragmentos, mantendo criação e transições abaixo do teto de 50 consultas por invocação do D1 Free; volumes superiores falham de modo fechado antes de qualquer geração.
 
 ### Cobertura e falha fechada
 
@@ -124,9 +124,9 @@ Cada unidade possui `evidenceId`, caminho, SHA-256 e vínculo com a fonte origin
 - falha de contagem, etapa acima do contexto ou síntese incompleta;
 - HTML final acima de 1.500.000 bytes ou sem espaço na linha D1 completa depois de reservar 131.072 bytes de margem operacional.
 
-Há até três tentativas por etapa, com ampliação do orçamento de saída somente dentro do limite informado pelo modelo. Fragmentos são mantidos apenas na memória da requisição atual: esta versão não oferece streaming, polling nem retomada persistente. A coluna final existente continua sendo atualizada uma única vez, depois da cobertura integral. Antes do `UPDATE`, o servidor soma em bytes os demais campos variáveis da linha e recusa a persistência se análise, dados existentes e margem não couberem no limite D1 de 2 MB.
+Há até três tentativas por etapa, mas cada tentativa ocupa uma requisição independente. Nenhuma chamada repete `generateContent` dentro da mesma conexão. O navegador recebe `202`, mostra o progresso e solicita a próxima etapa; jobs, partes, leases e resultados intermediários ficam no D1 por até 24 horas e podem ser retomados pela mesma aba. Uma capability aleatória permanece apenas no navegador e somente seu SHA-256 é persistido. A coluna final existente continua sendo atualizada uma única vez, depois da cobertura integral. Antes do `UPDATE`, o servidor soma em bytes os demais campos variáveis da linha e recusa a persistência se análise, dados existentes e margem não couberem no limite D1 de 2 MB.
 
-A arquitetura considera os limites oficiais atuais: o Gemini fornece consulta de modelos, contagem de tokens, JSON estruturado e `finishReason`; Workers HTTP não impõem limite rígido de duração enquanto o cliente permanece conectado, mas limitam conexões simultâneas; e o D1 limita string ou linha a 2 MB. Referências: <https://ai.google.dev/gemini-api/docs/tokens>, <https://ai.google.dev/gemini-api/docs/generate-content/structured-output>, <https://ai.google.dev/api/generate-content>, <https://developers.cloudflare.com/workers/platform/limits/> e <https://developers.cloudflare.com/d1/platform/limits/>.
+A arquitetura considera os limites oficiais atuais: o Gemini fornece consulta de modelos, contagem de tokens, JSON estruturado, `finishReason` e timeout por chamada; o proxy Cloudflare encerra por padrão uma origem silenciosa após 120 segundos; e o D1 limita string ou linha a 2 MB. Cada geração usa timeout de 65 segundos, o lease do servidor dura 95 segundos e o navegador aguarda no máximo 100 segundos, deixando margem para validação e persistência. Referências: <https://ai.google.dev/gemini-api/docs/tokens>, <https://ai.google.dev/gemini-api/docs/generate-content/structured-output>, <https://ai.google.dev/api/generate-content>, <https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/>, <https://developers.cloudflare.com/workers/platform/limits/> e <https://developers.cloudflare.com/d1/platform/limits/>.
 
 ## Referências de implementação e pesquisa de produto
 
@@ -143,4 +143,4 @@ Da comparação vieram quatro decisões de UX: desenho e tabela devem coexistir;
 
 ## Persistência e implantação
 
-As tabelas avançadas são criadas pela migration `016_bigdata_astrologo_advanced_charts.sql` do `admin-app`. A versão 02.22.00 também depende da migration `017_astrologo_saved_map_claims.sql`, que acrescenta `save_claim_hash`, executa o backfill histórico inequívoco, cria `astrologo/auth-read` e indexa claims ainda ativos. O preflight 2.0 do `admin-app` reconcilia e verifica essas garantias idempotentemente antes do deploy. Endpoints públicos não executam DDL em tempo de requisição; ausência ou incompatibilidade de schema falha de modo fechado e auditável.
+As tabelas avançadas são criadas pela migration `016_bigdata_astrologo_advanced_charts.sql` do `admin-app`; a migration 017 acrescenta a prova de propriedade dos mapas. A versão 02.22.02 depende também da migration `018_astrologo_reentrant_ai_analysis.sql`, que cria jobs, etapas, leases, índices e a policy `astrologo/analisar-etapa`. O preflight 3.0 do `admin-app` reconcilia e verifica essas garantias idempotentemente antes do deploy. Endpoints públicos não executam DDL em tempo de requisição; ausência ou incompatibilidade de schema falha de modo fechado e auditável.

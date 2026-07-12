@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 // Módulo: astrologo-frontend/src/App.tsx
-// Versão: v02.22.01
+// Versão: v02.22.02
 // Descrição: Frontend principal do Oráculo Celestial com análise astrológica via Gemini.
 
 import DOMPurify from 'dompurify';
@@ -71,7 +71,7 @@ import { isSynastryRunV1, renderSynastryRunEmailHtml, renderSynastryRunText } fr
 import { formatTatwaDurationPtBr, presentTatwa, renderTatwaEmailCautionHtml } from './tatwaPresentation';
 import { isTransitRunV1, renderTransitRunEmailHtml, renderTransitRunText, type TransitRunV1 } from './transitRunV1';
 
-const APP_VERSION = 'APP v02.22.01';
+const APP_VERSION = 'APP v02.22.02';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (value: string): boolean => emailRegex.test(value.trim());
@@ -172,8 +172,31 @@ interface ResultViewProps {
   analiseIa: string;
   onSolicitarAnalise?: () => void;
   loadingAi?: boolean;
+  analysisProgress?: AnalysisProgress | undefined;
   openInfoModal: (topic: InfoTopic) => void;
   onResultEnhance?: (patch: Partial<ResultData>) => void;
+}
+interface AnalysisProgress {
+  message: string;
+  completedSteps: number;
+  totalSteps: number;
+}
+interface AnalysisJobResponse {
+  success: boolean;
+  analise?: string;
+  error?: string;
+  httpStatus: number;
+  job?: {
+    id: string;
+    capability?: string;
+    status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+    phase: 'planning' | 'analyzing' | 'reducing' | 'synthesizing' | 'completed' | 'failed';
+    completedSteps: number;
+    totalSteps: number;
+    message: string;
+    retryAfterMs?: number;
+    busy?: boolean;
+  };
 }
 interface GeoResult {
   id?: number;
@@ -181,6 +204,46 @@ interface GeoResult {
   admin1?: string;
   country?: string;
 }
+
+const ANALYSIS_REQUEST_TIMEOUT_MS = 100_000;
+
+const waitForNextAnalysisStep = (milliseconds: number): Promise<void> =>
+  new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+
+const requestAnalysisJob = async (body: Record<string, unknown>): Promise<AnalysisJobResponse> => {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), ANALYSIS_REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch('/api/analisar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const responseText = await response.text();
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(responseText);
+    } catch (error) {
+      const message =
+        response.status === 524
+          ? 'Uma parte da análise excedeu o tempo seguro da conexão.'
+          : 'O servidor devolveu uma resposta inválida durante a análise.';
+      throw new Error(message, { cause: error });
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('O servidor devolveu um estado de análise inválido.');
+    }
+    return { ...(parsed as Omit<AnalysisJobResponse, 'httpStatus'>), httpStatus: response.status };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Uma parte da análise ultrapassou o limite de 100 segundos do navegador.', { cause: error });
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+};
 
 interface CalculationFormData {
   nome: string;
@@ -1135,6 +1198,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
   analiseIa,
   onSolicitarAnalise,
   loadingAi,
+  analysisProgress,
   openInfoModal,
   onResultEnhance,
 }) => {
@@ -1646,7 +1710,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
       )}
 
       {!analiseIa && onSolicitarAnalise && (
-        <div className="flex justify-center mt-14 mb-10 w-full border-t border-slate-200 pt-12">
+        <div className="flex flex-col items-center justify-center mt-14 mb-10 w-full border-t border-slate-200 pt-12 gap-5">
           <button
             aria-label="Solicitar Análise de IA"
             title="Solicitar Análise"
@@ -1663,6 +1727,40 @@ export const ResultView: React.FC<ResultViewProps> = ({
               SOLICITAR ANÁLISE PSICOLÓGICA E ESOTÉRICA POR IA
             </span>
           </button>
+          {loadingAi && analysisProgress && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="w-full max-w-2xl rounded-3xl border border-blue-100 bg-white/80 px-5 py-4 shadow-sm"
+            >
+              <div className="flex items-center justify-between gap-4 text-sm font-bold text-slate-700">
+                <span>{analysisProgress.message}</span>
+                <span className="shrink-0 text-blue-700">
+                  {analysisProgress.completedSteps}/{Math.max(analysisProgress.totalSteps, 1)} etapas
+                </span>
+              </div>
+              <div
+                className="mt-3 h-2.5 overflow-hidden rounded-full bg-blue-100"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={Math.max(analysisProgress.totalSteps, 1)}
+                aria-valuenow={analysisProgress.completedSteps}
+              >
+                <div
+                  className="h-full rounded-full bg-linear-to-r from-blue-500 to-indigo-600 transition-all duration-500"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      (analysisProgress.completedSteps / Math.max(analysisProgress.totalSteps, 1)) * 100,
+                    )}%`,
+                  }}
+                />
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                Cada parte é enviada e concluída separadamente. O relatório só aparece depois da integração integral.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -1692,6 +1790,7 @@ export default function App() {
   const [ambiguousTimeCandidates, setAmbiguousTimeCandidates] = useState<AmbiguousTimeCandidate[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingAi, setLoadingAi] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgress | undefined>();
   const [result, setResult] = useState<ResultData | null>(null);
   const [analiseIa, setAnaliseIa] = useState<string>('');
   const [modalType, setModalType] = useState<InfoTopic | null>(null);
@@ -1917,6 +2016,7 @@ export default function App() {
     e.preventDefault();
     setLoading(true);
     setAnaliseIa('');
+    setAnalysisProgress(undefined);
     setResult(null);
     try {
       const res = await fetch('/api/calcular', {
@@ -1948,33 +2048,96 @@ export default function App() {
   const solicitarAnalise = async () => {
     if (!result) return;
     setLoadingAi(true);
+    setAnalysisProgress({ message: 'Iniciando a análise em partes...', completedSteps: 0, totalSteps: 1 });
+    const storageKey = `astrologo_analysis_job:${result.id}`;
+    let credentials: { jobId: string; capability: string } | null = null;
     try {
-      const res = await fetch('/api/analisar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: result.id,
-          dadosAstronomica: result.dadosAstronomica,
-          dadosTropical: result.dadosTropical,
-          dadosGlobais: result.dadosGlobais,
-          query: result.query,
-        }),
-      });
-      const data = (await res.json()) as { analise?: string; error?: string };
-      if (res.ok && data.analise) {
-        setAnaliseIa(data.analise);
-      } else {
-        showNotification(data.error ?? 'A análise não pôde ser gerada com segurança.', 'error');
+      const storedCredentials = sessionStorage.getItem(storageKey);
+      if (storedCredentials) {
+        try {
+          const parsed = JSON.parse(storedCredentials) as Record<string, unknown>;
+          if (typeof parsed.jobId === 'string' && typeof parsed.capability === 'string') {
+            credentials = { jobId: parsed.jobId, capability: parsed.capability };
+          }
+        } catch {
+          sessionStorage.removeItem(storageKey);
+        }
       }
-    } catch {
-      showNotification('A Inteligência falhou.', 'error');
+
+      let data: AnalysisJobResponse = { success: false, httpStatus: 0 };
+      if (credentials) {
+        data = await requestAnalysisJob({
+          action: 'status',
+          jobId: credentials.jobId,
+          capability: credentials.capability,
+        });
+        if (data.httpStatus === 404 || data.job?.status === 'failed' || data.job?.status === 'cancelled') {
+          credentials = null;
+          sessionStorage.removeItem(storageKey);
+        }
+      }
+      if (!credentials) {
+        data = await requestAnalysisJob({ action: 'start', id: result.id });
+        if (!data.success || !data.job?.id || !data.job.capability) {
+          throw new Error(data.error ?? 'A análise não pôde ser iniciada com segurança.');
+        }
+        credentials = { jobId: data.job.id, capability: data.job.capability };
+        sessionStorage.setItem(storageKey, JSON.stringify(credentials));
+      }
+
+      let consecutiveConnectionFailures = 0;
+      while (data.job && data.job.status !== 'completed') {
+        if (data.job.status === 'failed' || data.job.status === 'cancelled' || !data.success) {
+          throw new Error(data.error ?? 'Uma parte da análise não pôde ser concluída integralmente.');
+        }
+        setAnalysisProgress({
+          message: data.job.message,
+          completedSteps: data.job.completedSteps,
+          totalSteps: data.job.totalSteps,
+        });
+        await waitForNextAnalysisStep(data.job.retryAfterMs ?? 250);
+        try {
+          data = await requestAnalysisJob({
+            action: 'advance',
+            jobId: credentials.jobId,
+            capability: credentials.capability,
+          });
+          consecutiveConnectionFailures = 0;
+        } catch (error) {
+          consecutiveConnectionFailures += 1;
+          if (consecutiveConnectionFailures >= 3) throw error;
+          await waitForNextAnalysisStep(2 ** consecutiveConnectionFailures * 1_000 + Math.floor(Math.random() * 400));
+          data = await requestAnalysisJob({
+            action: 'status',
+            jobId: credentials.jobId,
+            capability: credentials.capability,
+          });
+        }
+      }
+      if (!data.analise) {
+        throw new Error(data.error ?? 'A análise foi concluída sem um relatório integral válido.');
+      }
+      setAnalysisProgress({
+        message: 'Análise completa concluída.',
+        completedSteps: data.job?.totalSteps ?? 1,
+        totalSteps: data.job?.totalSteps ?? 1,
+      });
+      setAnaliseIa(data.analise);
+      sessionStorage.removeItem(storageKey);
+    } catch (error) {
+      showNotification(
+        error instanceof Error ? error.message : 'A Inteligência não conseguiu concluir todas as partes.',
+        'error',
+      );
     }
     setLoadingAi(false);
+    setAnalysisProgress(undefined);
   };
 
   const handleNovaConsulta = () => {
     setResult(null);
     setAnaliseIa('');
+    setAnalysisProgress(undefined);
     setAmbiguousTimeCandidates([]);
     setDataNascimentoDisplay('');
     setFormData({ nome: '', dataNascimento: '', horaNascimento: '', localNascimento: '' });
@@ -2191,6 +2354,7 @@ export default function App() {
               analiseIa={analiseIa}
               onSolicitarAnalise={solicitarAnalise}
               loadingAi={loadingAi}
+              analysisProgress={analysisProgress}
               openInfoModal={setModalType}
               onResultEnhance={(patch) => setResult((current) => (current ? { ...current, ...patch } : current))}
             />

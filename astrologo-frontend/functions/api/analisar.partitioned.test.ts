@@ -1,111 +1,23 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { D1DatabaseLike, D1Statement } from './_shared/requestSecurity';
 
-const gemini = vi.hoisted(() => ({
-  fullTokenCount: 120_001,
-  countTokensCalls: 0,
-  generateContentCalls: 0,
-  finishReason: 'STOP',
-  contents: [] as string[],
-  fragmentHtml: [] as string[],
-  fragmentHtmlOverride: null as string | null,
-  forceHierarchy: false,
-  reductionCalls: 0,
-  occupiedRowBytes: 1_000,
+const runtime = vi.hoisted(() => ({
+  generateCalls: 0,
+  finishReasons: ['STOP'] as string[],
+  job: null as Record<string, unknown> | null,
+  step: null as Record<string, unknown> | null,
 }));
 
 vi.mock('@google/genai', () => ({
   GoogleGenAI: class {
     readonly models = {
       get: async () => ({ inputTokenLimit: 1_000_000, outputTokenLimit: 65_536 }),
-      countTokens: async (request: { contents?: unknown }) => {
-        gemini.countTokensCalls += 1;
-        if (gemini.countTokensCalls === 1) return { totalTokens: gemini.fullTokenCount };
-        const contents = String(request.contents ?? '');
-        if (gemini.forceHierarchy) {
-          const sourceCount = (contents.match(/"sourceId"/gu) ?? []).length;
-          if (
-            contents.includes('DADOS_DA_ETAPA_DE_ANALISE_LONGA') &&
-            (contents.match(/"evidenceId"/gu) ?? []).length > 1
-          ) {
-            return { totalTokens: 97_000 };
-          }
-          if (contents.includes('DADOS_DA_SINTESE_DE_ANALISE_LONGA') && sourceCount > 1) {
-            return { totalTokens: 999_000 };
-          }
-          if (contents.includes('DADOS_DA_REDUCAO_DE_ANALISE_LONGA') && sourceCount > 2) {
-            return { totalTokens: 999_000 };
-          }
-        }
-        return { totalTokens: 1_000 };
-      },
-      generateContent: async (request: {
-        contents: unknown;
-        config?: { responseJsonSchema?: { properties?: Record<string, { enum?: unknown[] }> } };
-      }) => {
-        gemini.generateContentCalls += 1;
-        gemini.contents.push(String(request.contents));
-        const properties = request.config?.responseJsonSchema?.properties;
-        const schemaId = properties?.schemaId?.enum?.[0];
-        let text = '<p>Análise completa.</p>';
-        if (schemaId === 'urn:astrologo:ai-analysis-fragment') {
-          const coveredEvidenceIds = (properties?.coveredEvidenceIds as { items?: { enum?: string[] } } | undefined)
-            ?.items?.enum ?? ['evidence'];
-          const fragmentId = String(properties?.fragmentId?.enum?.[0]);
-          const html = gemini.fragmentHtmlOverride ?? `<p>Parte validada ${fragmentId}.</p>`;
-          gemini.fragmentHtml.push(html);
-          text = JSON.stringify({
-            schemaId,
-            schemaVersion: properties?.schemaVersion?.enum?.[0],
-            rootInputHash: properties?.rootInputHash?.enum?.[0],
-            promptVersion: properties?.promptVersion?.enum?.[0],
-            fragmentId,
-            ordinal: properties?.ordinal?.enum?.[0],
-            domain: properties?.domain?.enum?.[0],
-            inputHash: properties?.inputHash?.enum?.[0],
-            coveredEvidenceIds,
-            html,
-            synthesisNotes: [{ textPtBr: `Integração de ${fragmentId}.`, evidenceIds: coveredEvidenceIds }],
-            warnings: [],
-          });
-        } else if (schemaId === 'urn:astrologo:ai-analysis-reduction') {
-          gemini.reductionCalls += 1;
-          const fragmentIds =
-            (properties?.fragmentIds as { items?: { enum?: string[] } } | undefined)?.items?.enum ?? [];
-          const coveredEvidenceIds =
-            (properties?.coveredEvidenceIds as { items?: { enum?: string[] } } | undefined)?.items?.enum ?? [];
-          text = JSON.stringify({
-            schemaId,
-            schemaVersion: properties?.schemaVersion?.enum?.[0],
-            rootInputHash: properties?.rootInputHash?.enum?.[0],
-            promptVersion: properties?.promptVersion?.enum?.[0],
-            reductionId: properties?.reductionId?.enum?.[0],
-            level: properties?.level?.enum?.[0],
-            ordinal: properties?.ordinal?.enum?.[0],
-            fragmentIds,
-            coveredEvidenceIds,
-            synthesisNotes: [{ textPtBr: 'Notas reduzidas com cobertura integral.', evidenceIds: coveredEvidenceIds }],
-            warnings: [],
-          });
-        } else if (schemaId === 'urn:astrologo:ai-analysis-synthesis') {
-          const fragmentIds =
-            (properties?.fragmentIds as { items?: { enum?: string[] } } | undefined)?.items?.enum ?? [];
-          const coveredEvidenceIds =
-            (properties?.coveredEvidenceIds as { items?: { enum?: string[] } } | undefined)?.items?.enum ?? [];
-          text = JSON.stringify({
-            schemaId,
-            schemaVersion: properties?.schemaVersion?.enum?.[0],
-            rootInputHash: properties?.rootInputHash?.enum?.[0],
-            promptVersion: properties?.promptVersion?.enum?.[0],
-            fragmentIds,
-            coveredEvidenceIds,
-            html: '<p><strong>Síntese integrada validada.</strong></p>',
-            warnings: [],
-          });
-        }
+      countTokens: async () => ({ totalTokens: 100 }),
+      generateContent: async () => {
+        runtime.generateCalls += 1;
         return {
-          text,
-          candidates: [{ finishReason: gemini.finishReason }],
+          text: '<p>Análise direta validada.</p>',
+          candidates: [{ finishReason: runtime.finishReasons.shift() ?? 'STOP' }],
           usageMetadata: { promptTokenCount: 1_000, candidatesTokenCount: 100 },
         };
       },
@@ -121,6 +33,26 @@ vi.mock('@google/genai', () => ({
   },
 }));
 
+vi.mock('./_shared/advancedAnalysisPrompt', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./_shared/advancedAnalysisPrompt')>();
+  return {
+    ...actual,
+    loadCanonicalNatalAnalysisV1: async () => null,
+    loadCanonicalTransitRunV1: async () => null,
+    loadCanonicalSynastryRunV1: async () => null,
+    loadCanonicalLocalityMapV1: async () => null,
+  };
+});
+
+vi.mock('./_shared/analysisPrompt', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./_shared/analysisPrompt')>();
+  return { ...actual, loadCanonicalAnalysisV2: async () => null };
+});
+
+vi.mock('./_shared/modelConfig', () => ({
+  loadConfiguredAstrologerModel: async () => 'gemini-test',
+}));
+
 vi.mock('./_shared/tatwaPrompt', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./_shared/tatwaPrompt')>();
   return {
@@ -134,194 +66,205 @@ vi.mock('./_shared/tatwaPrompt', async (importOriginal) => {
   };
 });
 
-const createDb = (queries: string[] = []): D1DatabaseLike => {
+vi.mock('./_shared/analysisJobRepository', () => {
+  const createJobRecord = () => ({
+    id: 'analysis:00000000-0000-4000-8000-000000000001',
+    capability_hash: 'a'.repeat(64),
+    mapa_id: '00000000-0000-4000-8000-000000000002',
+    status: 'running',
+    phase: 'planning',
+    completed_steps: 0,
+    total_steps: 1,
+    input_tokens: 0,
+    output_tokens: 0,
+    plan_json: JSON.stringify({
+      schemaId: 'urn:astrologo:ai-analysis-job-plan',
+      schemaVersion: '1.0.0',
+      state: 'planning',
+    }),
+    fixed_prompt_prefix: '',
+    final_result_json: null,
+    expires_at: '2099-01-01 00:00:00',
+    created_at: '2026-07-12 00:00:00',
+    updated_at: '2026-07-12 00:00:00',
+  });
+
   return {
+    AnalysisJobAlreadyActiveError: class extends Error {},
+    createAnalysisJob: async () => {
+      runtime.job = createJobRecord();
+      return { job: runtime.job, capability: 'b'.repeat(64) };
+    },
+    loadAnalysisJob: async () => runtime.job,
+    claimAnalysisJob: async () =>
+      runtime.job?.status === 'running' ? { job: { ...runtime.job }, leaseOwner: 'lease' } : null,
+    releaseAnalysisJob: async () => undefined,
+    resetExpiredAnalysisSteps: async () => undefined,
+    storeAnalysisPlan: async (options: { plan: unknown; fixedPromptPrefix: string; steps: unknown[] }) => {
+      if (!runtime.job) throw new Error('job ausente');
+      runtime.job = {
+        ...runtime.job,
+        phase: 'analyzing',
+        completed_steps: 1,
+        total_steps: 2,
+        plan_json: JSON.stringify(options.plan),
+        fixed_prompt_prefix: options.fixedPromptPrefix,
+      };
+      const input = options.steps[0] as {
+        stepKey: string;
+        ordinal: number;
+        kind: string;
+        payload: unknown;
+      };
+      runtime.step = {
+        job_id: runtime.job.id,
+        step_key: input.stepKey,
+        ordinal: input.ordinal,
+        kind: input.kind,
+        status: 'pending',
+        attempts: 0,
+        payload_json: JSON.stringify(input.payload),
+        result_json: null,
+        input_tokens: 0,
+        output_tokens: 0,
+      };
+    },
+    claimNextAnalysisStep: async () => {
+      if (runtime.step?.status !== 'pending') return null;
+      runtime.step = { ...runtime.step, status: 'running', attempts: Number(runtime.step.attempts) + 1 };
+      return { ...runtime.step };
+    },
+    completeAnalysisStep: async (options: { result: unknown; inputTokens: number; outputTokens: number }) => {
+      if (!runtime.job || !runtime.step) throw new Error('estado ausente');
+      runtime.step = { ...runtime.step, status: 'completed', result_json: JSON.stringify(options.result) };
+      runtime.job = {
+        ...runtime.job,
+        completed_steps: Number(runtime.job.completed_steps) + 1,
+        input_tokens: Number(runtime.job.input_tokens) + options.inputTokens,
+        output_tokens: Number(runtime.job.output_tokens) + options.outputTokens,
+      };
+    },
+    retryOrFailAnalysisStep: async (options: { step: { attempts: number }; payload: unknown }) => {
+      if (!runtime.job || !runtime.step) throw new Error('estado ausente');
+      const retry = options.step.attempts < 3;
+      runtime.step = {
+        ...runtime.step,
+        status: retry ? 'pending' : 'failed',
+        payload_json: JSON.stringify(options.payload),
+      };
+      if (!retry) runtime.job = { ...runtime.job, status: 'failed', phase: 'failed' };
+      return retry ? 'retry' : 'failed';
+    },
+    listAnalysisSteps: async () => (runtime.step ? [runtime.step] : []),
+    completeAnalysisJob: async () => {
+      if (!runtime.job) throw new Error('job ausente');
+      runtime.job = {
+        ...runtime.job,
+        status: 'completed',
+        phase: 'completed',
+        completed_steps: runtime.job.total_steps,
+        final_result_json: JSON.stringify({ persisted: true, mapaId: MAP_ID }),
+      };
+    },
+    appendAnalysisSteps: async () => undefined,
+    failAnalysisJob: async () => {
+      if (runtime.job) runtime.job = { ...runtime.job, status: 'failed', phase: 'failed' };
+    },
+    parseStoredJson: (value: string) => JSON.parse(value),
+  };
+});
+
+const MAP_ID = '00000000-0000-4000-8000-000000000002';
+const CAPABILITY = 'b'.repeat(64);
+const JOB_ID = 'analysis:00000000-0000-4000-8000-000000000001';
+
+const createDb = (): D1DatabaseLike =>
+  ({
     prepare: (query: string) => {
-      queries.push(query);
       const statement: D1Statement<Record<string, unknown>> = {
         bind: () => statement,
-        first: async () => (query.includes('AS occupied_bytes') ? { occupied_bytes: gemini.occupiedRowBytes } : null),
+        first: async () => {
+          if (query.includes('SELECT id FROM astrologo_mapas')) return { id: MAP_ID };
+          if (query.includes('dados_astronomica, dados_tropical, dados_globais')) {
+            return {
+              id: MAP_ID,
+              nome: 'Consulente',
+              data_nascimento: '2000-01-01',
+              hora_nascimento: '12:00',
+              local_nascimento: 'Rio de Janeiro, RJ',
+              dados_astronomica: JSON.stringify({ astrologia: [] }),
+              dados_tropical: JSON.stringify({ astrologia: [] }),
+              dados_globais: JSON.stringify({ numerologia: { expressao: 7 } }),
+            };
+          }
+          if (query.includes('AS occupied_bytes')) return { occupied_bytes: 1_000 };
+          if (query.includes('SELECT analise_ia FROM astrologo_mapas')) {
+            return { analise_ia: '<p>Análise direta validada.</p>' };
+          }
+          return null;
+        },
         run: async () => ({ success: true }),
         all: async () => ({ results: [] }),
       };
       return statement;
     },
-  } as unknown as D1DatabaseLike;
-};
+  }) as D1DatabaseLike;
 
-afterEach(() => {
-  gemini.countTokensCalls = 0;
-  gemini.generateContentCalls = 0;
-  gemini.fullTokenCount = 120_001;
-  gemini.finishReason = 'STOP';
-  gemini.contents = [];
-  gemini.fragmentHtml = [];
-  gemini.fragmentHtmlOverride = null;
-  gemini.forceHierarchy = false;
-  gemini.reductionCalls = 0;
-  gemini.occupiedRowBytes = 1_000;
-  vi.clearAllMocks();
+const request = (body: Record<string, unknown>) =>
+  new Request('https://mapa-astral.lcv.app.br/api/analisar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://mapa-astral.lcv.app.br' },
+    body: JSON.stringify(body),
+  });
+
+const context = (body: Record<string, unknown>) => ({
+  request: request(body),
+  env: { GEMINI_API_KEY: 'test', BIGDATA_DB: createDb() },
 });
 
-describe('/api/analisar — planejamento para contexto extenso', () => {
-  it('interrompe a retirada de novos lotes após a primeira falha e aguarda os trabalhos já iniciados', async () => {
-    const { mapWithConcurrency } = await import('./analisar');
-    const started: number[] = [];
-    await expect(
-      mapWithConcurrency([0, 1, 2, 3], 2, async (value) => {
-        started.push(value);
-        if (value === 0) throw new Error('falha controlada');
-        await Promise.resolve();
-        return value;
-      }),
-    ).rejects.toThrow(/falha controlada/iu);
-    expect(started).toEqual([0, 1]);
+beforeEach(() => {
+  runtime.generateCalls = 0;
+  runtime.finishReasons = ['STOP'];
+  runtime.job = null;
+  runtime.step = null;
+});
+
+afterEach(() => vi.clearAllMocks());
+
+describe('/api/analisar — protocolo reentrante', () => {
+  it('inicia, planeja e gera em requisições distintas, com no máximo uma geração por avanço', async () => {
+    const { onRequestPost } = await import('./analisar');
+
+    const started = await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    expect(started.status).toBe(202);
+    expect(runtime.generateCalls).toBe(0);
+
+    const planned = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    expect(planned.status).toBe(202);
+    expect(runtime.generateCalls).toBe(0);
+
+    const completed = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    expect(runtime.generateCalls).toBe(1);
+    expect(completed.status).toBe(200);
+    await expect(completed.json()).resolves.toMatchObject({
+      success: true,
+      analise: '<p>Análise direta validada.</p>',
+      job: { status: 'completed', completedSteps: 2, totalSteps: 2 },
+    });
   });
 
-  it('não rejeita com 413 um mapa acima do antigo corte local de 120 mil tokens', async () => {
+  it('transforma cada tentativa em uma nova requisição e nunca repete dentro do mesmo avanço', async () => {
+    runtime.finishReasons = ['MAX_TOKENS', 'STOP'];
     const { onRequestPost } = await import('./analisar');
-    const response = await onRequestPost({
-      request: new Request('https://mapa-astral.lcv.app.br/api/analisar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://mapa-astral.lcv.app.br' },
-        body: JSON.stringify({
-          id: 'mapa-contexto-extenso',
-          dadosTropical: { astrologia: [{ planeta: 'Sol', signo: 'Touro' }] },
-          dadosAstronomica: { astrologia: [{ planeta: 'Sol', constelacao: 'Touro' }] },
-          dadosGlobais: { numerologia: { expressao: 7 } },
-          query: { nome: 'Consulente' },
-        }),
-      }),
-      env: { GEMINI_API_KEY: 'test', BIGDATA_DB: createDb() },
-    });
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
 
-    expect(response.status).toBe(200);
-    expect(gemini.generateContentCalls).toBeGreaterThan(0);
-    const payload = (await response.json()) as { analise: string };
-    for (const html of gemini.fragmentHtml) expect(payload.analise).toContain(html);
-    expect(payload.analise).toContain('Síntese integrada validada.');
-  });
+    const firstAttempt = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    expect(firstAttempt.status).toBe(202);
+    expect(runtime.generateCalls).toBe(1);
 
-  it('preserva o caminho monolítico vigente para prompts pequenos', async () => {
-    gemini.fullTokenCount = 100;
-    const { onRequestPost } = await import('./analisar');
-    const response = await onRequestPost({
-      request: new Request('https://mapa-astral.lcv.app.br/api/analisar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://mapa-astral.lcv.app.br' },
-        body: JSON.stringify({
-          id: 'mapa-contexto-pequeno',
-          dadosTropical: { astrologia: [] },
-          dadosAstronomica: { astrologia: [] },
-          dadosGlobais: { numerologia: { expressao: 7 } },
-          query: { nome: 'Consulente' },
-        }),
-      }),
-      env: { GEMINI_API_KEY: 'test', BIGDATA_DB: createDb() },
-    });
-
-    expect(response.status).toBe(200);
-    expect(gemini.generateContentCalls).toBe(1);
-    expect(gemini.contents[0]).toContain('ADENDO — TATWAS E PERSPECTIVAS DE CÁLCULO');
-    expect(gemini.contents[0]).not.toContain('ADENDO OPERACIONAL INTERNO');
-  });
-
-  it('nunca persiste uma resposta encerrada por MAX_TOKENS', async () => {
-    gemini.fullTokenCount = 100;
-    gemini.finishReason = 'MAX_TOKENS';
-    const queries: string[] = [];
-    const { onRequestPost } = await import('./analisar');
-    const response = await onRequestPost({
-      request: new Request('https://mapa-astral.lcv.app.br/api/analisar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://mapa-astral.lcv.app.br' },
-        body: JSON.stringify({
-          id: 'mapa-resposta-truncada',
-          dadosTropical: { astrologia: [] },
-          dadosAstronomica: { astrologia: [] },
-          dadosGlobais: { numerologia: { expressao: 7 } },
-          query: { nome: 'Consulente' },
-        }),
-      }),
-      env: { GEMINI_API_KEY: 'test', BIGDATA_DB: createDb(queries) },
-    });
-
-    expect(response.status).toBe(504);
-    expect(gemini.generateContentCalls).toBe(3);
-    expect(queries.some((query) => /UPDATE\s+astrologo_mapas\s+SET\s+analise_ia/iu.test(query))).toBe(false);
-  });
-
-  it('falha fechado quando a sanitização esvazia o HTML de um fragmento', async () => {
-    gemini.fragmentHtmlOverride = '<script></script>';
-    const queries: string[] = [];
-    const { onRequestPost } = await import('./analisar');
-    const response = await onRequestPost({
-      request: new Request('https://mapa-astral.lcv.app.br/api/analisar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://mapa-astral.lcv.app.br' },
-        body: JSON.stringify({
-          id: 'mapa-html-esvaziado',
-          dadosTropical: { astrologia: [{ planeta: 'Sol', signo: 'Touro' }] },
-          dadosAstronomica: { astrologia: [{ planeta: 'Sol', constelacao: 'Touro' }] },
-          dadosGlobais: { numerologia: { expressao: 7 } },
-          query: { nome: 'Consulente' },
-        }),
-      }),
-      env: { GEMINI_API_KEY: 'test', BIGDATA_DB: createDb(queries) },
-    });
-
-    expect(response.status).toBe(504);
-    expect(queries.some((query) => /UPDATE\s+astrologo_mapas\s+SET\s+analise_ia/iu.test(query))).toBe(false);
-  });
-
-  it('reduz as notas hierarquicamente até a síntese caber sem perder a cobertura', async () => {
-    gemini.forceHierarchy = true;
-    const { onRequestPost } = await import('./analisar');
-    const response = await onRequestPost({
-      request: new Request('https://mapa-astral.lcv.app.br/api/analisar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://mapa-astral.lcv.app.br' },
-        body: JSON.stringify({
-          id: 'mapa-reducao-hierarquica',
-          dadosTropical: { astrologia: [{ planeta: 'Sol', signo: 'Touro' }] },
-          dadosAstronomica: { astrologia: [{ planeta: 'Sol', constelacao: 'Touro' }] },
-          dadosGlobais: { numerologia: { expressao: 7 } },
-          query: { nome: 'Consulente' },
-        }),
-      }),
-      env: { GEMINI_API_KEY: 'test', BIGDATA_DB: createDb() },
-    });
-
-    expect(response.status).toBe(200);
-    expect(gemini.reductionCalls).toBeGreaterThan(0);
-    expect(gemini.countTokensCalls).toBeLessThan(50);
-    const payload = (await response.json()) as { analise: string };
-    expect(payload.analise).toContain('Síntese integrada validada.');
-    for (const html of gemini.fragmentHtml) expect(payload.analise).toContain(html);
-  });
-
-  it('falha antes do UPDATE quando os demais campos já consomem o orçamento da linha D1', async () => {
-    gemini.fullTokenCount = 100;
-    gemini.occupiedRowBytes = 1_900_000;
-    const queries: string[] = [];
-    const { onRequestPost } = await import('./analisar');
-    const response = await onRequestPost({
-      request: new Request('https://mapa-astral.lcv.app.br/api/analisar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Origin: 'https://mapa-astral.lcv.app.br' },
-        body: JSON.stringify({
-          id: 'mapa-sem-orcamento-d1',
-          dadosTropical: { astrologia: [] },
-          dadosAstronomica: { astrologia: [] },
-          dadosGlobais: { numerologia: { expressao: 7 } },
-          query: { nome: 'Consulente' },
-        }),
-      }),
-      env: { GEMINI_API_KEY: 'test', BIGDATA_DB: createDb(queries) },
-    });
-
-    expect(response.status).toBe(504);
-    expect(queries.some((query) => query.includes('AS occupied_bytes'))).toBe(true);
-    expect(queries.some((query) => /UPDATE\s+astrologo_mapas\s+SET\s+analise_ia/iu.test(query))).toBe(false);
+    const secondAttempt = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    expect(secondAttempt.status).toBe(200);
+    expect(runtime.generateCalls).toBe(2);
   });
 });

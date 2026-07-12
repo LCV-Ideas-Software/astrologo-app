@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [v02.22.02] - 2026-07-12
+
+### Corrigido
+
+- **Análise realmente distribuída entre requisições** — o particionamento deixa de executar planejamento, fragmentos, reduções e síntese dentro de um único `POST`. O navegador inicia um trabalho persistido, solicita exatamente uma etapa por vez e somente pede a seguinte depois que a anterior foi validada e gravada.
+- **Fim do 524 estrutural** — cada geração Gemini recebe prazo de 65 segundos, abaixo do proxy Cloudflare de 120 segundos, e nenhuma repetição ocorre dentro da mesma conexão. Tentativas adicionais acontecem em novas requisições, com progresso e estado retomável.
+- **Erro compreensível na UI** — respostas HTML do proxy, inclusive 524, deixam de cair no genérico “A Inteligência falhou”; o frontend identifica resposta não JSON, preserva o trabalho e consulta seu estado antes de repetir.
+
+### Adicionado
+
+- Trabalho de análise protegido por capability SHA-256, lease expirável, etapas idempotentes no D1, progresso em português do Brasil e retomada pela mesma aba por `sessionStorage`.
+- Telemetria aguardada por etapa e registro final em `astrologo_ai_analyses`, sem persistir conteúdo parcial em `astrologo_mapas.analise_ia`.
+
+### Preservado
+
+- Prompt histórico e adendos cumulativos, hashes, schemas estruturados, cobertura integral, sanitização, ordem canônica, limites D1, e-mail, PDF e demais cálculos permanecem preservados.
+
 ## [v02.22.01] - 2026-07-12
 
 ### Segurança

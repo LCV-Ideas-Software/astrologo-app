@@ -1,5 +1,18 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.22.02] - 2026-07-12
+
+### Corrigido
+
+- A análise extensa agora usa várias requisições sequenciais: iniciar, planejar, analisar uma parte, persistir, avançar e sintetizar.
+- Cada requisição executa no máximo uma geração da IA e possui timeout de 65 segundos no provedor; repetições são novas requisições e nunca três chamadas escondidas na mesma conexão.
+- A interface mostra fase, etapas concluídas e barra de progresso, retoma o trabalho pela mesma aba e trata explicitamente respostas 524 ou não JSON.
+
+### Persistência
+
+- Jobs e etapas usam o schema D1 da migration administrativa 018, com capability, lease, tentativas, tokens, payloads e resultados validados por etapa.
+- Apenas o relatório integral montado é gravado no mapa; fragmentos nunca aparecem como análise final.
+
 ## [v02.22.01] - 2026-07-12
 
 ### Segurança
