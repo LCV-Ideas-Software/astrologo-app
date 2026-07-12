@@ -1,5 +1,16 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.22.01] - 2026-07-12
+
+### Segurança
+
+- O HTML produzido pela IA passa por `sanitize-html` com allowlist estrutural de tags, atributos e estilos, eliminando a sanitização incompleta por expressão regular.
+- A verificação de conteúdo visível também usa os nós de texto processados pelo parser e continua falhando de forma fechada para respostas vazias.
+
+### Preservado
+
+- Nenhum cálculo, prompt, fluxo de análise, dado persistido ou componente visual foi alterado por este patch.
+
 ## [v02.22.00] - 2026-07-12
 
 ### Adicionado

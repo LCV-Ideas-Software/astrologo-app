@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [v02.22.01] - 2026-07-12
+
+### Segurança
+
+- **Sanitização estrutural do HTML da IA** — substitui a remoção de tags por expressão regular de passagem única pelo parser `sanitize-html` já adotado no projeto, com allowlist de tags, atributos e estilos. A correção elimina a formação de uma nova tag após a remoção de marcação aninhada e fecha o alerta CodeQL `js/incomplete-multi-character-sanitization` sem relaxar a rejeição de respostas visualmente vazias.
+
+### Preservado
+
+- Planejamento em partes, prompt cumulativo, cobertura, síntese, reidratação, autenticação, cálculos, UI, e-mail e persistência permanecem inalterados.
+
 ## [v02.22.00] - 2026-07-12
 
 ### Adicionado

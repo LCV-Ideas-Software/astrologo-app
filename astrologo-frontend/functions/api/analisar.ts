@@ -3,6 +3,7 @@
 // Descrição: API Gemini com caminho direto compatível e orquestração longa por fragmentos validados.
 
 import { GoogleGenAI, HarmBlockThreshold, HarmCategory } from '@google/genai';
+import sanitizeHtml from 'sanitize-html';
 import {
   appendAdvancedAnalysisPrompt,
   loadCanonicalLocalityMapV1,
@@ -509,61 +510,35 @@ const sanitizeGeneratedHtml = (input: string): string => {
     return '';
   }
 
-  // Whitelist of allowed HTML tags (matching frontend DOMPurify config + style for alignment)
-  const ALLOWED_TAGS = new Set(['p', 'strong', 'ul', 'li', 'em', 'b', 'i', 'h1', 'h2', 'h3', 'br']);
-
-  // Allow only safe style properties for text alignment/indent.
-  // Linear-time validation (no nested-quantifier regex; the prior
-  // /^(?:\s*(?:text-align|text-indent)\s*:\s*[^;"'<>]+;\s*)+$/i was
-  // flagged as polynomial-redos by CodeQL — replaced with a manual
-  // declaration-by-declaration check that runs in O(n).
-  const isSafeStyle = (decls: string): boolean => {
-    if (decls.length > 256) return false;
-    const parts = decls.split(';');
-    for (const part of parts) {
-      const trimmed = part.trim();
-      if (!trimmed) continue;
-      const colon = trimmed.indexOf(':');
-      if (colon < 1) return false;
-      const prop = trimmed.slice(0, colon).trim().toLowerCase();
-      const val = trimmed.slice(colon + 1).trim();
-      if (prop !== 'text-align' && prop !== 'text-indent') return false;
-      if (val.length === 0 || /["'<>]/.test(val)) return false;
-    }
-    return true;
-  };
-
-  // Strip disallowed tags but keep their text content; preserve allowed tags
-  const sanitized = normalized.replace(
-    /<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g,
-    (match, tagName: string, attrs: string) => {
-      const tag = tagName.toLowerCase();
-      if (!ALLOWED_TAGS.has(tag)) {
-        return ''; // Strip disallowed tags entirely
-      }
-      // For allowed tags, only keep safe style attribute
-      const isClosing = match.startsWith('</');
-      if (isClosing) return `</${tag}>`;
-      // Parse style attribute if present
-      const styleMatch = attrs.match(/style\s*=\s*"([^"]*)"/i);
-      const styleValue = styleMatch?.[1];
-      if (styleValue && isSafeStyle(styleValue)) {
-        return `<${tag} style="${styleValue}">`;
-      }
-      return `<${tag}>`;
+  return sanitizeHtml(normalized, {
+    allowedTags: ['p', 'strong', 'ul', 'li', 'em', 'b', 'i', 'h1', 'h2', 'h3', 'br'],
+    allowedAttributes: { '*': ['style'] },
+    allowedStyles: {
+      '*': {
+        'text-align': [/^(?:left|right|center|justify|start|end)$/iu],
+        'text-indent': [/^-?(?:\d+(?:\.\d+)?|\.\d+)(?:px|em|rem|%)$/iu],
+      },
     },
-  );
+    disallowedTagsMode: 'discard',
+  });
+};
 
-  return sanitized;
+const containsVisibleHtmlText = (html: string): boolean => {
+  let visible = false;
+  sanitizeHtml(html, {
+    allowedTags: [],
+    allowedAttributes: {},
+    textFilter: (text) => {
+      if (/[^\s\u00a0]/u.test(text)) visible = true;
+      return text;
+    },
+  });
+  return visible;
 };
 
 const sanitizeCompleteGeneratedHtml = (input: string, stage: string): string => {
   const sanitized = sanitizeGeneratedHtml(input);
-  const visibleText = sanitized
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;|&#160;/gi, ' ')
-    .trim();
-  if (!sanitized.trim() || !visibleText) {
+  if (!sanitized.trim() || !containsVisibleHtmlText(sanitized)) {
     throw new GeminiGenerationValidationError(`O HTML da etapa ${stage} ficou vazio após a sanitização.`);
   }
   return sanitized;
