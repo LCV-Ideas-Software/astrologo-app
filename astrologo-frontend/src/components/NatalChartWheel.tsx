@@ -343,7 +343,7 @@ export function NatalChartWheel({
     },
     ...(midheavenLongitudeDeg === undefined
       ? []
-      : [
+      : ([
           {
             id: 'mc',
             pointId: 'midheaven',
@@ -359,7 +359,7 @@ export function NatalChartWheel({
             longitude: midheavenLongitudeDeg + 180,
             color: '#c4b5fd',
           },
-        ] as const),
+        ] as const)),
   ];
 
   const angleElements: WheelInteractiveElement[] = angleDefinitions.map((angle) => {
