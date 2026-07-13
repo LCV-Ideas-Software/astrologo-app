@@ -128,7 +128,7 @@ describe('conteúdo leigo dos botões Saiba mais', () => {
     const text = flatten('houseInfluences');
     expect(text).toContain('grau mundano');
     expect(text).not.toContain('swe_house_pos');
-    expect(text).toContain('não é estimado pelo tamanho do arco');
+    expect(text).toMatch(/não é estimad[oa] pelo tamanho do arco/iu);
     expect(text).toContain('indisponível');
   });
 

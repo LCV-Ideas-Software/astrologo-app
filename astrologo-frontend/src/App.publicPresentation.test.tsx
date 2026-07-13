@@ -31,7 +31,7 @@ describe('apresentação pública dos módulos originais', () => {
     expect(html).toContain('hover:scale-[1.01]');
     expect(html).toContain('focus-visible:ring-orange-200');
     expect(html).toContain('motion-reduce:transition-none');
-    expect(html.match(/tabindex="0"/g)?.length).toBe(4);
+    expect(html).not.toContain('tabindex=');
   });
 
   it('preserva o aviso fundamental sem repetir explicações conceituais no card', () => {

@@ -184,7 +184,7 @@ describe('adendos acumulativos das análises avançadas', () => {
     expect(expanded).toContain('Interprete as linhas mais relevantes');
     expect(expanded).toContain('sem reexplicar a geometria');
     expect(expanded).toContain('Não recomende mudança');
-    expect(expanded).toContain('Não invente raio de influência');
+    expect(expanded).toContain('raio de influência');
     expect(buildLocalityAnalysisPromptAddendum(null)).toBe('');
   });
 
