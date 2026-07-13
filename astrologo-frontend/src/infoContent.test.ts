@@ -50,6 +50,9 @@ describe('conteúdo leigo dos botões Saiba mais', () => {
     expect(text).toContain('Ordem pelo principal');
     expect(text).toContain('Tejas (Fogo)');
     expect(text).toContain('44 s');
+    expect(text).toContain('tema elementar dominante');
+    expect(text).toContain('Akasha sugere abertura');
+    expect(text).toContain('Tejas–Akasha');
   });
 
   it('explica exatamente os três cálculos numerológicos usados pelo aplicativo', () => {
@@ -70,6 +73,7 @@ describe('conteúdo leigo dos botões Saiba mais', () => {
     expect(text).toContain('Casa Placidus');
     expect(text).toContain('região oficial da IAU');
     expect(text).toContain('quinário angelical');
+    expect(text).toContain('três faixas de 10 graus');
     expect(text).toContain('Hora oficial de Brasília');
     expect(text).toContain('não calcula um grau dentro da constelação');
     expect(text).toContain('posições celestes são geocêntricas');
@@ -96,6 +100,8 @@ describe('conteúdo leigo dos botões Saiba mais', () => {
     expect(text).toContain('dez correspondências');
     expect(text).toContain('não foi adaptado às 13 constelações');
     expect(text).toContain('correspondência simbólica');
+    expect(text).toContain('triplete hebraico');
+    expect(text).toContain('função simbólica do planeta');
   });
 
   it('explica a roda natal sem desenhar constelações IAU como setores iguais', () => {
@@ -112,14 +118,16 @@ describe('conteúdo leigo dos botões Saiba mais', () => {
     expect(text).toContain('distância angular');
     expect(text).toContain('orbe');
     expect(text).toContain('Conjunção');
+    expect(text).toContain('Quadratura cria atrito');
+    expect(text).toContain('aspecto aplicativo');
     expect(text).toContain('Ascendente e Meio do Céu');
-    expect(text).toContain('perfil metodológico versionado');
+    expect(text).not.toContain('perfil metodológico versionado');
   });
 
   it('distingue casa, cúspide e grau mundano', () => {
     const text = flatten('houseInfluences');
     expect(text).toContain('grau mundano');
-    expect(text).toContain('swe_house_pos');
+    expect(text).not.toContain('swe_house_pos');
     expect(text).toContain('não é estimado pelo tamanho do arco');
     expect(text).toContain('indisponível');
   });
@@ -138,6 +146,8 @@ describe('conteúdo leigo dos botões Saiba mais', () => {
     expect(text).toContain('A nas Casas de B');
     expect(text).toContain('B nas Casas de A');
     expect(text).toContain('não mede compatibilidade');
+    expect(text).toContain('Tensões não significam incompatibilidade');
+    expect(text).toContain('Sol, Lua, Mercúrio, Vênus e Marte');
   });
 
   it('explica linhas astrocartográficas e seus limites geográficos', () => {
@@ -146,5 +156,23 @@ describe('conteúdo leigo dos botões Saiba mais', () => {
     expect(text).toContain('instante natal');
     expect(text).toContain('antimeridiano');
     expect(text).toContain('não recomenda mudança');
+  });
+
+  it('oferece poucos links de aprofundamento em fontes institucionais e do sistema adotado', () => {
+    const topics = [
+      'tropical',
+      'astronomica',
+      'tatwas',
+      'mapCorrespondences',
+      'natalAspects',
+      'synastry',
+      'localityMap',
+    ] as const;
+    for (const topic of topics) {
+      const sources = getInfoContent(topic).sources ?? [];
+      expect(sources.length).toBeGreaterThan(0);
+      expect(sources.length).toBeLessThanOrEqual(2);
+      for (const source of sources) expect(source.url).toMatch(/^https:\/\//u);
+    }
   });
 });

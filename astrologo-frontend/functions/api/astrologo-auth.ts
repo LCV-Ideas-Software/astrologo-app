@@ -107,7 +107,8 @@ export async function onRequestPost(context: Context) {
 
   const db = env?.BIGDATA_DB;
   if (!db || typeof db.prepare !== 'function') {
-    return getCorsResponse(request, { ok: false, error: 'Database indisponível.' }, 503);
+    console.error('Armazenamento indisponível no fluxo de autenticação.');
+    return getCorsResponse(request, { ok: false, error: 'Este recurso está temporariamente indisponível.' }, 503);
   }
 
   try {
@@ -129,7 +130,7 @@ export async function onRequestPost(context: Context) {
     try {
       body = JSON.parse(rawBody) as typeof body;
     } catch {
-      return getCorsResponse(request, { ok: false, error: 'Corpo JSON inválido.' }, 400);
+      return getCorsResponse(request, { ok: false, error: 'Não foi possível compreender a solicitação.' }, 400);
     }
     const action = body.action;
     const readOnlySessionAction = action === 'session-retrieve' || action === 'session-map-artifacts';
@@ -169,7 +170,12 @@ export async function onRequestPost(context: Context) {
       envRec['resend-api-key'] ||
       envRec['resend-appkey']) as string;
     if (new Set(['save', 'request-token', 'request-delete-token']).has(action) && !apiKey) {
-      return getCorsResponse(request, { ok: false, error: 'RESEND_API_KEY não configurada.' }, 503);
+      console.error('Serviço de autenticação sem credencial de e-mail configurada.');
+      return getCorsResponse(
+        request,
+        { ok: false, error: 'O envio do código está temporariamente indisponível.' },
+        503,
+      );
     }
 
     if (action === 'save') {
@@ -392,7 +398,7 @@ export async function onRequestPost(context: Context) {
           {
             ok: false,
             code: 'CANONICAL_ARTIFACT_QUERY_FAILED',
-            error: 'Os dados avançados canônicos estão temporariamente indisponíveis.',
+            error: 'Não foi possível abrir todos os detalhes deste mapa agora. Tente novamente mais tarde.',
           },
           503,
         );
@@ -403,7 +409,7 @@ export async function onRequestPost(context: Context) {
           {
             ok: false,
             code: 'CANONICAL_ARTIFACT_INVALID',
-            error: 'Os dados avançados canônicos deste mapa estão inconsistentes.',
+            error: 'Alguns detalhes deste mapa não puderam ser abertos. Faça um novo cálculo.',
           },
           409,
         );
@@ -521,13 +527,14 @@ export async function onRequestPost(context: Context) {
       return getCorsResponse(request, { ok: true, message: 'Todos os seus dados foram excluídos permanentemente.' });
     }
 
-    return getCorsResponse(request, { ok: false, error: `Ação desconhecida: ${action}` }, 400);
+    return getCorsResponse(request, { ok: false, error: 'Não foi possível compreender a solicitação.' }, 400);
   } catch (error) {
+    console.error('Falha inesperada no gerenciamento dos mapas do consulente.', error);
     return getCorsResponse(
       request,
       {
         ok: false,
-        error: error instanceof Error ? error.message : 'Erro interno.',
+        error: 'Não foi possível concluir esta solicitação agora. Tente novamente.',
       },
       500,
     );

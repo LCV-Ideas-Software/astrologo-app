@@ -33,7 +33,8 @@ describe('apresentação da sinastria', () => {
     expect(text).toContain('orbe 1,00°');
     expect(text).toContain('Sol de Leonardo na Casa 5 de João');
     expect(text).toContain('Lua de João na Casa 7 de Leonardo');
-    expect(text).toContain('astrologo-synastry-major-v1 v1.0.0');
+    expect(text).not.toContain('astrologo-synastry-major-v1');
+    expect(text).not.toContain('Perfil metodológico');
   });
 
   it('gera HTML de e-mail com a cautela relacional', () => {
@@ -42,6 +43,7 @@ describe('apresentação da sinastria', () => {
     expect(html).toContain('Leonardo');
     expect(html).toContain('João');
     expect(html).toContain('não mede compatibilidade científica');
+    expect(html).not.toContain('astrologo-synastry-major-v1');
   });
 
   it('rejeita resposta de rede estruturalmente incompleta antes de renderizar', () => {

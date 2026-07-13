@@ -113,7 +113,12 @@ export async function onRequestPost(context: Context) {
     }
 
     if (!RESEND_API_KEY) {
-      return jsonResponse({ success: false, error: 'Chave do Resend não encontrada.' }, 500, corsHeaders);
+      console.error('Serviço de e-mail sem credencial configurada.');
+      return jsonResponse(
+        { success: false, error: 'O envio por e-mail está temporariamente indisponível.' },
+        503,
+        corsHeaders,
+      );
     }
 
     const res = await fetch('https://api.resend.com/emails', {
@@ -136,9 +141,19 @@ export async function onRequestPost(context: Context) {
     if (res.ok) {
       return jsonResponse({ success: true, message: 'E-mail enviado com sucesso!' }, 200, corsHeaders);
     } else {
-      return jsonResponse({ success: false, error: String(data.message) }, 500, corsHeaders);
+      console.error('O serviço de e-mail recusou o envio.', { status: res.status, detail: data.message });
+      return jsonResponse(
+        { success: false, error: 'Não foi possível enviar o e-mail agora. Tente novamente.' },
+        502,
+        corsHeaders,
+      );
     }
-  } catch {
-    return jsonResponse({ success: false, error: 'Falha interna na comunicação do e-mail.' }, 500, corsHeaders);
+  } catch (error) {
+    console.error('Falha inesperada no envio do relatório por e-mail.', error);
+    return jsonResponse(
+      { success: false, error: 'Não foi possível enviar o e-mail agora. Tente novamente.' },
+      500,
+      corsHeaders,
+    );
   }
 }

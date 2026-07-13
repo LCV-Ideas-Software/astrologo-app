@@ -55,19 +55,14 @@ const escapeHtml = (value: unknown): string =>
 
 const availabilityPtBr = (line: LocalityLineV1): string => {
   if (line.availability.status === 'available') return 'linha disponível';
-  if (line.availability.status === 'partial') {
-    return `linha parcial em ${line.availability.solvedLatitudeCount} de ${line.availability.sampledLatitudeCount} latitudes amostradas`;
-  }
-  return 'linha indisponível na grade amostrada';
+  if (line.availability.status === 'partial') return 'linha parcialmente disponível';
+  return 'linha indisponível';
 };
 
 export function renderLocalityMapText(data: LocalityMapV1): string {
   const lines = [
     '*🗺️ MAPA PLANETÁRIO DE LOCALIDADE*',
     `*Instante natal:* ${formatInstantInBrasilia(data.source.birthInstantUtc)} — Hora oficial de Brasília`,
-    `*Resolução latitudinal:* ${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(data.models.sampling.latitudeResolutionDeg)}°`,
-    '*Referência equatorial:* EQJ/J2000 → EQD verdadeiro da data, com precessão e nutação explícitas.',
-    `*Horizonte geométrico:* altitude 0°, sem refração.`,
     '',
     '*Linhas planetárias:*',
   ];
@@ -89,7 +84,6 @@ export function renderLocalityMapEmailHtml(data: LocalityMapV1): string {
   return `<section style="margin-top:28px;padding:24px;border:1px solid #fde68a;border-radius:22px;background:#fffbeb;">
     <h3 style="font-size:21px;color:#92400e;margin:0 0 8px 0;">🗺️ Mapa Planetário de Localidade</h3>
     <p style="font-size:13px;color:#475569;margin:0 0 5px 0;"><strong>Instante natal:</strong> ${escapeHtml(formatInstantInBrasilia(data.source.birthInstantUtc))} — Hora oficial de Brasília</p>
-    <p style="font-size:12px;line-height:1.6;color:#64748b;margin:0 0 16px 0;">EQJ/J2000 transformado para EQD verdadeiro da data; horizonte geométrico em 0°, sem refração.</p>
     <h4 style="color:#b45309;margin:14px 0 8px 0;">Linhas planetárias</h4><ul style="padding-left:20px;">${lines}</ul>
     <p style="font-size:12px;line-height:1.6;color:#64748b;margin:18px 0 0 0;">A cartografia é uma referência simbólica: não recomenda mudança, viagem, investimento ou moradia.</p>
   </section>`;

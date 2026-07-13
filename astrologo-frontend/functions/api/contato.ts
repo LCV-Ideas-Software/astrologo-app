@@ -58,7 +58,14 @@ export async function onRequestPost(context: Context) {
     envRec.RESEND_APPKEY ||
     envRec['resend-api-key'] ||
     envRec['resend-appkey']) as string;
-  if (!apiKey) return getCorsResponse(request, { ok: false, error: 'RESEND_API_KEY não configurada.' }, 503);
+  if (!apiKey) {
+    console.error('Serviço de contato sem credencial de e-mail configurada.');
+    return getCorsResponse(
+      request,
+      { ok: false, error: 'O envio de mensagens está temporariamente indisponível.' },
+      503,
+    );
+  }
 
   try {
     const body = (await request.json()) as { name?: string; phone?: string; email?: string; message?: string };
@@ -109,8 +116,18 @@ export async function onRequestPost(context: Context) {
       return getCorsResponse(request, { ok: true, message: 'Mensagem enviada com sucesso!' });
     }
     const data = (await res.json()) as Record<string, unknown>;
-    return getCorsResponse(request, { ok: false, error: String(data.message ?? 'Falha no envio.') }, 500);
-  } catch {
-    return getCorsResponse(request, { ok: false, error: 'Falha interna.' }, 500);
+    console.error('O serviço de e-mail recusou a mensagem de contato.', { status: res.status, detail: data.message });
+    return getCorsResponse(
+      request,
+      { ok: false, error: 'Não foi possível enviar a mensagem agora. Tente novamente.' },
+      502,
+    );
+  } catch (error) {
+    console.error('Falha inesperada no envio da mensagem de contato.', error);
+    return getCorsResponse(
+      request,
+      { ok: false, error: 'Não foi possível enviar a mensagem agora. Tente novamente.' },
+      500,
+    );
   }
 }

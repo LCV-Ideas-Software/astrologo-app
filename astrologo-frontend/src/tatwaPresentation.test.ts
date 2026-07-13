@@ -32,7 +32,7 @@ describe('apresentação backward-compatible dos Tatwas', () => {
   it('preserva e identifica mapa antigo sem metadados como legacy-rulingFirst', () => {
     expect(presentTatwa({ principal: 'Tejas (Fogo)', sub: 'Tejas (Fogo)' })).toMatchObject({
       mode: 'legacy-rulingFirst',
-      modeLabelPtBr: 'Registro legado — ordem pelo principal',
+      modeLabelPtBr: 'Ordem pelo principal',
       principal: 'Tejas (Fogo)',
       sub: 'Tejas (Fogo)',
       provenanceAvailable: false,
@@ -48,7 +48,7 @@ describe('apresentação backward-compatible dos Tatwas', () => {
   ])('não transforma payload ausente ou malformado em registro legado: %j', (value) => {
     expect(presentTatwa(value)).toMatchObject({
       mode: 'unknown',
-      modeLabelPtBr: 'Método de cálculo não identificado',
+      modeLabelPtBr: 'Ordem não informada',
       provenanceAvailable: false,
       subIsIndicative: false,
     });
@@ -77,7 +77,7 @@ describe('apresentação backward-compatible dos Tatwas', () => {
   it('não classifica um marcador desconhecido como legado', () => {
     expect(
       presentTatwa({ principal: 'Tejas (Fogo)', sub: 'Akasha (Éter)', calculationMode: 'future-mode' }),
-    ).toMatchObject({ mode: 'unknown', modeLabelPtBr: 'Método de cálculo não identificado' });
+    ).toMatchObject({ mode: 'unknown', modeLabelPtBr: 'Ordem não informada' });
   });
 
   it('nomeia uma ordem pelo principal explicitamente selecionada sem tratá-la como inferência', () => {

@@ -1,5 +1,7 @@
 import type { AnalysisManifest, PackedAnalysisFragment, PackedAnalysisPlan } from './longAnalysisPlanner';
 
+export const INTEGRATED_ANALYSIS_PROMPT_VERSION = 'astrologo-long-analysis-v2';
+
 export interface GeneratedTextCandidate {
   readonly finishReason?: unknown;
   readonly text?: unknown;
@@ -316,26 +318,25 @@ export const assembleLongAnalysisHtml = (
   if (byId.size !== plan.fragments.length) {
     throw new LongAnalysisContractError('A montagem exige todos os fragmentos do plano.');
   }
-  if (
-    synthesis.rootInputHash !== plan.manifest.rootInputHash ||
-    synthesis.fragmentIds.some((id, index) => id !== plan.fragments[index]?.fragmentId) ||
-    synthesis.coveredEvidenceIds.some((id, index) => id !== plan.coverage.evidenceIds[index])
-  ) {
-    throw new LongAnalysisContractError('A síntese não pertence integralmente ao plano de montagem.');
+  const validatedFragments = plan.fragments.map((expected) => {
+    const fragment = byId.get(expected.fragmentId);
+    if (!fragment) throw new LongAnalysisContractError(`Fragmento ausente na montagem: ${expected.fragmentId}.`);
+    return parseGeneratedAnalysisFragment(
+      { finishReason: 'STOP', text: JSON.stringify(fragment) },
+      plan.manifest,
+      expected,
+    );
+  });
+  const validatedSynthesis = parseGeneratedAnalysisSynthesis(
+    { finishReason: 'STOP', text: JSON.stringify(synthesis) },
+    plan,
+  );
+
+  if (plan.manifest.promptVersion === INTEGRATED_ANALYSIS_PROMPT_VERSION) {
+    return validatedSynthesis.html.trim();
   }
 
-  const htmlParts = plan.fragments.map((expected) => {
-    const fragment = byId.get(expected.fragmentId);
-    if (
-      !fragment ||
-      fragment.rootInputHash !== plan.manifest.rootInputHash ||
-      fragment.inputHash !== expected.inputHash ||
-      fragment.ordinal !== expected.ordinal
-    ) {
-      throw new LongAnalysisContractError(`Fragmento inválido na montagem: ${expected.fragmentId}.`);
-    }
-    return fragment.html.trim();
-  });
-  htmlParts.push(synthesis.html.trim());
+  const htmlParts = validatedFragments.map((fragment) => fragment.html.trim());
+  htmlParts.push(validatedSynthesis.html.trim());
   return htmlParts.join('\n');
 };

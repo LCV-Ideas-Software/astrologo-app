@@ -7,12 +7,14 @@ const INTERNAL_ANALYSIS_MARKER_UNICODE = /⟦ASTROLOGO_PAYLOAD:[A-Za-z0-9._:-]{1
 const INTERNAL_ANALYSIS_MARKER_ENTITY =
   /(?:&#10214;|&#x0*27e6;)ASTROLOGO_PAYLOAD:[A-Za-z0-9._:-]{1,128}:[0-9a-f]{64}(?:&#10215;|&#x0*27e7;)/giu;
 const INTERNAL_ANALYSIS_NAMESPACE = /ASTROLOGO_PAYLOAD/iu;
+const OBSOLETE_POSITIONAL_FALLBACK = /Dados posicionais v2 indisponíveis para este mapa legado\.?/giu;
 
 /** Remove somente sentinelas reservadas do orquestrador, preservando a prosa ao redor. */
 export const stripInternalAnalysisMarkers = (input: string): string =>
   String(input ?? '')
     .replace(INTERNAL_ANALYSIS_MARKER_UNICODE, '')
-    .replace(INTERNAL_ANALYSIS_MARKER_ENTITY, '');
+    .replace(INTERNAL_ANALYSIS_MARKER_ENTITY, '')
+    .replace(OBSOLETE_POSITIONAL_FALLBACK, '');
 
 /** Detecta resíduos internos que não podem atravessar uma fronteira de persistência. */
 export const hasInternalAnalysisMarkerResidue = (input: string): boolean => INTERNAL_ANALYSIS_NAMESPACE.test(input);

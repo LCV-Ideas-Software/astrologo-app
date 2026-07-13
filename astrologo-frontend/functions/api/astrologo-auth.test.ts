@@ -330,7 +330,7 @@ describe('POST /api/astrologo-auth', () => {
     expect(await response.json()).toEqual({
       ok: false,
       code: 'CANONICAL_ARTIFACT_INVALID',
-      error: 'Os dados avançados canônicos deste mapa estão inconsistentes.',
+      error: 'Alguns detalhes deste mapa não puderam ser abertos. Faça um novo cálculo.',
     });
   });
 
@@ -359,7 +359,7 @@ describe('POST /api/astrologo-auth', () => {
     expect(await response.json()).toEqual({
       ok: false,
       code: 'CANONICAL_ARTIFACT_QUERY_FAILED',
-      error: 'Os dados avançados canônicos estão temporariamente indisponíveis.',
+      error: 'Não foi possível abrir todos os detalhes deste mapa agora. Tente novamente mais tarde.',
     });
   });
 });

@@ -97,12 +97,7 @@ const escapeHtml = (value: unknown): string =>
     .replaceAll("'", '&#39;');
 
 export function renderNatalChartAnalysisText(data: NatalChartAnalysisV1): string {
-  const lines = [
-    '*🔭 ASPECTOS NATAIS E CASAS*',
-    `*Perfil metodológico:* ${data.models.aspects.profileId} v${data.models.aspects.profileVersion}`,
-    '',
-    '*Aspectos:*',
-  ];
+  const lines = ['*🔭 ASPECTOS NATAIS E CASAS*', '', '*Aspectos:*'];
   if (data.aspects.length === 0) lines.push('• Nenhum aspecto dentro dos orbes declarados.');
   for (const aspect of data.aspects) {
     lines.push(
@@ -119,7 +114,7 @@ export function renderNatalChartAnalysisText(data: NatalChartAnalysisV1): string
     const mundane =
       house.mundaneDegreeWithinHouse.status === 'available'
         ? `, grau mundano ${formatNatalDegreePtBr(house.mundaneDegreeWithinHouse.degreeWithinHouseDeg)}`
-        : ', grau mundano indisponível para este registro';
+        : ', posição dentro da casa indisponível';
     lines.push(`• ${name}: Casa ${house.occupancy.houseIndex1}${mundane}.`);
   }
   return `${lines.join('\n')}\n`;
@@ -141,17 +136,15 @@ export function renderNatalChartAnalysisEmailHtml(data: NatalChartAnalysisV1): s
       const mundane =
         house.mundaneDegreeWithinHouse.status === 'available'
           ? ` · Grau mundano ${escapeHtml(formatNatalDegreePtBr(house.mundaneDegreeWithinHouse.degreeWithinHouseDeg))}`
-          : ' · Grau mundano indisponível para este registro';
+          : ' · Posição dentro da casa indisponível';
       return `<li style="margin:0 0 8px 0;"><strong>${name}:</strong> Casa ${house.occupancy.houseIndex1}${mundane}</li>`;
     })
     .join('');
 
   return `<section style="margin-top:28px;padding:24px;border:1px solid #ddd6fe;border-radius:22px;background:#faf5ff;">
     <h3 style="font-size:21px;color:#5b21b6;margin:0 0 8px 0;">🔭 Aspectos Natais e Casas</h3>
-    <p style="font-size:12px;color:#6b7280;margin:0 0 16px 0;">Perfil: ${escapeHtml(data.models.aspects.profileId)} v${escapeHtml(data.models.aspects.profileVersion)}</p>
     <h4 style="color:#7c3aed;margin:14px 0 8px 0;">Aspectos</h4><ul style="padding-left:20px;">${aspects}</ul>
     <h4 style="color:#047857;margin:18px 0 8px 0;">Casas Placidus e Grau mundano</h4><ul style="padding-left:20px;">${houses}</ul>
-    <p style="font-size:12px;line-height:1.6;color:#64748b;margin:18px 0 0 0;">O grau mundano provém somente da posição fracionária do Swiss Ephemeris; não é estimado pelo arco entre cúspides.</p>
   </section>`;
 }
 

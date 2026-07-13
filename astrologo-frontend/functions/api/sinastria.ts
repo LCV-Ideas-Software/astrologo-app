@@ -63,7 +63,11 @@ export async function onRequestPost({ request, env }: Context) {
     }
     const primaryMapId = typeof payload.primaryMapId === 'string' ? payload.primaryMapId.trim() : '';
     if (!MAP_ID_PATTERN.test(primaryMapId)) {
-      return jsonResponse({ success: false, error: 'Identificador do mapa principal inválido.' }, 400, corsHeaders);
+      return jsonResponse(
+        { success: false, error: 'Não foi possível reconhecer o mapa principal. Abra-o novamente.' },
+        400,
+        corsHeaders,
+      );
     }
     if (typeof payload.subjectB !== 'object' || payload.subjectB === null || Array.isArray(payload.subjectB)) {
       return jsonResponse({ success: false, error: 'Informe os dados completos da Pessoa B.' }, 400, corsHeaders);
@@ -95,17 +99,25 @@ export async function onRequestPost({ request, env }: Context) {
       .bind(primaryMapId)
       .first();
     if (!primaryRow?.dados_posicionais_v2) {
-      return jsonResponse({ success: false, error: 'Mapa principal canônico não encontrado.' }, 404, corsHeaders);
+      return jsonResponse(
+        { success: false, error: 'O mapa principal não foi encontrado. Abra-o novamente.' },
+        404,
+        corsHeaders,
+      );
     }
     let primary: DadosPosicionaisV2;
     try {
       primary = JSON.parse(primaryRow.dados_posicionais_v2) as DadosPosicionaisV2;
     } catch {
-      return jsonResponse({ success: false, error: 'O mapa principal armazenado está corrompido.' }, 409, corsHeaders);
+      return jsonResponse(
+        { success: false, error: 'Não foi possível abrir o mapa principal. Faça um novo cálculo.' },
+        409,
+        corsHeaders,
+      );
     }
     if (!validateDadosPosicionaisV2(primary).valid) {
       return jsonResponse(
-        { success: false, error: 'O mapa principal não passou pelos invariantes.' },
+        { success: false, error: 'Não foi possível usar o mapa principal. Faça um novo cálculo.' },
         409,
         corsHeaders,
       );
@@ -198,7 +210,7 @@ export async function onRequestPost({ request, env }: Context) {
     );
     if (!validateDadosPosicionaisV2(secondary).valid) {
       return jsonResponse(
-        { success: false, error: 'O segundo mapa não passou pelos invariantes posicionais.' },
+        { success: false, error: 'Não foi possível concluir o mapa da Pessoa B. Confira os dados e tente novamente.' },
         500,
         corsHeaders,
       );
@@ -207,7 +219,10 @@ export async function onRequestPost({ request, env }: Context) {
     const secondaryNatalChartAnalysisV1 = calculateNatalChartAnalysisV1(secondary, secondarySupplement);
     if (!validateNatalChartAnalysisV1(secondaryNatalChartAnalysisV1).valid) {
       return jsonResponse(
-        { success: false, error: 'A análise natal da Pessoa B não passou pelos invariantes.' },
+        {
+          success: false,
+          error: 'Não foi possível concluir os detalhes da Pessoa B. Confira os dados e tente novamente.',
+        },
         500,
         corsHeaders,
       );
@@ -216,7 +231,11 @@ export async function onRequestPost({ request, env }: Context) {
     const synastryValidation = validateSynastryRunV1(synastryRunV1);
     if (!synastryValidation.valid) {
       console.error('Contrato SynastryRunV1 inválido.', synastryValidation.errors);
-      return jsonResponse({ success: false, error: 'A sinastria não passou pelos invariantes.' }, 500, corsHeaders);
+      return jsonResponse(
+        { success: false, error: 'Não foi possível concluir a sinastria. Tente novamente.' },
+        500,
+        corsHeaders,
+      );
     }
 
     const primarySha256 = await sha256Hex(primaryRow.dados_posicionais_v2);
@@ -303,7 +322,7 @@ export async function onRequestPost({ request, env }: Context) {
         {
           success: false,
           code: 'SYNASTRY_PERSISTENCE_FAILED',
-          error: 'A sinastria foi calculada, mas não pôde ser persistida com segurança.',
+          error: 'A sinastria foi calculada, mas não pôde ser salva. Tente novamente em alguns instantes.',
         },
         503,
         corsHeaders,

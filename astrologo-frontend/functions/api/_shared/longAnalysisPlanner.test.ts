@@ -185,7 +185,7 @@ describe('planejador puro da análise longa', () => {
     expect(countTokens.mock.calls.length).toBeLessThan(10);
   });
 
-  it('mantém consulta, sistemas, fundamentos, Tatwas, V2 e natal no mesmo núcleo quando cabem', async () => {
+  it('mantém o núcleo coeso e separa a interpretação natal em domínio próprio', async () => {
     const prompt = await captureMonolithicPrompt('INSTRUÇÕES FIXAS');
     const units = await extractSemanticAnalysisUnits(sources());
     const manifest = await createAnalysisManifest(prompt, units, 'v1');
@@ -204,7 +204,6 @@ describe('planejador puro da análise longa', () => {
       'legacy.globals',
       'canonical.tatwa',
       'canonical.v2',
-      'advanced.natal',
     ];
     const coreFragments = plan.fragments.filter(({ units: fragmentUnits }) =>
       fragmentUnits.some(({ evidenceId }) => coreIds.includes(evidenceId)),
@@ -212,6 +211,11 @@ describe('planejador puro da análise longa', () => {
     expect(coreFragments).toHaveLength(1);
     expect(coreFragments[0]?.domain).toBe('core');
     expect(coreFragments[0]?.coveredEvidenceIds).toEqual(coreIds);
+    const natalFragment = plan.fragments.find(({ coveredEvidenceIds }) =>
+      coveredEvidenceIds.includes('advanced.natal'),
+    );
+    expect(natalFragment?.domain).toBe('natal');
+    expect(natalFragment?.coveredEvidenceIds).toEqual(['advanced.natal']);
     expect(
       plan.fragments.some(
         ({ coveredEvidenceIds }) => coveredEvidenceIds.length === 1 && coveredEvidenceIds[0] === 'legacy.query',

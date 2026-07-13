@@ -43,9 +43,9 @@ export function CurrentSkyPanel({ mapaId, run, onRunChange, openInfoModal, notif
         return;
       }
       onRunChange(payload.transitRunV1);
-      notify('Céu atual calculado com segurança.', 'success');
+      notify('Céu atual calculado com sucesso.', 'success');
     } catch {
-      notify('Falha de conexão ao calcular o céu atual.', 'error');
+      notify('Não foi possível calcular o céu atual agora. Tente novamente em alguns instantes.', 'error');
     } finally {
       setLoading(false);
     }
@@ -76,9 +76,7 @@ export function CurrentSkyPanel({ mapaId, run, onRunChange, openInfoModal, notif
               Céu Atual e Trânsitos
             </h3>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-              Compara as posições do instante do servidor ao mapa natal, com orbe máximo de 2° e aperfeiçoamentos
-              somente quando comprovados dentro do horizonte. Mantém lado a lado a projeção tropical e a classificação
-              astronômica oficial da IAU.
+              Compara o céu do momento da consulta ao mapa natal e destaca as influências vigentes no período escolhido.
             </p>
           </div>
         </div>
@@ -130,7 +128,8 @@ export function CurrentSkyPanel({ mapaId, run, onRunChange, openInfoModal, notif
               {run.positionsAtReference.map((position) => (
                 <li
                   key={position.bodyId}
-                  className="rounded-2xl border border-sky-100 bg-linear-to-br from-white to-sky-50/60 p-3 shadow-sm"
+                  tabIndex={0}
+                  className="rounded-2xl border border-sky-100 bg-linear-to-br from-white to-sky-50/60 p-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-sky-200 hover:shadow-md focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:border-sky-300 focus-visible:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 motion-reduce:transform-none motion-reduce:transition-none"
                 >
                   <div className="flex items-center gap-3">
                     <span
@@ -158,8 +157,8 @@ export function CurrentSkyPanel({ mapaId, run, onRunChange, openInfoModal, notif
                   </p>
                   <p className="mt-1 text-xs font-semibold leading-relaxed text-indigo-700">
                     {position.astronomicalReal.status === 'available'
-                      ? `Constelação IAU: ${position.astronomicalReal.constellation.namePtBr}`
-                      : 'Classificação IAU indisponível perto de uma fronteira'}
+                      ? `Constelação: ${position.astronomicalReal.constellation.namePtBr}`
+                      : 'Constelação indisponível'}
                   </p>
                 </li>
               ))}
@@ -173,7 +172,8 @@ export function CurrentSkyPanel({ mapaId, run, onRunChange, openInfoModal, notif
                 {run.aspects.map((aspect) => (
                   <li
                     key={aspect.recordId}
-                    className="rounded-2xl border border-indigo-100 bg-linear-to-br from-white to-indigo-50/60 p-4 shadow-sm"
+                    tabIndex={0}
+                    className="rounded-2xl border border-indigo-100 bg-linear-to-br from-white to-indigo-50/60 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-indigo-200 hover:shadow-md focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:border-indigo-300 focus-visible:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 motion-reduce:transform-none motion-reduce:transition-none"
                   >
                     <p className="text-xs font-black uppercase tracking-wider text-indigo-700">
                       {aspect.displayNamePtBr}
@@ -189,7 +189,7 @@ export function CurrentSkyPanel({ mapaId, run, onRunChange, openInfoModal, notif
                     <p className="mt-2 rounded-xl bg-white/80 px-3 py-2 text-xs font-semibold text-indigo-800">
                       {aspect.exactitude.status === 'available'
                         ? `Aperfeiçoamento: ${formatInstantInBrasilia(aspect.exactitude.exactAtUtc)} — Hora oficial de Brasília`
-                        : 'Aperfeiçoamento não comprovado dentro do horizonte declarado.'}
+                        : 'Momento exato não identificado no período escolhido.'}
                     </p>
                   </li>
                 ))}
@@ -204,10 +204,6 @@ export function CurrentSkyPanel({ mapaId, run, onRunChange, openInfoModal, notif
           <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">
             A leitura descreve influências simbólicas vigentes e possibilidades; não é uma previsão inevitável nem uma
             garantia de acontecimentos.
-          </p>
-          <p className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-xs leading-relaxed text-indigo-900">
-            A classificação IAU usa coordenadas geocêntricas aparentes no referencial equatorial J2000 e uma guarda de
-            20 minutos de arco nas fronteiras. Constelações são áreas bidimensionais do céu, sem grau interno definido.
           </p>
         </div>
       ) : (

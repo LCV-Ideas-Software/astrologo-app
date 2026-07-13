@@ -48,7 +48,11 @@ export async function onRequestPost({ request, env }: Context) {
     const mapaId = typeof payload.mapaId === 'string' ? payload.mapaId.trim() : '';
     const horizonDays = payload.horizonDays === undefined ? 7 : Number(payload.horizonDays);
     if (!MAP_ID_PATTERN.test(mapaId)) {
-      return jsonResponse({ success: false, error: 'Identificador do mapa inválido.' }, 400, corsHeaders);
+      return jsonResponse(
+        { success: false, error: 'Não foi possível reconhecer este mapa. Abra-o novamente.' },
+        400,
+        corsHeaders,
+      );
     }
     if (!Number.isInteger(horizonDays) || horizonDays < 0 || horizonDays > 30) {
       return jsonResponse({ success: false, error: 'O horizonte deve ficar entre 0 e 30 dias.' }, 400, corsHeaders);
@@ -60,19 +64,27 @@ export async function onRequestPost({ request, env }: Context) {
       .bind(mapaId)
       .first();
     if (!row?.dados_posicionais_v2) {
-      return jsonResponse({ success: false, error: 'Mapa natal canônico não encontrado.' }, 404, corsHeaders);
+      return jsonResponse(
+        { success: false, error: 'O mapa natal não foi encontrado. Abra-o novamente.' },
+        404,
+        corsHeaders,
+      );
     }
 
     let natal: DadosPosicionaisV2;
     try {
       natal = JSON.parse(row.dados_posicionais_v2) as DadosPosicionaisV2;
     } catch {
-      return jsonResponse({ success: false, error: 'O mapa natal armazenado está corrompido.' }, 409, corsHeaders);
+      return jsonResponse(
+        { success: false, error: 'Não foi possível abrir o mapa natal. Faça um novo cálculo.' },
+        409,
+        corsHeaders,
+      );
     }
     const natalValidation = validateDadosPosicionaisV2(natal);
     if (!natalValidation.valid) {
       return jsonResponse(
-        { success: false, error: 'O mapa natal armazenado não passou pelos invariantes.' },
+        { success: false, error: 'Não foi possível usar o mapa natal. Faça um novo cálculo.' },
         409,
         corsHeaders,
       );
@@ -96,7 +108,7 @@ export async function onRequestPost({ request, env }: Context) {
         {
           success: false,
           code: 'TRANSIT_SCHEMA_VALIDATION_FAILED',
-          error: 'O céu atual não passou pelos invariantes.',
+          error: 'Não foi possível concluir o céu atual. Tente novamente.',
         },
         500,
         corsHeaders,
@@ -175,7 +187,7 @@ export async function onRequestPost({ request, env }: Context) {
         {
           success: false,
           code: 'TRANSIT_PERSISTENCE_FAILED',
-          error: 'O céu atual foi calculado, mas não pôde ser persistido com segurança.',
+          error: 'O céu atual foi calculado, mas não pôde ser salvo. Tente novamente em alguns instantes.',
         },
         503,
         corsHeaders,

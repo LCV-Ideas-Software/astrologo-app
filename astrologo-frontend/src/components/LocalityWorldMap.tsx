@@ -158,10 +158,6 @@ export function LocalityWorldMap({ data }: LocalityWorldMapProps) {
           </span>
         ))}
       </div>
-      <figcaption className="mt-3 text-center text-[0.68rem] leading-relaxed text-slate-500 md:text-xs">
-        Base cartográfica: Natural Earth 1:110m, distribuída pelo pacote World Atlas. Linhas calculadas localmente; sem
-        tiles, rastreamento ou chamadas cartográficas externas.
-      </figcaption>
     </figure>
   );
 }

@@ -50,5 +50,11 @@ describe('painel de sinastria', () => {
     expect(html).toContain('Casa 5 de João');
     expect(html).toContain('Casa 7 de Leonardo');
     expect(html).toContain('não é uma pontuação científica de compatibilidade');
+    expect(html).toContain('serão salvos junto ao resultado');
+    expect(html).not.toContain('persistido com segurança');
+    expect(html).not.toContain('auditável');
+    expect(html).toContain('focus-visible:ring-pink-200');
+    expect(html).toContain('focus-visible:ring-violet-200');
+    expect(html).toContain('motion-reduce:transition-none');
   });
 });

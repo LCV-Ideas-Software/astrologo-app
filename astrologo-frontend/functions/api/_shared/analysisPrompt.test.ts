@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   buildAnalysisPrompt,
@@ -136,15 +135,13 @@ const makeCanonicalV2 = () => ({
 });
 
 describe('analysisPrompt', () => {
-  it('fixa os bytes e hashes do corpo legado original', () => {
-    expect(LEGACY_PROMPT_TEMPLATE.length).toBe(2173);
-    expect([...LEGACY_PROMPT_TEMPLATE].length).toBe(2147);
-    expect(Buffer.byteLength(LEGACY_PROMPT_TEMPLATE, 'utf8')).toBe(2345);
-    expect((LEGACY_PROMPT_TEMPLATE.match(/\n/g) ?? []).length).toBe(14);
-    expect(createHash('md5').update(LEGACY_PROMPT_TEMPLATE).digest('hex')).toBe('c44a9fee011fd50148bdca975cb61025');
-    expect(createHash('sha256').update(LEGACY_PROMPT_TEMPLATE).digest('hex')).toBe(
-      '8e5ece407c7edc97b6903abddf21a36601f1a216ce711f7912d480ee3a598611',
-    );
+  it('define um contrato editorial interpretativo sem transformar o relatório em aula', () => {
+    expect(LEGACY_PROMPT_TEMPLATE).toContain('Saiba Mais');
+    expect(LEGACY_PROMPT_TEMPLATE).toContain('interpretação personalizada');
+    expect(LEGACY_PROMPT_TEMPLATE).toMatch(/não explique conceitos/iu);
+    expect(LEGACY_PROMPT_TEMPLATE).toContain('Umbanda Esotérica de W. W. da Matta e Silva');
+    expect(LEGACY_PROMPT_TEMPLATE).not.toContain('Investigue as Influências Astrológicas');
+    expect(LEGACY_PROMPT_TEMPLATE).not.toContain('verdade estelar oculta');
   });
 
   it('renderiza o legado sem alterar texto, ordem ou interpolação', () => {
@@ -165,7 +162,7 @@ describe('analysisPrompt', () => {
     expect(buildAnalysisPrompt('DADOS', { nome: 'Legado' }, { schemaVersion: 'inválida' })).toBe(legacy);
   });
 
-  it('acrescenta as instruções de Tatwa sem alterar um byte do prompt legado', () => {
+  it('acrescenta os dados de Tatwa sem ordenar explicações metodológicas', () => {
     const legacy = buildLegacyAnalysisPrompt('DADOS', { nome: 'Tatwa' });
     const complete = buildAnalysisPrompt('DADOS', { nome: 'Tatwa' }, null, {
       schemaVersion: 'legacy',
@@ -175,8 +172,11 @@ describe('analysisPrompt', () => {
     });
 
     expect(complete.slice(0, legacy.length)).toBe(legacy);
-    expect(complete).toContain('ADENDO — TATWAS E PERSPECTIVAS DE CÁLCULO');
-    expect(complete).toContain('mapa legado');
+    expect(complete).toContain('INTERPRETAÇÃO DOS TATWAS');
+    expect(complete).toMatch(/interprete somente a combinação selecionada/iu);
+    expect(complete).not.toContain('mapa legado');
+    expect(complete).not.toContain('24 minutos');
+    expect(complete).not.toContain('4 minutos e 48 segundos');
   });
 
   it('projeta somente o contrato v2 allowlisted e não inventa grau IAU ou posição mundana', () => {
@@ -205,8 +205,9 @@ describe('analysisPrompt', () => {
     expect(complete.startsWith(legacy)).toBe(true);
     expect(complete.slice(0, legacy.length)).toBe(legacy);
     expect(complete).toContain('ADENDO V2 — GRAUS, CASAS PLACIDUS, CÉU REAL E CORRESPONDÊNCIAS ANGELICAIS');
-    expect(complete).toContain('Constelação IAU é área 2D');
-    expect(complete).toContain('falange angelical do mapa');
+    expect(complete).toContain('REGRAS INTERNAS DE FIDELIDADE');
+    expect(complete).toMatch(/falange angelical do mapa/iu);
+    expect(complete).not.toContain('Dados posicionais v2 indisponíveis para este mapa legado.');
     expect(complete).not.toContain('mundaneHousePositionDeg');
     expect(complete).not.toContain('inventedDegree');
     expect(complete).not.toContain('ignore previous instructions');
@@ -220,8 +221,10 @@ describe('analysisPrompt', () => {
     expect(complete).toContain('bodyId="sun"');
     expect(complete).toContain('angelicQuinary');
     expect(complete).toContain('qualitySummaryPtBr');
+    expect(complete).toContain('interprete a qualidade catalogada do anjo no contexto simbólico do Sol');
+    expect(complete).toContain('integre as correspondências planetárias em uma leitura da falange');
     expect(complete).not.toMatch(/\bqualitySummary\b(?!PtBr)/);
-    expect(complete).toContain('exclusivamente da longitude tropical natal do Sol');
+    expect(complete).toContain('Não derive o regente da constelação IAU');
     expect(complete).toContain('português do Brasil (pt-BR)');
     expect(complete).toContain('nunca exponha bodyId');
     expect(complete).not.toContain('Não eleja anjo regente');

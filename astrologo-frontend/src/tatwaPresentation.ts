@@ -71,12 +71,12 @@ const MODE_COPY: Record<TatwaPresentationMode, { label: string; description: str
     description: 'Em todo Tatwa principal, os subtatwas seguem Akasha, Vayu, Tejas, Apas e Prithvi.',
   },
   'legacy-rulingFirst': {
-    label: 'Registro legado — ordem pelo principal',
+    label: 'Ordem pelo principal',
     description: 'Cada período começa pelo próprio Tatwa principal e prossegue pela sequência circular.',
   },
   unknown: {
-    label: 'Método de cálculo não identificado',
-    description: 'O registro informa um método que esta versão do aplicativo não reconhece.',
+    label: 'Ordem não informada',
+    description: 'Este mapa não registra qual ordem foi utilizada.',
   },
 };
 

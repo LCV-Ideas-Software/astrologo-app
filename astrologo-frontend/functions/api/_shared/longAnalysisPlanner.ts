@@ -350,7 +350,7 @@ export const extractSemanticAnalysisUnits = async (
   for (const pending of [
     await optionalUnit(sources.canonicalTatwa, 'canonical.tatwa', '/canonicalTatwa', 'core'),
     await optionalUnit(sources.canonicalV2, 'canonical.v2', '/canonicalV2', 'core'),
-    await optionalUnit(sources.natal, 'advanced.natal', '/natal', 'core'),
+    await optionalUnit(sources.natal, 'advanced.natal', '/natal', 'natal'),
     await optionalUnit(sources.transit, 'advanced.transit', '/transit', 'transit'),
     await optionalUnit(sources.synastry, 'advanced.synastry', '/synastry', 'synastry'),
   ]) {

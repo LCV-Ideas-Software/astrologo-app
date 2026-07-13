@@ -37,22 +37,48 @@ const PERCENT_FORMATTER = new Intl.NumberFormat('pt-BR', {
 const pointName = (analysis: NatalChartAnalysisV1, pointId: string): string =>
   analysis.points.find(({ id }) => id === pointId)?.displayNamePtBr ?? 'Ponto não identificado';
 
+const movementLabelPtBr = (direction: 'direct' | 'retrograde' | 'stationary' | undefined): string | undefined => {
+  if (direction === 'direct') return 'direto';
+  if (direction === 'retrograde') return 'retrógrado';
+  if (direction === 'stationary') return 'estacionário';
+  return undefined;
+};
+
 export function NatalAnalysisPanel({ positional, analysis, openInfoModal }: NatalAnalysisPanelProps) {
   const ascendant = positional.angles.find(({ angleId }) => angleId === 'ascendant');
   const midheaven = positional.angles.find(({ angleId }) => angleId === 'midheaven');
   const canRenderWheel = positional.houses.status === 'available' && positional.houses.cusps && ascendant;
-  const wheelPlanets: NatalWheelPlanet[] = positional.positions.map((position) => ({
-    id: position.bodyId,
-    displayNamePtBr: position.displayNamePtBr,
-    symbol: position.symbol,
-    longitudeDeg: position.coordinates.eclipticLongitudeDeg,
-    color: PLANET_COLORS[position.bodyId] ?? '#a78bfa',
-  }));
+  const movementByBody = new Map(analysis.movements.map((movement) => [movement.bodyId, movement]));
+  const wheelPlanets: NatalWheelPlanet[] = positional.positions.map((position) => {
+    const movement = movementByBody.get(position.bodyId);
+    const directionPtBr = movement?.status === 'available' ? movementLabelPtBr(movement.direction) : undefined;
+    return {
+      id: position.bodyId,
+      displayNamePtBr: position.displayNamePtBr,
+      symbol: position.symbol,
+      longitudeDeg: position.coordinates.eclipticLongitudeDeg,
+      color: PLANET_COLORS[position.bodyId] ?? '#a78bfa',
+      tropicalSignNamePtBr: position.tropical.sign.namePtBr,
+      degreeWithinSignDeg: position.tropical.degreeWithinSignDeg,
+      ...(position.housePlacement.status === 'available' && position.housePlacement.houseIndex1
+        ? { houseIndex1: position.housePlacement.houseIndex1 }
+        : {}),
+      ...(directionPtBr ? { directionPtBr } : {}),
+      ...(position.astronomicalReal.status === 'available' && position.astronomicalReal.constellation
+        ? { astronomicalConstellationPtBr: position.astronomicalReal.constellation.namePtBr }
+        : {}),
+      angelName: position.angelicQuinary.angel.canonicalName,
+    };
+  });
   const wheelAspects: NatalWheelAspect[] = analysis.aspects.map((aspect) => ({
+    recordId: aspect.recordId,
     leftId: aspect.pointA.id,
     rightId: aspect.pointB.id,
     aspectId: aspect.aspectId,
     orbDeg: aspect.orbDeg,
+    separationDeg: aspect.separationDeg,
+    intensityPercent: aspect.intensityPercent,
+    phasePtBr: aspectPhaseLabelPtBr(aspect.phase),
   }));
   const positionByBody = new Map(positional.positions.map((position) => [position.bodyId, position]));
   const occupantsByHouse = new Map<number, NatalChartAnalysisV1['houseOccupancies']>();
@@ -122,8 +148,7 @@ export function NatalAnalysisPanel({ positional, analysis, openInfoModal }: Nata
               <p className="text-xs font-black uppercase tracking-[0.18em] text-rose-700">Relações angulares</p>
               <h3 className="mt-1 text-xl font-black text-slate-900 md:text-2xl">Aspectos Natais</h3>
               <p className="mt-2 text-sm text-slate-600">
-                {analysis.aspects.length} relações dentro dos orbes do perfil{' '}
-                <strong>{analysis.models.aspects.profileId}</strong>.
+                {analysis.aspects.length} relações angulares identificadas neste mapa.
               </p>
             </div>
           </div>
@@ -142,7 +167,8 @@ export function NatalAnalysisPanel({ positional, analysis, openInfoModal }: Nata
             {analysis.aspects.map((aspect) => (
               <li
                 key={aspect.recordId}
-                className="rounded-2xl border border-rose-100 bg-linear-to-br from-white to-rose-50/60 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none"
+                tabIndex={0}
+                className="rounded-2xl border border-rose-100 bg-linear-to-br from-white to-rose-50/60 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-rose-200 hover:shadow-md focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:border-rose-300 focus-visible:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 motion-reduce:transform-none motion-reduce:transition-none"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -176,7 +202,7 @@ export function NatalAnalysisPanel({ positional, analysis, openInfoModal }: Nata
           </ul>
         ) : (
           <p className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-            Nenhum par ficou dentro dos orbes declarados pelo perfil desta versão.
+            Nenhuma relação angular foi identificada dentro dos limites desta leitura.
           </p>
         )}
       </article>
@@ -194,8 +220,8 @@ export function NatalAnalysisPanel({ positional, analysis, openInfoModal }: Nata
               <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">Setores de experiência</p>
               <h3 className="mt-1 text-xl font-black text-slate-900 md:text-2xl">Análise das Casas</h3>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-                Temas introdutórios das 12 Casas Placidus, corpos ocupantes e o grau mundano quando o hpos Swiss foi
-                preservado.
+                Temas das 12 Casas Placidus, seus planetas ocupantes e a posição de cada corpo dentro da casa quando
+                disponível.
               </p>
             </div>
           </div>
@@ -216,7 +242,8 @@ export function NatalAnalysisPanel({ positional, analysis, openInfoModal }: Nata
             return (
               <li
                 key={houseIndex1}
-                className="rounded-[1.6rem] border border-emerald-100 bg-linear-to-br from-white to-emerald-50/55 p-4 shadow-sm"
+                tabIndex={0}
+                className="rounded-[1.6rem] border border-emerald-100 bg-linear-to-br from-white to-emerald-50/55 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-emerald-200 hover:shadow-md focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:border-emerald-300 focus-visible:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 motion-reduce:transform-none motion-reduce:transition-none"
               >
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Casa {houseIndex1}</p>
                 <p className="mt-2 text-sm leading-relaxed text-slate-700">{theme}</p>
@@ -246,14 +273,14 @@ export function NatalAnalysisPanel({ positional, analysis, openInfoModal }: Nata
                             </strong>
                             {mundane.status === 'available'
                               ? `grau mundano ${formatNatalDegreePtBr(mundane.degreeWithinHouseDeg)}`
-                              : 'grau mundano indisponível no registro'}
+                              : 'posição dentro da casa indisponível'}
                           </p>
                         </div>
                       );
                     })
                   ) : (
                     <p className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
-                      Sem corpos do conjunto canônico nesta casa.
+                      Nenhum planeta nesta casa.
                     </p>
                   )}
                 </div>
@@ -261,10 +288,6 @@ export function NatalAnalysisPanel({ positional, analysis, openInfoModal }: Nata
             );
           })}
         </ol>
-        <p className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600">
-          Os temas são referências interpretativas introdutórias. O grau mundano vem de{' '}
-          <code className="font-bold">swe_house_pos</code> e nunca é estimado pelo arco entre cúspides.
-        </p>
       </article>
     </section>
   );

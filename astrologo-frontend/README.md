@@ -19,12 +19,13 @@ Currently, two official plugins are available:
 
 ## Change History
 
-**Status.** Stable. Current release: **v02.22.04**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.23.00**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release     | Notes                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v02.23.00` | Relatório dedicado à interpretação, ajuda contextual ampliada, barreira contra detalhes internos, roda natal interativa e padronização completa de UI/UX.            |
 | `v02.22.04` | Impede que sentinelas internas do particionamento apareçam na tela, em mapas salvos e nos formatos HTML/texto do e-mail.                                               |
 | `v02.22.03` | Corrige o 422 dos fragmentos: conteúdo estruturado mínimo, identidade anexada pelo servidor, `thinking` controlado e diagnóstico causal sanitizado.                    |
 | `v02.22.02` | Protocolo reentrante da IA: uma parte por requisição, progresso persistido, retomada, timeout abaixo do 524 e síntese somente após cobertura integral.                   |

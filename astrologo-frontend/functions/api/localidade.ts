@@ -48,7 +48,11 @@ export async function onRequestPost({ request, env }: Context) {
     const mapaId = typeof payload.mapaId === 'string' ? payload.mapaId.trim() : '';
     const resolutionDeg = payload.resolutionDeg === undefined ? 1 : Number(payload.resolutionDeg);
     if (!MAP_ID_PATTERN.test(mapaId)) {
-      return jsonResponse({ success: false, error: 'Identificador do mapa inválido.' }, 400, corsHeaders);
+      return jsonResponse(
+        { success: false, error: 'Não foi possível reconhecer este mapa. Abra-o novamente.' },
+        400,
+        corsHeaders,
+      );
     }
     if (!Number.isFinite(resolutionDeg) || resolutionDeg < 0.25 || resolutionDeg > 5) {
       return jsonResponse({ success: false, error: 'A resolução deve ficar entre 0,25° e 5°.' }, 400, corsHeaders);
@@ -60,17 +64,25 @@ export async function onRequestPost({ request, env }: Context) {
       .bind(mapaId)
       .first();
     if (!row?.dados_posicionais_v2) {
-      return jsonResponse({ success: false, error: 'Mapa natal canônico não encontrado.' }, 404, corsHeaders);
+      return jsonResponse(
+        { success: false, error: 'O mapa natal não foi encontrado. Abra-o novamente.' },
+        404,
+        corsHeaders,
+      );
     }
     let natal: DadosPosicionaisV2;
     try {
       natal = JSON.parse(row.dados_posicionais_v2) as DadosPosicionaisV2;
     } catch {
-      return jsonResponse({ success: false, error: 'O mapa natal armazenado está corrompido.' }, 409, corsHeaders);
+      return jsonResponse(
+        { success: false, error: 'Não foi possível abrir o mapa natal. Faça um novo cálculo.' },
+        409,
+        corsHeaders,
+      );
     }
     if (!validateDadosPosicionaisV2(natal).valid) {
       return jsonResponse(
-        { success: false, error: 'O mapa natal armazenado não passou pelos invariantes.' },
+        { success: false, error: 'Não foi possível usar o mapa natal. Faça um novo cálculo.' },
         409,
         corsHeaders,
       );
@@ -101,7 +113,7 @@ export async function onRequestPost({ request, env }: Context) {
         {
           success: false,
           code: 'LOCALITY_SCHEMA_VALIDATION_FAILED',
-          error: 'O mapa de localidade não passou pelos invariantes.',
+          error: 'Não foi possível concluir o mapa de localidade. Tente novamente.',
         },
         500,
         corsHeaders,
@@ -176,7 +188,7 @@ export async function onRequestPost({ request, env }: Context) {
         {
           success: false,
           code: 'LOCALITY_PERSISTENCE_FAILED',
-          error: 'O mapa de localidade foi calculado, mas não pôde ser persistido com segurança.',
+          error: 'O mapa de localidade foi calculado, mas não pôde ser salvo. Tente novamente em alguns instantes.',
         },
         503,
         corsHeaders,

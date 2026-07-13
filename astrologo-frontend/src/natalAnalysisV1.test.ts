@@ -51,24 +51,26 @@ const fixture: NatalChartAnalysisV1 = {
 };
 
 describe('apresentação natal completa', () => {
-  it('renderiza texto inteiramente em pt-BR com perfil e grau mundano', () => {
+  it('renderiza texto em pt-BR sem expor o perfil interno', () => {
     const text = renderNatalChartAnalysisText(fixture);
     expect(text).toContain('ASPECTOS NATAIS E CASAS');
     expect(text).toContain('Sextil — Sol e Lua');
     expect(text).toContain('orbe 0,00°');
     expect(text).toContain('fase exata');
     expect(text).toContain('Sol: Casa 5, grau mundano 12,00°');
-    expect(text).toContain('astrologo-natal-major-v1 v1.0.0');
+    expect(text).not.toContain('astrologo-natal-major-v1');
+    expect(text).not.toContain('Perfil metodológico');
   });
 
-  it('escapa o HTML e preserva a metodologia declarada no e-mail', () => {
+  it('escapa o HTML sem expor a metodologia interna no e-mail', () => {
     const unsafe = structuredClone(fixture) as NatalChartAnalysisV1;
     (unsafe.points[0] as { displayNamePtBr: string }).displayNamePtBr = '<script>Sol</script>';
     const html = renderNatalChartAnalysisEmailHtml(unsafe);
     expect(html).not.toContain('<script>');
     expect(html).toContain('&lt;script&gt;Sol&lt;/script&gt;');
     expect(html).toContain('Grau mundano');
-    expect(html).toContain('astrologo-natal-major-v1');
+    expect(html).not.toContain('astrologo-natal-major-v1');
+    expect(html).not.toContain('Swiss Ephemeris');
   });
 
   it('rejeita resposta de rede estruturalmente incompleta antes de renderizar', () => {

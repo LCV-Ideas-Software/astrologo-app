@@ -59,14 +59,18 @@ describe('painel do céu atual', () => {
     expect(html).toContain('Hora oficial de Brasília');
     expect(html).toContain('Sol');
     expect(html).toContain('Câncer');
-    expect(html).toContain('Constelação IAU: Gêmeos');
-    expect(html).toContain('sem grau interno');
+    expect(html).toContain('Constelação: Gêmeos');
+    expect(html).not.toContain('sem grau interno');
+    expect(html).not.toContain('J2000');
+    expect(html).not.toContain('instante do servidor');
+    expect(html).toContain('focus-visible:ring-sky-200');
+    expect(html).toContain('motion-reduce:transition-none');
     expect(html).toContain('Quadratura');
     expect(html).toContain('fase aplicativa');
     expect(html).toContain('13/07/2026 às 12:00:00');
   });
 
-  it('explica em pt-BR quando a classificação IAU está protegida pela guarda de fronteira', () => {
+  it('humaniza em pt-BR quando a constelação está indisponível', () => {
     const boundaryRun = structuredClone(run) as unknown as {
       positionsAtReference: Array<Record<string, unknown>>;
     };
@@ -90,7 +94,7 @@ describe('painel do céu atual', () => {
         notify={vi.fn()}
       />,
     );
-    expect(html).toContain('Classificação IAU indisponível perto de uma fronteira');
+    expect(html).toContain('Constelação indisponível');
     expect(html).not.toContain('IAU_BOUNDARY_CLASSIFICATION_UNCERTAIN');
   });
 });

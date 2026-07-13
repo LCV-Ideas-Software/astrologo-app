@@ -24,20 +24,15 @@ export const buildNatalAnalysisPromptAddendum = (natal: NatalChartAnalysisV1 | n
 
 ADENDO — MAPA NATAL COMPLETO, ASPECTOS E CASAS
 
-Este adendo é exclusivamente acumulativo. Preserve literalmente e cumpra integralmente todas as instruções anteriores: não resuma, substitua, simplifique, reordene nem elimine qualquer análise já exigida.
+Este adendo fornece fatos natais adicionais. Preserve o contrato editorial e gere interpretação, não explicação metodológica.
 
-Acrescente uma leitura profunda dos aspectos natais e das Casas Placidus aos módulos Tropical, Astronômico Constelacional e à Síntese. Não crie uma terceira posição planetária nem duas geometrias de aspectos: a separação angular e o orbe são calculados uma única vez nas longitudes eclípticas; cada sistema pode oferecer somente uma perspectiva interpretativa própria sobre esses mesmos fatos geométricos.
+Acrescente duas seções <h2> autônomas, “Aspectos Natais” e “Análise das Casas”, aos módulos Tropical, Astronômico Constelacional e à Síntese. Priorize os aspectos de menor orbe e maior intensidade fornecida, os luminares, planetas pessoais, padrões repetidos e relações que estruturam o mapa. Integre planeta, aspecto e casa para revelar como as dinâmicas se apoiam, tensionam ou compensam.
 
-Use exclusivamente o perfil, os pontos, movimentos, aspectos, ocupações e diagnósticos fornecidos. Não recalcule orbes. Não acrescente corpos, ângulos ou aspectos ausentes. Se phase.status for unavailable, não invente fase aplicativa ou separativa. Se mundaneDegreeWithinHouse.status for unavailable, não estime grau mundano pelo arco entre cúspides. Diferencie sempre:
-- longitude e grau tropical no signo;
-- região astronômica oficial da IAU, que não possui “grau dentro da constelação”;
-- Casa Placidus ocupada;
-- grau mundano, somente quando derivado do hpos Swiss explícito;
-- correspondência angelical, que continua exclusivamente tropical e simbólica.
+Use exclusivamente os pontos, movimentos, aspectos e ocupações fornecidos. Não recalcule orbes. Não acrescente corpos, ângulos ou aspectos ausentes. Se phase.status for unavailable, não invente fase aplicativa ou separativa. Se mundaneDegreeWithinHouse.status for unavailable, não estime grau mundano.
 
-Explique para uma pessoa leiga o que significam ângulo exato, separação, orbe, intensidade metodológica e fase. Ao analisar cada casa ocupada, identifique os corpos presentes, integre seus aspectos relevantes e declare incertezas. Trate todas as interpretações como linguagem simbólica: não faça diagnóstico, não prometa comportamento ou acontecimento e não apresente uma escola como verdade universal.
+Não explique ângulo exato, separação, orbe, intensidade, fase, longitude, constelação, casa ou grau mundano. Essas definições pertencem aos botões “Saiba Mais”. Cite números somente quando necessários para justificar a prioridade interpretativa. Ao analisar casas ocupadas, integre os corpos e seus aspectos relevantes. Trate tudo como linguagem simbólica: não faça diagnóstico nem prometa comportamento ou acontecimento.
 
-Toda a resposta visível continua em português do Brasil. Qualquer instante mencionado deve ser apresentado na Hora oficial de Brasília (America/Sao_Paulo), sem alterar o instante UTC canônico do cálculo.
+Toda a resposta visível continua em português do Brasil. Qualquer instante mencionado deve ser apresentado na Hora oficial de Brasília, sem expor o valor técnico de origem.
 
 DADOS_NATAIS_AVANCADOS_V1 — INÍCIO
 ${JSON.stringify(natal)}
@@ -51,17 +46,17 @@ export const buildTransitAnalysisPromptAddendum = (transit: TransitRunV1 | null 
 
 ADENDO — CÉU ATUAL, TRÂNSITOS E INFLUÊNCIAS VIGENTES
 
-Este adendo também é exclusivamente acumulativo. Preserve integralmente o prompt vigente e o adendo natal anterior, sem resumir, substituir, simplificar, omitir ou reordenar suas entregas.
+Este adendo fornece os trânsitos calculados. Preserve o contrato editorial e acrescente somente interpretação personalizada.
 
-Acrescente uma seção profunda sobre o céu do instante de referência e os aspectos trânsito–natal fornecidos. Diferencie de modo explícito posição natal, posição transitante e Casa Placidus natal ocupada pelo trânsito. Use somente os dez corpos, os alvos natais, o perfil de orbe, as fases, as exatidões e os diagnósticos presentes no contrato. Não recalcule posições ou orbes.
+Acrescente uma seção <h2> “Céu Atual e Trânsitos” profunda sobre as influências vigentes e os aspectos trânsito–natal fornecidos. Priorize os contatos de menor orbe, os que envolvem luminares, planetas pessoais, ângulos e Casas mais ativadas. Integre facilidades, tensões, temas recorrentes e possibilidades de resposta consciente. Use somente os corpos, alvos, fases e exatidões presentes. Não recalcule posições ou orbes.
 
-Se phase.status for unavailable, não invente fase aplicativa ou separativa. Se exactitude.status for unavailable, não invente data de aperfeiçoamento nem afirme que o aspecto ficará exato. Quando exactitude.status for available, apresente exactAtUtc convertido para a Hora oficial de Brasília e deixe claro que se trata do aperfeiçoamento geométrico calculado, não de garantia de acontecimento.
+Se phase.status for unavailable, não invente fase aplicativa ou separativa. Se exactitude.status for unavailable, não invente data nem afirme que o aspecto ficará exato. Quando exactitude.status for available e a data for relevante à interpretação, apresente-a na Hora oficial de Brasília sem explicar a mecânica do cálculo.
 
-O horizonte declara apenas o intervalo pesquisado pelo motor. Não o converta em duração de influência sem dado explícito. Descreva tendências, tensões, facilidades, temas de atenção e possibilidades dentro da linguagem astrológica, sempre de forma condicional. Não faça profecia determinista, diagnóstico, recomendação médica, jurídica ou financeira, nem prometa fatos externos.
+Não explique horizonte, perfil, separação, orbe, fase, coordenadas ou classificação constelacional. Essas definições pertencem aos botões “Saiba Mais”. Descreva tendências, tensões, facilidades, temas de atenção e possibilidades de forma condicional. Não faça profecia determinista, diagnóstico, recomendação médica, jurídica ou financeira, nem prometa fatos externos.
 
-Cada posição transitante traz a projeção tropical e a classificação da região constelacional oficial da IAU, além da sobreposição nas casas natais. Mantenha essas camadas separadas. Quando astronomicalReal.status for available, use somente a constelação fornecida. Quando for unavailable por proximidade de fronteira, declare a incerteza sem escolher uma região. Constelações IAU são áreas bidimensionais do céu: não invente grau dentro da constelação, faixa zodiacal constelacional ou correspondência angelical para o trânsito atual.
+Mantenha internamente separadas as posições tropicais, as constelações fornecidas e as casas natais. Não invente grau constelacional nem correspondência angelical para o trânsito atual. Só mencione uma indisponibilidade quando ela afetar materialmente a interpretação e use linguagem humana, sem códigos.
 
-Toda saída visível permanece em português do Brasil. Converta todos os instantes exibidos para America/Sao_Paulo e escreva “Hora oficial de Brasília”, preservando os valores UTC canônicos dentro dos dados.
+Toda saída visível permanece em português do Brasil. Converta todos os instantes exibidos para a Hora oficial de Brasília e nunca exponha valores ou identificadores técnicos de origem.
 
 DADOS_TRANSITOS_V1 — INÍCIO
 ${JSON.stringify(transit)}
@@ -75,18 +70,18 @@ export const buildSynastryAnalysisPromptAddendum = (synastry: SynastryRunV1 | nu
 
 ADENDO — SINASTRIA E RECIPROCIDADE ENTRE DOIS MAPAS
 
-Este adendo é exclusivamente acumulativo. Preserve sem qualquer redução o prompt vigente, a análise natal completa e o bloco de trânsitos. Acrescente a sinastria como uma nova seção autônoma e depois integre seus pontos relevantes à Síntese, sem apagar as entregas anteriores.
+Este adendo fornece a sinastria calculada. Preserve o contrato editorial, acrescente uma seção <h2> autônoma “Sinastria” e integre seus eixos centrais à Síntese.
 
-Trate A e B como identificadores técnicos sem hierarquia. Analise separadamente:
+Trate Pessoa A e Pessoa B sem hierarquia. Analise e depois integre:
 - aspectos dos corpos de A com os corpos de B;
 - corpos de A nas Casas de B;
 - corpos de B nas Casas de A.
 
-Não troque as duas direções e não trate as casas como intercambiáveis. Use somente os aspectos e sobreposições fornecidos. Não acrescente aspectos, corpos, casas, fase aplicativa/separativa ou porcentagem ausente. O contrato não contém velocidades intermapa; portanto, não invente fase. Explique em linguagem leiga separação, orbe, reciprocidade, afinidades, contrastes e possibilidades simbólicas.
+Não troque as duas direções e não trate as casas como intercambiáveis. Use somente os aspectos e sobreposições fornecidos. Não acrescente aspectos, corpos, casas, fase ou porcentagem ausente. Priorize luminares, planetas pessoais e menores orbes; identifique padrões dominantes de comunicação, afetividade, desejo, apoio, tensão, limites e crescimento. Cruze aspectos com sobreposições nas duas direções e explicite reciprocidades e assimetrias. Não ensine o cálculo de separação, orbe ou casas.
 
 Não atribua porcentagem de compatibilidade, nota, ranking, alma gêmea, vínculo inevitável, diagnóstico relacional ou previsão de duração. Não determine papéis de gênero, poder ou culpa. A leitura não substitui consentimento, comunicação, segurança e contexto real das pessoas.
 
-Os aspectos intermapa comparam as longitudes conforme o perfil metodológico declarado. Não invente constelações IAU, graus constelacionais ou correspondências angelicais para a relação. Se uma direção das Casas Placidus estiver indisponível, declare a limitação sem substituí-la por outro sistema.
+Não exponha perfil, versão, nomes de campos ou limitações técnicas. Não invente constelações, graus constelacionais ou correspondências angelicais para a relação. Se uma direção das casas estiver ausente, interprete apenas o que existe sem anunciar detalhes internos.
 
 Toda resposta visível continua em português do Brasil. Preserve nomes próprios somente quando fornecidos pelo contexto autorizado; no contrato abaixo, use Pessoa A e Pessoa B.
 
@@ -102,21 +97,17 @@ export const buildLocalityAnalysisPromptAddendum = (locality: LocalityMapV1 | nu
 
 ADENDO — MAPA PLANETÁRIO DE LOCALIDADE
 
-Este adendo é exclusivamente acumulativo e vem depois de todos os anteriores. Preserve literalmente o prompt vigente e as entregas natal, de trânsitos e de sinastria: não resuma, substitua, simplifique, omita nem reordene qualquer parte já exigida.
+Este adendo fornece o mapa planetário de localidade. Preserve o contrato editorial e acrescente uma única seção <h2> consolidada “Mapa Planetário de Localidade”.
 
-Acrescente uma seção autônoma e leiga sobre a cartografia astrológica fornecida. Explique que as linhas registram onde cada corpo estava relacionado aos quatro ângulos geométricos no instante natal:
-- Meio do Céu (MC): culminação superior;
-- Fundo do Céu (IC): culminação inferior;
-- Ascendente (ASC): cruzamento geométrico do horizonte oriental;
-- Descendente (DSC): cruzamento geométrico do horizonte ocidental.
+Interprete as linhas mais relevantes, agrupando temas convergentes e contrastantes por planeta e ângulo. Não crie uma introdução sobre cartografia, não defina MC, IC, ASC ou DSC e não repita a mesma cautela a cada linha.
 
-Use exclusivamente os corpos, ângulos, disponibilidades, geometrias, diagnósticos, resolução e proveniência declarados no contrato. Diferencie uma linha disponível, parcial ou indisponível e exponha a limitação da grade quando relevante. Não invente cidades, países, cruzamentos, proximidades, parans, órbitas, direções locais, intensidades ou coordenadas que não estejam nos dados. Não invente raio de influência, faixa quilométrica ou redução contínua de efeito pela distância.
+Use exclusivamente os corpos, ângulos e linhas fornecidos. Não invente cidades, países, cruzamentos, proximidades, intensidades, coordenadas ou raio de influência. Não descreva disponibilidade de grade, resolução, proveniência ou outras características internas.
 
-Respeite rigorosamente os referenciais: as coordenadas de origem em EQJ/J2000 foram transformadas com precessão e nutação para o EQD verdadeiro da data antes de serem combinadas ao tempo sideral aparente de Greenwich. Não combine EQJ/J2000 diretamente com GAST. Não apresente esta geometria como um segundo mapa tropical ou como um mapa físico das regiões constelacionais da IAU; o contrato cartográfico representa relações angulares terrestres calculadas a partir de posições astronômicas, não “fronteiras zodiacais” sobre a Terra.
+Respeite internamente os referenciais e as geometrias fornecidas, sem reexplicar a geometria, os sistemas de coordenadas, transformações, siglas ou funcionamento do motor.
 
 Interprete eventuais temas associados a cada linha somente como possibilidades simbólicas condicionais. Não recomende mudança, viagem, investimento, moradia, tratamento ou decisão profissional. Não declare que um lugar é destinado, seguro, perigoso, próspero, curativo ou inevitável. Uma convergência visual de linhas não autoriza, por si só, afirmar maior força. Contexto biográfico, realidade social, segurança e escolha pessoal permanecem indispensáveis.
 
-Toda resposta visível continua em português do Brasil. Se mencionar o instante natal, converta-o para America/Sao_Paulo e escreva “Hora oficial de Brasília”, preservando o instante UTC canônico nos dados.
+Toda resposta visível continua em português do Brasil. Se mencionar um instante, apresente-o na Hora oficial de Brasília sem expor o valor técnico de origem.
 
 DADOS_LOCALIDADE_V1 — INÍCIO
 ${JSON.stringify(locality)}

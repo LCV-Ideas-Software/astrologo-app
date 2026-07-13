@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   assembleLongAnalysisHtml,
+  INTEGRATED_ANALYSIS_PROMPT_VERSION,
   parseGeneratedAnalysisFragment,
   parseGeneratedAnalysisReduction,
   parseGeneratedAnalysisSynthesis,
@@ -219,5 +220,69 @@ describe('contratos puros dos fragmentos da análise longa', () => {
       '<p>Primeira parte.</p>\n<p>Segunda parte.</p>\n<p><strong>🔗 Síntese</strong></p><p>Integração.</p>',
     );
     expect(() => assembleLongAnalysisHtml(plan, [first], synthesis)).toThrow(/todos os fragmentos/i);
+  });
+
+  it('no contrato editorial integrado publica somente a síntese final e não concatena introduções dos fragmentos', () => {
+    const integratedPlan: PackedAnalysisPlan = {
+      ...plan,
+      manifest: { ...plan.manifest, promptVersion: INTEGRATED_ANALYSIS_PROMPT_VERSION },
+    };
+    const integratedFragmentJson = (index: 0 | 1, html: string) => {
+      const fragment = integratedPlan.fragments[index]!;
+      return JSON.stringify({
+        schemaId: 'urn:astrologo:ai-analysis-fragment',
+        schemaVersion: '1.0.0',
+        rootInputHash: integratedPlan.manifest.rootInputHash,
+        promptVersion: integratedPlan.manifest.promptVersion,
+        fragmentId: fragment.fragmentId,
+        ordinal: fragment.ordinal,
+        domain: fragment.domain,
+        inputHash: fragment.inputHash,
+        coveredEvidenceIds: fragment.coveredEvidenceIds,
+        html,
+        synthesisNotes: [{ textPtBr: `Nota ${fragment.ordinal}`, evidenceIds: fragment.coveredEvidenceIds }],
+        warnings: [],
+      });
+    };
+    const first = parseGeneratedAnalysisFragment(
+      { finishReason: 'STOP', text: integratedFragmentJson(0, '<p>Introdução repetida 1.</p>') },
+      integratedPlan.manifest,
+      integratedPlan.fragments[0]!,
+    );
+    const second = parseGeneratedAnalysisFragment(
+      { finishReason: 'STOP', text: integratedFragmentJson(1, '<p>Introdução repetida 2.</p>') },
+      integratedPlan.manifest,
+      integratedPlan.fragments[1]!,
+    );
+    const synthesis = parseGeneratedAnalysisSynthesis(
+      {
+        finishReason: 'STOP',
+        text: JSON.stringify({
+          schemaId: 'urn:astrologo:ai-analysis-synthesis',
+          schemaVersion: '1.0.0',
+          rootInputHash: integratedPlan.manifest.rootInputHash,
+          promptVersion: integratedPlan.manifest.promptVersion,
+          fragmentIds: integratedPlan.fragments.map(({ fragmentId }) => fragmentId),
+          coveredEvidenceIds: integratedPlan.coverage.evidenceIds,
+          html: '<p><strong>Relatório interpretativo final</strong></p>',
+          warnings: [],
+        }),
+      },
+      integratedPlan,
+    );
+
+    expect(assembleLongAnalysisHtml(integratedPlan, [first, second], synthesis)).toBe(
+      '<p><strong>Relatório interpretativo final</strong></p>',
+    );
+    expect(() =>
+      assembleLongAnalysisHtml(integratedPlan, [{ ...first, inputHash: 'f'.repeat(64) }, second], synthesis),
+    ).toThrow(/hash de entrada|fragmento/i);
+    expect(() =>
+      assembleLongAnalysisHtml(integratedPlan, [first, second], {
+        ...synthesis,
+        fragmentIds: [],
+        coveredEvidenceIds: [],
+      }),
+    ).toThrow(/fragmentos|cobertura/i);
   });
 });

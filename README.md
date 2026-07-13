@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.22.04**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.23.00**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.23.00`**                      | **Interpretação útil e experiência integrada.** A análise final exclui aulas metodológicas e detalhes internos, aprofunda aspectos, sinastria e angelologia; os “Saiba Mais” absorvem as explicações; a roda natal ganha interação acessível e toda a UI/UX adota o mesmo acabamento e movimento.                                                                 |
 | **`v02.22.04`**                      | **Saída da IA sem marcadores internos.** Sentinelas de restauração deixam de chegar ao Gemini e são removidas nas fronteiras de persistência, tela, mapas salvos e e-mail, inclusive para análises históricas.                                                                                                                                                     |
 | **`v02.22.03`**                      | **IA fragmentada estabilizada.** O Gemini devolve somente conteúdo, o servidor anexa identidades e cobertura imutáveis, fragmentos usam `thinking=LOW` e falhas preservam diagnóstico sanitizado sem ultrapassar a conexão Cloudflare.                                                                                                                             |
 | **`v02.22.02`**                      | **IA reentrante sem 524.** Processa uma única parte por requisição, persiste progresso e tentativas no D1, retoma pela mesma aba e só apresenta o relatório depois da síntese e cobertura integrais.                                                                                                                                                                |
@@ -53,11 +54,11 @@ Aplicação para gerar análises astrológicas a partir de dados de nascimento (
 Funcionalidades adicionais:
 
 - **Metodologia auditável**: [Tatwas e Numerologia](./docs/METODOLOGIA_TATWAS_E_NUMEROLOGIA.md) e [leitura dos dados posicionais](./docs/GUIA_LEITURA_DADOS_POSICIONAIS.md), com fontes, regras e limites interpretativos.
-- **Mapa natal completo**: roda SVG, aspectos versionados, movimentos, Casas Placidus e grau mundano somente quando comprovado pelo Swiss Ephemeris.
+- **Mapa natal completo**: roda SVG interativa e acessível, aspectos, movimentos, Casas Placidus e grau mundano, acompanhados de detalhes curtos por hover, foco, toque ou clique.
 - **Céu atual e trânsitos**: posições tropicais e regiões IAU, aspectos trânsito–natal, fase por snapshot posterior e aperfeiçoamento geométrico verificado dentro do horizonte escolhido.
 - **Sinastria consentida**: aspectos entre dois mapas e sobreposições recíprocas de Casas Placidus, sem pontuação determinista de compatibilidade.
 - **Mapa planetário de localidade**: linhas MC, IC, ASC e DSC em SVG sobre Natural Earth empacotado, sem tiles ou rastreamento cartográfico externo.
-- **IA para mapas extensos**: lotes medidos por tokens, hashes e cobertura exata; respostas truncadas nunca são persistidas e todos os fragmentos completos precedem a síntese integrada.
+- **IA para mapas extensos**: lotes medidos por tokens, hashes e cobertura exata; respostas truncadas nunca são persistidas e somente a síntese interpretativa consolidada chega ao consulente.
 - **Metodologia dos mapas avançados**: [contratos, fórmulas, pesquisa comparativa e limites](./docs/METODOLOGIA_MAPAS_AVANCADOS.md).
 - **Rate limiting por D1** (`requestSecurity.ts`): proteção contra abuso de endpoints públicos via janelas deslizantes persistidas.
 - **Auth opcional**: resgate por e-mail/código, sessão rotativa e reidratação canônica autorizada dos mapas previamente salvos.

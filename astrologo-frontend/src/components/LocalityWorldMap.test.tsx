@@ -27,14 +27,15 @@ const map = {
 } as unknown as LocalityMapV1;
 
 describe('mapa-múndi de localidade', () => {
-  it('renderiza Natural Earth, linhas acessíveis e atribuição', () => {
+  it('renderiza linhas acessíveis sem expor a implementação cartográfica', () => {
     const html = renderToStaticMarkup(<LocalityWorldMap data={map} />);
     expect(html).toContain('role="img"');
     expect(html).toContain('Mapa-múndi com linhas planetárias de localidade');
     expect(html).toContain('data-world-land="natural-earth-110m"');
     expect(html).toContain('data-locality-line="sun:mc"');
     expect(html).toContain('Sol · Meio do Céu');
-    expect(html).toContain('Natural Earth');
-    expect(html).toContain('World Atlas');
+    expect(html).not.toContain('Natural Earth');
+    expect(html).not.toContain('World Atlas');
+    expect(html).not.toContain('tiles');
   });
 });

@@ -41,7 +41,7 @@ const data = {
 } as unknown as LocalityMapV1;
 
 describe('painel de localidade', () => {
-  it('combina mapa, metodologia, Brasília e Saiba Mais', () => {
+  it('combina mapa, Brasília e Saiba Mais sem expor detalhes tecnológicos', () => {
     const html = renderToStaticMarkup(
       <LocalityPanel mapaId="mapa-1" data={data} onDataChange={vi.fn()} openInfoModal={vi.fn()} notify={vi.fn()} />,
     );
@@ -50,9 +50,12 @@ describe('painel de localidade', () => {
     expect(html).toContain('Saiba mais');
     expect(html).toContain('26/03/1979 às 16:45:00');
     expect(html).toContain('Hora oficial de Brasília');
-    expect(html).toContain('EQJ/J2000');
-    expect(html).toContain('EQD verdadeiro da data');
-    expect(html).toContain('Natural Earth');
+    expect(html).toContain('Detalhamento');
+    expect(html).toContain('Muito alto');
+    expect(html).not.toContain('EQJ/J2000');
+    expect(html).not.toContain('EQD verdadeiro da data');
+    expect(html).not.toContain('Natural Earth');
+    expect(html).not.toContain('resolução latitudinal');
     expect(html).toContain('não recomenda mudança');
   });
 });

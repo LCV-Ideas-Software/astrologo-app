@@ -98,18 +98,22 @@ Cada artefato possui um estado explícito: `available`, `absent`, `invalid` ou `
 
 O prompt histórico e todos os adendos permanecem cumulativos. O caminho direto é reservado a entradas de até 6.000 tokens e ainda precisa caber em 75% do limite publicado pelo modelo configurado. Esse teto operacional deliberadamente menor separa mapas avançados mesmo quando o contexto total tecnicamente caberia no modelo, reduzindo latência e risco de timeout. A resposta direta também precisa terminar com `finishReason=STOP`.
 
-Quando o contexto ultrapassa esse teto, o servidor ativa `astrologo-long-analysis-v1`:
+Quando o contexto ultrapassa esse teto, o servidor ativa `astrologo-long-analysis-v2`:
 
 1. preserva os bytes UTF-8 e o SHA-256 do prompt monolítico original;
 2. substitui exclusivamente cada payload serializado por uma sentinela ligada ao seu hash e comprova que a restauração reproduz o prompt byte por byte; essa sentinela permanece apenas no artefato interno de restauração e é retirada do prefixo entregue ao modelo;
-3. reúne consulta, Tropical, Astronômica, dados globais, Tatwas, V2 e mapa natal no domínio coerente `core`, mantendo trânsitos, sinastria e localidade como domínios próprios;
+3. reúne consulta, Tropical, Astronômica, dados globais, Tatwas e dados posicionais no domínio coerente `core`, mantendo mapa natal, trânsitos, sinastria e localidade como domínios próprios;
 4. mantém cada linha cartográfica como unidade indivisível enquanto ela couber; documentos ou linhas isoladamente excessivos são divididos por uma árvore JSON genérica e reversível, com índices e hashes suficientes para comprovar a reconstrução exata;
 5. usa divisão balanceada e consulta `countTokens` somente para grupos finais ou subgrupos que ainda precisam ser divididos, evitando uma chamada remota para cada unidade;
 6. cria um trabalho persistido e executa exatamente uma geração por requisição HTTP, sempre depois que a etapa anterior foi validada e gravada;
-7. valida cada envelope estruturado antes de coletar seu HTML e suas notas de integração;
+7. valida cada envelope estruturado antes de coletar seu extrato interno e suas notas interpretativas;
 8. inicia a síntese apenas quando a cobertura conjunta coincide exatamente com o manifesto;
 9. quando as notas ainda excedem o contexto, executa reduções hierárquicas token-aware que preservam toda a cobertura antes da síntese final;
-10. concatena todos os HTMLs completos na ordem canônica e acrescenta somente o HTML novo da síntese.
+10. usa as notas completas para redigir uma única síntese definitiva; os extratos dos fragmentos são validados, mas não são concatenados nem apresentados ao consulente.
+
+O contrato editorial da versão 2 separa rigorosamente interpretação e documentação. O relatório ao consulente não ensina conceitos, métodos, sistemas, contratos ou funcionamento interno; essas explicações ficam nos diálogos “Saiba Mais”. A síntese deve interpretar cada domínio disponível uma única vez, aprofundar relações relevantes e incluir explicitamente aspectos natais, sinastria, Anjo Regente e Falange Angelical quando as respectivas evidências existirem. Antes da persistência, uma validação adicional rejeita resíduos técnicos e exige a cobertura narrativa mínima dos domínios presentes.
+
+O Aviso Fundamental e a orientação para consultar os botões “Saiba Mais” são textos fixos do aplicativo, acrescentados na fronteira final. Eles não são regenerados pelo modelo. Trabalhos iniciados com a versão anterior mantêm sua regra histórica de montagem; novos trabalhos usam exclusivamente a síntese consolidada.
 
 O empacotamento usa um limite conservador equivalente a no máximo 48.000 bytes UTF-8 por entrada completa da etapa — cada token necessariamente consome ao menos um byte, portanto esse valor é também um limite superior seguro de tokens e, em português/JSON usuais, resulta em muito menos tokens reais. São reservados tokens para saída e uma margem adicional de 2.048 tokens. A contagem remota inicial decide entre caminho direto e particionado; toda divisão posterior usa o limite local em bytes, evitando várias chamadas remotas de planejamento dentro da mesma requisição. O plano admite no máximo 40 fragmentos, mantendo criação e transições abaixo do teto de 50 consultas por invocação do D1 Free; volumes superiores falham de modo fechado antes de qualquer geração.
 
@@ -128,7 +132,7 @@ Há até três tentativas por etapa, mas cada tentativa ocupa uma requisição i
 
 A arquitetura considera os limites oficiais atuais: o Gemini fornece consulta de modelos, contagem de tokens, JSON estruturado, `finishReason`, níveis explícitos de raciocínio e timeout por chamada; o proxy Cloudflare encerra por padrão uma origem silenciosa após 120 segundos; e o D1 limita string ou linha a 2 MB. Cada etapa começa com orçamento de 8.192 tokens de saída e usa timeout de 80 segundos; uma repetição causada por `MAX_TOKENS` pode ampliar esse orçamento até o limite declarado pelo modelo. O navegador aguarda no máximo 110 segundos, o lease da etapa dura 115 segundos e o lease do job 118 segundos; essa ordem impede uma nova posse do trabalho enquanto a conexão anterior ainda encerra e permanece abaixo do proxy. Nos modelos Gemini 3.1 ou posteriores, fragmentos e reduções usam `thinkingLevel=LOW`, enquanto o caminho direto e a síntese usam `MEDIUM`; aliases Gemini 3 sem suporte comprovado a `MEDIUM` recebem `LOW`. Os tokens de raciocínio entram na telemetria de saída. Referências: <https://ai.google.dev/gemini-api/docs/tokens>, <https://ai.google.dev/gemini-api/docs/generate-content/thinking>, <https://ai.google.dev/gemini-api/docs/generate-content/structured-output>, <https://ai.google.dev/api/generate-content>, <https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/>, <https://developers.cloudflare.com/workers/platform/limits/> e <https://developers.cloudflare.com/d1/platform/limits/>.
 
-As sentinelas de restauração nunca compõem uma entrada destinada ao Gemini. A sanitização das respostas remove somente o formato reservado completo antes de gravar fragmentos ou o HTML integral, e qualquer resíduo do namespace interno bloqueia a persistência. A mesma remoção é repetida na apresentação e no e-mail para compatibilidade com análises geradas antes da versão 02.22.04.
+As sentinelas de restauração nunca compõem uma entrada destinada ao Gemini. A sanitização das respostas remove somente o formato reservado completo antes de gravar fragmentos ou o HTML integral, e qualquer resíduo do namespace interno bloqueia a persistência. A mesma remoção é repetida na apresentação e no e-mail para compatibilidade com análises geradas antes da versão 02.22.04. A versão 02.23.00 também remove a frase histórica sobre indisponibilidade de dados posicionais e bloqueia nomes de infraestrutura, versões, contratos, identificadores, hashes e mensagens operacionais em qualquer nova análise destinada ao usuário.
 
 O JSON estruturado gerado pelo modelo contém apenas os campos narrativos variáveis (`html`, notas e avisos). Identidade do schema, hashes, versão do prompt, ordinal, IDs e cobertura ordenada são valores derivados do plano e anexados pelo servidor antes da validação canônica. Assim, a IA não pode alterar a identidade nem precisa copiar listas técnicas cuja ordem o schema JSON não garante semanticamente; a cobertura das notas e o conteúdo continuam falhando de modo fechado quando incompletos.
 
@@ -143,7 +147,11 @@ As referências abaixo foram usadas como comparação funcional, não como fonte
 - O Astronomy Engine documenta posições, transformações de coordenadas, eventos e classificação de constelação, além de sua validação contra NOVAS e JPL Horizons: <https://github.com/cosinekitty/astronomy>.
 - O D3 documenta projeções geográficas esféricas e caminhos SVG: <https://d3js.org/d3-geo/projection>.
 
-Da comparação vieram quatro decisões de UX: desenho e tabela devem coexistir; cada camada precisa ser filtrável ou explicável; termos técnicos devem abrir ajuda contextual; e resultados interpretativos precisam manter visíveis instante, método e limitações. O Astrologo não copia textos, layouts ou perfis de cálculo dessas aplicações.
+Da comparação vieram quatro decisões de UI/UX: desenho e tabela devem coexistir; cada camada precisa ser interativa ou explicável; termos especializados devem abrir ajuda contextual; e métodos e limitações pertencem à documentação “Saiba Mais”, não ao texto interpretativo final. O Astrologo não copia textos, layouts ou perfis de cálculo dessas aplicações.
+
+Na versão 02.23.00, a roda natal continua sendo SVG React derivado dos dados já calculados pelo aplicativo. Planetas, aspectos, Casas, signos e ângulos compartilham um modelo de interação: hover e foco realçam o elemento e suas relações; clique, toque, Enter ou espaço abrem um painel envidraçado curto em pt-BR. Áreas transparentes ampliam os alvos sem alterar a geometria visível, o foco retorna ao acionador, `Escape` fecha o painel e `prefers-reduced-motion` desativa transições não essenciais. A solução nativa evita um segundo motor astrológico e o risco de divergência de cálculo.
+
+Foram consultados os padrões públicos de interação do AstroClick Portrait e AstroClick Travel, do Astrodienst, e do TimePassages. A escolha de manter o SVG existente também considerou o mapeamento de acessibilidade do W3C para SVG e evitou bibliotecas que manipulam diretamente o DOM ou duplicam a geometria astrológica. Referências: <https://www.astro.com/cgi/aclch.cgi>, <https://www.astro.com/cgi/aclch.cgi?btyp=acm>, <https://astrograph.com/timepassages/standard?purchase=1&type=SE>, <https://www.w3.org/TR/svg-aam-1.0/> e <https://www.w3.org/TR/SVG/interact.html>.
 
 ## Persistência e implantação
 

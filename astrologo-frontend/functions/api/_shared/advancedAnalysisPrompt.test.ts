@@ -131,11 +131,14 @@ describe('adendos acumulativos das análises avançadas', () => {
 
     expect(expanded.startsWith(base)).toBe(true);
     expect(expanded.slice(0, base.length)).toBe(base);
-    expect(expanded).toContain('Este adendo é exclusivamente acumulativo');
+    expect(expanded).toContain('Este adendo fornece fatos natais adicionais');
     expect(expanded).toContain('astrologo-natal-major-v1');
     expect(expanded).toContain('"aspectId":"sextile"');
     expect(expanded).toContain('"degreeWithinHouseDeg":12');
     expect(expanded).toContain('não invente fase');
+    expect(expanded).toContain('Priorize os aspectos de menor orbe');
+    expect(expanded).toContain('Integre planeta, aspecto e casa');
+    expect(expanded).not.toContain('Explique para uma pessoa leiga o que significam');
     expect(expanded).toContain('DADOS_NATAIS_AVANCADOS_V1 — INÍCIO');
   });
 
@@ -151,9 +154,9 @@ describe('adendos acumulativos das análises avançadas', () => {
     expect(expanded).toContain('DADOS_TRANSITOS_V1 — INÍCIO');
     expect(expanded).toContain('astrologo-transit-major-v1');
     expect(expanded).toContain('Hora oficial de Brasília');
-    expect(expanded).toContain('não invente data de aperfeiçoamento');
-    expect(expanded).toContain('região constelacional oficial da IAU');
-    expect(expanded).toContain('não invente grau dentro da constelação');
+    expect(expanded).toContain('não invente data nem afirme que o aspecto ficará exato');
+    expect(expanded).toContain('constelações fornecidas');
+    expect(expanded).toContain('Não invente grau constelacional');
     expect(buildTransitAnalysisPromptAddendum(null)).toBe('');
   });
 
@@ -165,6 +168,8 @@ describe('adendos acumulativos das análises avançadas', () => {
     expect(expanded).toContain('astrologo-synastry-major-v1');
     expect(expanded).toContain('A nas Casas de B');
     expect(expanded).toContain('B nas Casas de A');
+    expect(expanded).toContain('reciprocidades e assimetrias');
+    expect(expanded).toContain('comunicação, afetividade, desejo, apoio, tensão, limites e crescimento');
     expect(expanded).toContain('Não atribua porcentagem de compatibilidade');
     expect(buildSynastryAnalysisPromptAddendum(null)).toBe('');
   });
@@ -174,8 +179,10 @@ describe('adendos acumulativos das análises avançadas', () => {
     const expanded = appendAdvancedAnalysisPrompt('base', { natal, transit, synastry, locality });
     expect(expanded.startsWith(beforeLocality)).toBe(true);
     expect(expanded).toContain('DADOS_LOCALIDADE_V1 — INÍCIO');
-    expect(expanded).toContain('EQJ/J2000');
-    expect(expanded).toContain('EQD verdadeiro da data');
+    expect(expanded).not.toContain('EQJ/J2000');
+    expect(expanded).not.toContain('EQD verdadeiro da data');
+    expect(expanded).toContain('Interprete as linhas mais relevantes');
+    expect(expanded).toContain('sem reexplicar a geometria');
     expect(expanded).toContain('Não recomende mudança');
     expect(expanded).toContain('Não invente raio de influência');
     expect(buildLocalityAnalysisPromptAddendum(null)).toBe('');

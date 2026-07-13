@@ -23,12 +23,49 @@ const positional = {
       displayNamePtBr: 'Sol',
       symbol: '☉',
       coordinates: { eclipticLongitudeDeg: 10, eclipticLatitudeDeg: 0 },
+      tropical: { sign: { id: 'aries', namePtBr: 'Áries' }, degreeWithinSignDeg: 10, decan: { index1: 1 } },
+      astronomicalReal: {
+        status: 'available',
+        constellation: { iauCode: 'Psc', latinName: 'Pisces', namePtBr: 'Peixes' },
+      },
+      housePlacement: { status: 'available', houseIndex1: 1 },
+      angelicQuinary: {
+        basisSystem: 'tropical',
+        quinary: { index1: 3, globalStartLongitudeDeg: 10, globalEndLongitudeDegExclusive: 15 },
+        angel: {
+          id: 3,
+          canonicalName: 'Sitael',
+          aliases: [],
+          hebrewTriplet: 'SIT',
+          choir: 'Serafins',
+          prince: 'Metraton',
+          qualitySummaryPtBr: 'Construção',
+          sourcePermalink: 'https://example.com',
+        },
+      },
     },
     {
       bodyId: 'moon',
       displayNamePtBr: 'Lua',
       symbol: '☽',
       coordinates: { eclipticLongitudeDeg: 70, eclipticLatitudeDeg: 0 },
+      tropical: { sign: { id: 'gemini', namePtBr: 'Gêmeos' }, degreeWithinSignDeg: 10, decan: { index1: 1 } },
+      astronomicalReal: { status: 'unavailable' },
+      housePlacement: { status: 'available', houseIndex1: 3 },
+      angelicQuinary: {
+        basisSystem: 'tropical',
+        quinary: { index1: 15, globalStartLongitudeDeg: 70, globalEndLongitudeDegExclusive: 75 },
+        angel: {
+          id: 15,
+          canonicalName: 'Hariel',
+          aliases: [],
+          hebrewTriplet: 'HRI',
+          choir: 'Querubins',
+          prince: 'Raziel',
+          qualitySummaryPtBr: 'Clareza',
+          sourcePermalink: 'https://example.com',
+        },
+      },
     },
   ],
 } as unknown as DadosPosicionaisV2;
@@ -82,12 +119,20 @@ describe('painel natal completo', () => {
     expect(html).toContain('Roda do Mapa Natal');
     expect(html).toContain('Aspectos Natais');
     expect(html).toContain('Análise das Casas');
-    expect(html.match(/<button/g)).toHaveLength(3);
+    expect(html.match(/aria-label="Saiba mais/g)).toHaveLength(3);
     expect(html).toContain('Sextil');
     expect(html).toContain('100,00%');
     expect(html).toContain('Casa 1');
     expect(html).toContain('grau mundano 7,50°');
     expect(html).toContain('Identidade, iniciativa e maneira de se apresentar');
-    expect(html).toContain('indisponível no registro');
+    expect(html).toContain('posição dentro da casa indisponível');
+    expect(html).not.toContain('profileId');
+    expect(html).not.toContain('astrologo-natal-major-v1');
+    expect(html).not.toContain('hpos Swiss');
+    expect(html).not.toContain('swe_house_pos');
+    expect(html).not.toContain('conjunto canônico');
+    expect(html).toContain('focus-visible:ring-rose-200');
+    expect(html).toContain('focus-visible:ring-emerald-200');
+    expect(html).toContain('motion-reduce:transition-none');
   });
 });

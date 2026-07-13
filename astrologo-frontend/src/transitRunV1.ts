@@ -115,8 +115,8 @@ const natalName = (data: TransitRunV1, pointId: string): string =>
 
 export const transitIauLabelPtBr = (position: TransitRunV1['positionsAtReference'][number]): string =>
   position.astronomicalReal.status === 'available'
-    ? `constelação IAU ${position.astronomicalReal.constellation.namePtBr} (sem grau interno definido)`
-    : 'classificação IAU indisponível perto de uma fronteira (sem grau interno definido)';
+    ? `constelação ${position.astronomicalReal.constellation.namePtBr}`
+    : 'constelação indisponível';
 
 const escapeHtml = (value: unknown): string =>
   String(value)
@@ -131,7 +131,6 @@ export function renderTransitRunText(data: TransitRunV1): string {
     '*🌌 CÉU ATUAL E TRÂNSITOS*',
     `*Instante de referência:* ${formatInstantInBrasilia(data.request.referenceInstantUtc)} — Hora oficial de Brasília`,
     `*Horizonte:* ${data.request.horizonDays} dia(s), até ${formatInstantInBrasilia(data.request.horizonEndInstantUtc)}`,
-    `*Perfil metodológico:* ${data.models.aspects.profileId} v${data.models.aspects.profileVersion}`,
     '',
     '*Posições atuais:*',
   ];
@@ -150,7 +149,7 @@ export function renderTransitRunText(data: TransitRunV1): string {
     const exactitude =
       aspect.exactitude.status === 'available'
         ? ` Aperfeiçoamento: ${formatInstantInBrasilia(aspect.exactitude.exactAtUtc)}.`
-        : ' Aperfeiçoamento não comprovado dentro do horizonte.';
+        : ' Momento exato não identificado no período escolhido.';
     lines.push(
       `• ${aspect.displayNamePtBr} — ${transitName(data, aspect.transitPoint.bodyId)} em trânsito e ${natalName(data, aspect.natalPoint.pointId)} natal: orbe ${formatTransitDegreePtBr(aspect.orbDeg)}, ${transitPhaseLabelPtBr(aspect.phase)}.${exactitude}`,
     );
@@ -165,11 +164,11 @@ export function renderTransitRunEmailHtml(data: TransitRunV1): string {
         position.natalHousePlacement.status === 'available'
           ? `Casa natal ${position.natalHousePlacement.houseIndex1}`
           : 'Casa natal indisponível';
-      const iau =
+      const constellation =
         position.astronomicalReal.status === 'available'
-          ? `Constelação IAU: ${position.astronomicalReal.constellation.namePtBr} (sem grau interno definido)`
-          : 'Classificação IAU indisponível perto de uma fronteira (sem grau interno definido)';
-      return `<li style="margin:0 0 8px 0;"><strong>${escapeHtml(position.symbol)} ${escapeHtml(position.displayNamePtBr)}:</strong> ${escapeHtml(formatTransitDegreePtBr(position.tropical.degreeWithinSignDeg))} de ${escapeHtml(position.tropical.signNamePtBr)} · ${escapeHtml(iau)} · ${escapeHtml(house)}</li>`;
+          ? `Constelação: ${position.astronomicalReal.constellation.namePtBr}`
+          : 'Constelação indisponível';
+      return `<li style="margin:0 0 8px 0;"><strong>${escapeHtml(position.symbol)} ${escapeHtml(position.displayNamePtBr)}:</strong> ${escapeHtml(formatTransitDegreePtBr(position.tropical.degreeWithinSignDeg))} de ${escapeHtml(position.tropical.signNamePtBr)} · ${escapeHtml(constellation)} · ${escapeHtml(house)}</li>`;
     })
     .join('');
   const aspects = data.aspects.length
@@ -178,7 +177,7 @@ export function renderTransitRunEmailHtml(data: TransitRunV1): string {
           const exactitude =
             aspect.exactitude.status === 'available'
               ? ` · Aperfeiçoamento ${escapeHtml(formatInstantInBrasilia(aspect.exactitude.exactAtUtc))}`
-              : ' · Aperfeiçoamento não comprovado no horizonte';
+              : ' · Momento exato não identificado no período escolhido';
           return `<li style="margin:0 0 8px 0;"><strong>${escapeHtml(aspect.displayNamePtBr)}</strong> — ${escapeHtml(transitName(data, aspect.transitPoint.bodyId))} em trânsito e ${escapeHtml(natalName(data, aspect.natalPoint.pointId))} natal · orbe ${escapeHtml(formatTransitDegreePtBr(aspect.orbDeg))} · ${escapeHtml(transitPhaseLabelPtBr(aspect.phase))}${exactitude}</li>`;
         })
         .join('')
@@ -187,7 +186,6 @@ export function renderTransitRunEmailHtml(data: TransitRunV1): string {
   return `<section style="margin-top:28px;padding:24px;border:1px solid #bae6fd;border-radius:22px;background:#f0f9ff;">
     <h3 style="font-size:21px;color:#075985;margin:0 0 8px 0;">🌌 Céu Atual e Trânsitos</h3>
     <p style="font-size:13px;color:#475569;margin:0 0 5px 0;"><strong>Referência:</strong> ${escapeHtml(formatInstantInBrasilia(data.request.referenceInstantUtc))} — Hora oficial de Brasília</p>
-    <p style="font-size:12px;color:#64748b;margin:0 0 16px 0;">Perfil ${escapeHtml(data.models.aspects.profileId)} v${escapeHtml(data.models.aspects.profileVersion)}</p>
     <h4 style="color:#0369a1;margin:14px 0 8px 0;">Posições atuais</h4><ul style="padding-left:20px;">${positions}</ul>
     <h4 style="color:#7c3aed;margin:18px 0 8px 0;">Aspectos trânsito–natal</h4><ul style="padding-left:20px;">${aspects}</ul>
     <p style="font-size:12px;line-height:1.6;color:#64748b;margin:18px 0 0 0;">Esta é uma leitura simbólica e não uma previsão inevitável de acontecimentos.</p>

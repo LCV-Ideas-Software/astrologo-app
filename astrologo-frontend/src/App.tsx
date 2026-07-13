@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 // Módulo: astrologo-frontend/src/App.tsx
-// Versão: v02.22.04
+// Versão: v02.23.00
 // Descrição: Frontend principal do Oráculo Celestial com análise astrológica via Gemini.
 
 import DOMPurify from 'dompurify';
@@ -15,6 +15,7 @@ import {
   Compass,
   Copy,
   Download,
+  ExternalLink,
   Hash,
   HelpCircle,
   Info,
@@ -69,10 +70,10 @@ import {
 } from './natalAnalysisV1';
 import { isCanonicalHydrationEnvelope, mergeCanonicalArtifacts } from './savedMapRehydration';
 import { isSynastryRunV1, renderSynastryRunEmailHtml, renderSynastryRunText } from './synastryRunV1';
-import { formatTatwaDurationPtBr, presentTatwa, renderTatwaEmailCautionHtml } from './tatwaPresentation';
+import { formatTatwaDurationPtBr, presentTatwa } from './tatwaPresentation';
 import { isTransitRunV1, renderTransitRunEmailHtml, renderTransitRunText, type TransitRunV1 } from './transitRunV1';
 
-const APP_VERSION = 'APP v02.22.04';
+const APP_VERSION = 'APP v02.23.00';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (value: string): boolean => emailRegex.test(value.trim());
@@ -232,17 +233,19 @@ const requestAnalysisJob = async (body: Record<string, unknown>): Promise<Analys
     } catch (error) {
       const message =
         response.status === 524
-          ? 'Uma parte da análise excedeu o tempo seguro da conexão.'
-          : 'O servidor devolveu uma resposta inválida durante a análise.';
+          ? 'A análise está levando mais tempo do que o esperado. Tente novamente em alguns instantes.'
+          : 'Não foi possível continuar a análise agora. Tente novamente em alguns instantes.';
       throw new Error(message, { cause: error });
     }
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error('O servidor devolveu um estado de análise inválido.');
+      throw new Error('Não foi possível continuar a análise agora. Tente novamente em alguns instantes.');
     }
     return { ...(parsed as Omit<AnalysisJobResponse, 'httpStatus'>), httpStatus: response.status };
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('Uma parte da análise ultrapassou o limite de 110 segundos do navegador.', { cause: error });
+      throw new Error('A análise está levando mais tempo do que o esperado. Tente novamente em alguns instantes.', {
+        cause: error,
+      });
     }
     throw error;
   } finally {
@@ -311,7 +314,7 @@ const maskBrazilianTime = (value: string): string => {
 const formatBirthForDisplay = (result: ResultData): string =>
   result.dadosPosicionaisV2
     ? `${formatInstantInBrasilia(result.dadosPosicionaisV2.birthContext.timeResolution.instantUtc)} — Hora oficial de Brasília`
-    : `${formatarData(result.query.dataNascimento)} — horário legado sem fuso verificável`;
+    : `${formatarData(result.query.dataNascimento)} — horário não confirmado para exibição`;
 
 // Conversor visual para garantir a exibição estética tanto de mapas antigos quanto dos recém-calculados
 const formatPosicaoLabel = (pos: string): string => {
@@ -480,6 +483,29 @@ const InfoModal: React.FC<ModalProps> = ({ type, context, onClose }) => {
         <p className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold leading-relaxed text-slate-700">
           {content.closing}
         </p>
+        {content.sources && content.sources.length > 0 ? (
+          <section
+            className="mt-6 rounded-2xl border border-slate-200 bg-white/80 p-4"
+            aria-label="Fontes para aprofundar"
+          >
+            <h3 className={`text-sm font-black uppercase tracking-wider ${theme.sectionColor}`}>Para aprofundar</h3>
+            <ul className="mt-3 space-y-2">
+              {content.sources.map((source) => (
+                <li key={source.url}>
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="inline-flex items-start gap-2 text-sm font-bold leading-relaxed text-blue-700 underline decoration-blue-300 underline-offset-4 transition hover:text-blue-900 focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                  >
+                    <ExternalLink className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    {source.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         <button
           type="button"
           onClick={onClose}
@@ -642,6 +668,9 @@ const LocationAutocomplete: React.FC<AutocompleteProps> = ({ value, onChange }) 
   );
 };
 
+const RESULT_CARD_INTERACTION =
+  'transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-lg focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:shadow-lg focus-visible:outline-none focus-visible:ring-2 motion-reduce:transform-none motion-reduce:transition-none';
+
 export const RenderBlocoAstrologico: React.FC<BlocoProps> = ({
   titulo,
   dadosAstrologia,
@@ -653,6 +682,9 @@ export const RenderBlocoAstrologico: React.FC<BlocoProps> = ({
   const colorTheme = isTropical ? 'orange' : 'indigo';
   const colorHex = isTropical ? 'text-orange-600' : 'text-indigo-600';
   const bgSoft = isTropical ? 'bg-orange-50' : 'bg-indigo-50';
+  const cardTheme = isTropical
+    ? 'border-orange-100 bg-linear-to-br from-white to-orange-50/65 hover:border-orange-200 focus-visible:border-orange-300 focus-visible:ring-orange-200'
+    : 'border-indigo-100 bg-linear-to-br from-white to-indigo-50/65 hover:border-indigo-200 focus-visible:border-indigo-300 focus-visible:ring-indigo-200';
   return (
     <div className={`mt-10 pt-10 border-t border-${colorTheme}-200 animate-in slide-in-from-top-4 duration-700 w-full`}>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
@@ -677,11 +709,14 @@ export const RenderBlocoAstrologico: React.FC<BlocoProps> = ({
           {dadosAstrologia.map((a, i) => (
             <div
               key={i}
-              className="bg-white p-3 md:p-4 rounded-2xl border border-slate-100 flex flex-col justify-center shadow-sm"
+              tabIndex={0}
+              className={`flex flex-col justify-center rounded-[1.6rem] border p-4 shadow-sm md:p-5 ${cardTheme} ${RESULT_CARD_INTERACTION}`}
             >
-              <p className="text-[10px] md:text-xs text-slate-500 mb-1 truncate font-medium">{a.astro}</p>
-              <p className="font-bold flex items-center gap-2 text-slate-800 text-xs sm:text-sm md:text-base truncate">
-                {a.simbolo} {formatSignNamePtBr(a.signo)}
+              <p className="mb-2 truncate text-[10px] font-black uppercase tracking-wider text-slate-500 md:text-xs">
+                {a.astro}
+              </p>
+              <p className="flex items-center gap-3 truncate text-sm font-black text-slate-800 sm:text-base md:text-lg">
+                <span className={`text-3xl drop-shadow-sm ${colorHex}`}>{a.simbolo}</span> {formatSignNamePtBr(a.signo)}
               </p>
             </div>
           ))}
@@ -698,7 +733,8 @@ export const RenderBlocoAstrologico: React.FC<BlocoProps> = ({
           {dadosUmbanda.map((u, i) => (
             <div
               key={i}
-              className={`flex flex-col items-center justify-between p-3 md:p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow min-w-0 w-full h-full`}
+              tabIndex={0}
+              className={`flex h-full w-full min-w-0 flex-col items-center justify-between rounded-[1.6rem] border p-3 shadow-sm md:p-5 ${cardTheme} ${RESULT_CARD_INTERACTION}`}
             >
               <span className="text-2xl md:text-4xl mb-2 md:mb-3 mt-1 drop-shadow-sm shrink-0">{u.simbolo}</span>
               <div className="flex items-center justify-center w-full mb-2 md:mb-3 h-8 sm:h-10">
@@ -726,11 +762,6 @@ export const RenderBlocoAstrologico: React.FC<BlocoProps> = ({
                 O aplicativo revela a Tríplice Coroa Teórica. A verdadeira entidade regente e seu Orixá definitivo só
                 podem ser atestados inequivocamente através da <strong>Lei de Pemba</strong> pelo Mestre de Iniciação.
               </p>
-              <div className="text-[10px] md:text-xs text-emerald-700/80 border-t border-emerald-200/50 pt-2 mt-1 not-italic">
-                <strong>* Entendendo as Horas:</strong> O <strong>Período (3h)</strong> indica o Orixá que rege a faixa
-                de horas do seu nascimento. O <strong>Astro</strong> revela o planeta astrológico que regia o seu minuto
-                exato de nascimento.
-              </div>
             </div>
           </div>
         )}
@@ -849,7 +880,7 @@ const PositionalV2Panel: React.FC<{
                   Posições, Casas Placidus e Falange Angelical
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                  Nascimento convertido: {formatInstantInBrasilia(data.birthContext.timeResolution.instantUtc)} —{' '}
+                  Nascimento: {formatInstantInBrasilia(data.birthContext.timeResolution.instantUtc)} —{' '}
                   <strong className="text-violet-800">Hora oficial de Brasília</strong>
                 </p>
               </div>
@@ -865,7 +896,7 @@ const PositionalV2Panel: React.FC<{
           </div>
           {data.birthContext.timeResolution.historicalConfidence === 'best-effort-1900-1969' && (
             <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm font-semibold leading-relaxed text-amber-900">
-              Fuso histórico de 1900–1969: melhor esforço conforme a base histórica de fusos disponível no sistema.
+              O horário deste período histórico pode ter menor precisão. Considere essa limitação durante a leitura.
             </p>
           )}
         </header>
@@ -873,7 +904,8 @@ const PositionalV2Panel: React.FC<{
         {rulingPosition && rulingZodiac && (
           <article
             aria-labelledby="anjo-regente-titulo"
-            className="relative mx-4 mt-6 overflow-hidden rounded-[2rem] border border-amber-200 bg-linear-to-br from-amber-50 via-white to-violet-50 p-5 shadow-[0_14px_40px_rgba(217,119,6,0.12)] md:mx-8 md:mt-8 md:p-7"
+            tabIndex={0}
+            className={`relative mx-4 mt-6 overflow-hidden rounded-[2rem] border border-amber-200 bg-linear-to-br from-amber-50 via-white to-violet-50 p-5 shadow-[0_14px_40px_rgba(217,119,6,0.12)] hover:border-amber-300 focus-visible:border-amber-400 focus-visible:ring-amber-200 md:mx-8 md:mt-8 md:p-7 ${RESULT_CARD_INTERACTION}`}
           >
             <div
               aria-hidden="true"
@@ -954,7 +986,8 @@ const PositionalV2Panel: React.FC<{
                 <li
                   key={planet.bodyId}
                   aria-label={`Posição de ${planetPresentation.label}`}
-                  className="group rounded-[1.6rem] border border-slate-200/80 bg-linear-to-br from-white to-slate-50/70 p-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg motion-reduce:transform-none md:p-5"
+                  tabIndex={0}
+                  className={`group rounded-[1.6rem] border border-slate-200/80 bg-linear-to-br from-white to-slate-50/70 p-4 shadow-sm hover:border-violet-200 focus-visible:border-violet-300 focus-visible:ring-violet-200 md:p-5 ${RESULT_CARD_INTERACTION}`}
                 >
                   <div className="flex items-center gap-3">
                     <span
@@ -1021,12 +1054,6 @@ const PositionalV2Panel: React.FC<{
               );
             })}
           </ul>
-
-          <p className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600">
-            A classificação da União Astronômica Internacional usa áreas bidimensionais no céu e não define “grau dentro
-            da constelação”. A correspondência angelical é simbólica e deriva exclusivamente da longitude tropical em
-            quinários de 5°.
-          </p>
         </div>
       </div>
 
@@ -1047,9 +1074,7 @@ const PositionalV2Panel: React.FC<{
               <h4 id="cuspides-casas-titulo" className="mt-1 text-xl font-black text-slate-900 md:text-2xl">
                 Cúspides das 12 Casas Placidus
               </h4>
-              <p className="mt-1 text-sm text-slate-600">
-                O signo e o grau de cada cúspide, apresentados com duas casas decimais.
-              </p>
+              <p className="mt-1 text-sm text-slate-600">O signo e o grau onde começa cada uma das doze casas.</p>
             </div>
           </div>
           <button
@@ -1073,7 +1098,8 @@ const PositionalV2Panel: React.FC<{
               return (
                 <li
                   key={cusp.houseIndex1}
-                  className="flex min-w-0 items-center gap-3 rounded-2xl border border-emerald-100 bg-linear-to-br from-white to-emerald-50/60 p-3 shadow-sm md:p-4"
+                  tabIndex={0}
+                  className={`flex min-w-0 items-center gap-3 rounded-2xl border border-emerald-100 bg-linear-to-br from-white to-emerald-50/60 p-3 shadow-sm hover:border-emerald-200 focus-visible:border-emerald-300 focus-visible:ring-emerald-200 md:p-4 ${RESULT_CARD_INTERACTION}`}
                 >
                   <span
                     aria-hidden="true"
@@ -1123,9 +1149,7 @@ const PositionalV2Panel: React.FC<{
               <h4 id="falange-angelical-titulo" className="mt-1 text-xl font-black text-slate-900 md:text-2xl">
                 Falange Angelical do Mapa
               </h4>
-              <p className="mt-1 text-sm text-slate-600">
-                Os anjos associados aos quinários tropicais ocupados pelos dez corpos celestes do mapa.
-              </p>
+              <p className="mt-1 text-sm text-slate-600">Os anjos correspondentes aos dez corpos celestes do mapa.</p>
             </div>
           </div>
           <button
@@ -1145,7 +1169,8 @@ const PositionalV2Panel: React.FC<{
             return (
               <li
                 key={group.angelId}
-                className="rounded-[1.6rem] border border-violet-100 bg-white/85 p-4 shadow-sm md:p-5"
+                tabIndex={0}
+                className={`rounded-[1.6rem] border border-violet-100 bg-white/85 p-4 shadow-sm hover:border-violet-200 focus-visible:border-violet-300 focus-visible:ring-violet-200 md:p-5 ${RESULT_CARD_INTERACTION}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -1231,15 +1256,12 @@ export const ResultView: React.FC<ResultViewProps> = ({
     t += `*Tatwas:*\n`;
     t += `  • Principal: *${tatwaPresentation.principal}*\n`;
     t += `  • Subtatwa: *${tatwaPresentation.sub}*\n`;
-    t += `  • Método: *${tatwaPresentation.modeLabelPtBr}*\n`;
     if (tatwaPresentation.nearMainBoundary && tatwaPresentation.mainBoundaryMarginSec !== null) {
       t += `  • Atenção: resultado próximo de uma transição (${formatTatwaDurationPtBr(tatwaPresentation.mainBoundaryMarginSec)}).\n`;
       if (tatwaPresentation.adjacent) {
         t += `  • Possibilidade adjacente: *${tatwaPresentation.adjacent.principal} / ${tatwaPresentation.adjacent.sub}*\n`;
       }
     }
-    if (tatwaPresentation.subIsIndicative)
-      t += `  • O subtatwa é uma indicação sensível à precisão do horário natal.\n`;
     t += `\n`;
     t += `*Numerologia:*\n`;
     t += `  • Expressão: *${result.dadosGlobais.numerologia.expressao}*\n`;
@@ -1267,10 +1289,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
     t += blocoTexto(result.dadosTropical);
 
     t += divider;
-    t += `*✨ DUAS PERSPECTIVAS, UM MESMO NASCIMENTO ✨*\n\n`;
-    t += `_O módulo tropical organiza o zodíaco pelo ciclo sazonal; o resumo constelacional usa 13 faixas de referência aproximadas ao longo da eclíptica. Os dados posicionais detalhados fazem a classificação pelas regiões oficiais da IAU._\n`;
-    t += divider;
-
     t += `*⭐ MÓDULO II: ASTRONÔMICO CONSTELACIONAL*\n`;
     t += blocoTexto(result.dadosAstronomica);
 
@@ -1305,8 +1323,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
       t += `*🧠 SÍNTESE DO MESTRE (IA)*\n\n${iaTxt.replace(/\n{3,}/g, '\n\n').trim()}\n`;
     }
 
-    t += divider;
-    t += `✨ _Gerado via Oráculo Celestial ${APP_VERSION}_ ✨`;
     return t;
   };
 
@@ -1379,6 +1395,14 @@ export const ResultView: React.FC<ResultViewProps> = ({
     };
 
     const analiseSanitizada = analiseIa ? sanitizeRichHtml(analiseIa) : '';
+    const tatwaBoundaryEmailHtml =
+      tatwaPresentation.nearMainBoundary && tatwaPresentation.mainBoundaryMarginSec !== null
+        ? `<div style="margin-top:8px;padding:10px 12px;background-color:#fffbeb;border:1px solid #fde68a;border-radius:8px;color:#92400e;"><strong>Próximo de uma transição:</strong> margem de ${formatTatwaDurationPtBr(tatwaPresentation.mainBoundaryMarginSec)}.${
+            tatwaPresentation.adjacent
+              ? ` Possibilidade adjacente: <strong>${tatwaPresentation.adjacent.principal} / ${tatwaPresentation.adjacent.sub}</strong>.`
+              : ''
+          }</div>`
+        : '';
 
     const h = `
     <!DOCTYPE html>
@@ -1414,8 +1438,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
                     <div style="font-size: 16px; color: #334155;">
                         <div style="display: flex; justify-content: space-between; padding: 12px; background-color: #f8fafc; border-radius: 8px; margin-bottom: 8px;"><span>Principal</span> <strong style="color: #1e293b;">${tatwaPresentation.principal}</strong></div>
                         <div style="display: flex; justify-content: space-between; padding: 12px; background-color: #f8fafc; border-radius: 8px; margin-bottom: 8px;"><span>Subtatwa</span> <strong style="color: #1e293b;">${tatwaPresentation.sub}</strong></div>
-                        <div style="padding: 10px 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; color: #1e40af;"><strong>Método:</strong> ${tatwaPresentation.modeLabelPtBr}</div>
-                        ${renderTatwaEmailCautionHtml(tatwaPresentation)}
+                        ${tatwaBoundaryEmailHtml}
                     </div>
                 </div>
                 <div style="background-color: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); padding: 24px; border-radius: 24px; border: 1px solid #ffffff; ${boxShadow}">
@@ -1430,15 +1453,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
 
             ${renderBlocoAstrologicoEmail('Módulo I: Astrológico Tropical', result.dadosTropical.astrologia, result.dadosTropical.umbanda, true)}
             
-            <div style="margin: 60px 0; text-align: center; position: relative;">
-              <div style="position: absolute; inset: 0; background-image: linear-gradient(to right, rgba(251, 146, 60, 0.2), rgba(99, 102, 241, 0.2), rgba(52, 211, 153, 0.2)); border-radius: 24px; filter: blur(20px);"></div>
-              <div style="position: relative; background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); padding: 40px; border-radius: 24px; ${boxShadow}">
-                  <p style="font-size: 32px; margin: 0 0 12px 0;">✨</p>
-                  <h3 style="font-size: 24px; font-weight: 900; color: #4f46e5; margin: 0 0 8px 0;">Duas perspectivas, um mesmo nascimento</h3>
-                  <p style="font-size: 16px; color: #475569; margin: 0; max-width: 500px; margin-left: auto; margin-right: auto;">O módulo tropical organiza o zodíaco pelo ciclo sazonal. O resumo constelacional usa 13 faixas de referência aproximadas ao longo da eclíptica; os dados posicionais detalhados classificam pelas regiões oficiais da IAU.</p>
-              </div>
-            </div>
-
             ${renderBlocoAstrologicoEmail('Módulo II: Astronômico Constelacional', result.dadosAstronomica.astrologia, result.dadosAstronomica.umbanda, false)}
 
             ${result.dadosPosicionaisV2 ? renderPositionalV2EmailHtml(result.dadosPosicionaisV2) : ''}
@@ -1459,8 +1473,8 @@ export const ResultView: React.FC<ResultViewProps> = ({
             }
 
             <footer style="text-align: center; margin-top: 60px; padding-top: 20px; border-top: 1px solid #dde4ee;">
-                <p style="font-size: 12px; color: #64748b; margin: 0;">Gerado via Oráculo Celestial ${APP_VERSION}</p>
-                <p style="font-size: 12px; color: #64748b; margin: 6px 0 0;">Todos os instantes exibidos usam a hora oficial de Brasília (America/Sao_Paulo).</p>
+                <p style="font-size: 12px; color: #64748b; margin: 0;">Oráculo Celestial</p>
+                <p style="font-size: 12px; color: #64748b; margin: 6px 0 0;">Todos os horários exibidos seguem a Hora oficial de Brasília.</p>
             </footer>
 
         </div>
@@ -1498,7 +1512,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
         showNotification(String(data.error), 'error');
       }
     } catch {
-      showNotification('Falha na ponte do e-mail.', 'error');
+      showNotification('Não foi possível enviar o e-mail agora. Tente novamente em alguns instantes.', 'error');
     }
     setSendingEmail(false);
   };
@@ -1540,10 +1554,13 @@ export const ResultView: React.FC<ResultViewProps> = ({
       </div>
 
       <div className="grid md:grid-cols-2 gap-4 md:gap-6 w-full mb-8">
-        <div className="bg-white/70 backdrop-blur-2xl p-5 md:p-8 rounded-4xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] w-full flex flex-col justify-center min-w-0">
+        <div className="flex w-full min-w-0 flex-col justify-center rounded-[2.25rem] border border-sky-100 bg-linear-to-br from-white via-sky-50/55 to-blue-50/65 p-5 shadow-[0_16px_45px_rgba(14,165,233,0.10)] backdrop-blur-2xl md:p-8">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-            <h3 className="flex items-center gap-2 text-lg font-bold text-blue-600 md:text-xl">
-              <Wind className="h-5 w-5 text-blue-500" /> Forças Globais: Tatwas
+            <h3 className="flex items-center gap-3 text-lg font-black text-sky-700 md:text-xl">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-sky-400 to-blue-600 text-white shadow-md shadow-sky-100">
+                <Wind className="h-7 w-7" />
+              </span>{' '}
+              Forças Globais: Tatwas
             </h3>
             <button
               type="button"
@@ -1555,18 +1572,21 @@ export const ResultView: React.FC<ResultViewProps> = ({
             </button>
           </div>
           <div className="space-y-3">
-            <div className="bg-white/80 p-3 md:p-4 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm">
+            <div
+              tabIndex={0}
+              className={`flex items-center justify-between rounded-[1.35rem] border border-sky-100 bg-white/85 p-3 shadow-sm hover:border-sky-200 focus-visible:border-sky-300 focus-visible:ring-sky-200 md:p-4 ${RESULT_CARD_INTERACTION}`}
+            >
               <p className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Principal</p>
               <p className="font-bold text-slate-800 text-sm md:text-base truncate pl-2">
                 {tatwaPresentation.principal}
               </p>
             </div>
-            <div className="bg-white/80 p-3 md:p-4 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm">
+            <div
+              tabIndex={0}
+              className={`flex items-center justify-between rounded-[1.35rem] border border-sky-100 bg-white/85 p-3 shadow-sm hover:border-sky-200 focus-visible:border-sky-300 focus-visible:ring-sky-200 md:p-4 ${RESULT_CARD_INTERACTION}`}
+            >
               <p className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Subtatwa</p>
               <p className="font-bold text-slate-800 text-sm md:text-base truncate pl-2">{tatwaPresentation.sub}</p>
-            </div>
-            <div className="rounded-xl border border-blue-100 bg-blue-50/80 p-3 text-xs text-blue-900">
-              <span className="font-bold">Método:</span> {tatwaPresentation.modeLabelPtBr}
             </div>
             {tatwaPresentation.nearMainBoundary && tatwaPresentation.mainBoundaryMarginSec !== null && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
@@ -1583,15 +1603,18 @@ export const ResultView: React.FC<ResultViewProps> = ({
             )}
             {tatwaPresentation.subIsIndicative && (
               <p className="px-1 text-[11px] leading-relaxed text-slate-500">
-                O subtatwa é indicativo e especialmente sensível à precisão do horário registrado.
+                Resultado sujeito à precisão do horário.
               </p>
             )}
           </div>
         </div>
-        <div className="bg-white/70 backdrop-blur-2xl p-5 md:p-8 rounded-4xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] w-full flex flex-col justify-center min-w-0">
+        <div className="flex w-full min-w-0 flex-col justify-center rounded-[2.25rem] border border-violet-100 bg-linear-to-br from-white via-violet-50/55 to-fuchsia-50/55 p-5 shadow-[0_16px_45px_rgba(124,58,237,0.10)] backdrop-blur-2xl md:p-8">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-            <h3 className="flex items-center gap-2 text-lg font-bold text-blue-600 md:text-xl">
-              <Hash className="h-5 w-5 text-blue-500" /> Forças Globais: Numerologia
+            <h3 className="flex items-center gap-3 text-lg font-black text-violet-700 md:text-xl">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-400 to-fuchsia-600 text-white shadow-md shadow-violet-100">
+                <Hash className="h-7 w-7" />
+              </span>{' '}
+              Forças Globais: Numerologia
             </h3>
             <button
               type="button"
@@ -1603,19 +1626,28 @@ export const ResultView: React.FC<ResultViewProps> = ({
             </button>
           </div>
           <div className="space-y-3">
-            <div className="flex justify-between items-center bg-white/80 p-3 md:p-4 rounded-xl border border-slate-100 shadow-sm">
+            <div
+              tabIndex={0}
+              className={`flex items-center justify-between rounded-[1.35rem] border border-violet-100 bg-white/85 p-3 shadow-sm hover:border-violet-200 focus-visible:border-violet-300 focus-visible:ring-violet-200 md:p-4 ${RESULT_CARD_INTERACTION}`}
+            >
               <span className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Expressão</span>
               <strong className="text-sm md:text-base text-slate-800">
                 {String(result.dadosGlobais.numerologia.expressao)}
               </strong>
             </div>
-            <div className="flex justify-between items-center bg-white/80 p-3 md:p-4 rounded-xl border border-slate-100 shadow-sm">
+            <div
+              tabIndex={0}
+              className={`flex items-center justify-between rounded-[1.35rem] border border-violet-100 bg-white/85 p-3 shadow-sm hover:border-violet-200 focus-visible:border-violet-300 focus-visible:ring-violet-200 md:p-4 ${RESULT_CARD_INTERACTION}`}
+            >
               <span className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Caminho</span>
               <strong className="text-sm md:text-base text-slate-800">
                 {String(result.dadosGlobais.numerologia.caminhoVida)}
               </strong>
             </div>
-            <div className="flex justify-between items-center bg-white/80 p-3 md:p-4 rounded-xl border border-slate-100 shadow-sm">
+            <div
+              tabIndex={0}
+              className={`flex items-center justify-between rounded-[1.35rem] border border-violet-100 bg-white/85 p-3 shadow-sm hover:border-violet-200 focus-visible:border-violet-300 focus-visible:ring-violet-200 md:p-4 ${RESULT_CARD_INTERACTION}`}
+            >
               <span className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Hora</span>
               <strong className="text-sm md:text-base text-slate-800">
                 {String(result.dadosGlobais.numerologia.vibracaoHora)}
@@ -1642,11 +1674,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
             <h4 className="text-indigo-600 font-black uppercase tracking-widest text-sm md:text-xl mb-2">
               ✨ Duas perspectivas, um mesmo nascimento ✨
             </h4>
-            <p className="text-slate-600 text-sm md:text-base leading-relaxed text-balance">
-              O módulo tropical organiza o zodíaco pelo ciclo sazonal. A seguir, o resumo constelacional usa 13 faixas
-              de referência aproximadas ao longo da eclíptica; os dados posicionais detalhados classificam pelas regiões
-              oficiais da IAU.
-            </p>
           </div>
         </div>
       </div>
@@ -1664,8 +1691,8 @@ export const ResultView: React.FC<ResultViewProps> = ({
         <PositionalV2Panel data={result.dadosPosicionaisV2} openInfoModal={openInfoModal} />
       ) : (
         <p className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
-          Mapa legado: graus, Casas Placidus e falange angelical não estão disponíveis. O horário legado não possui fuso
-          verificável e não será relabelado como horário de Brasília.
+          Alguns detalhes não estão disponíveis neste mapa salvo anteriormente. Faça um novo cálculo para acessar todos
+          os recursos atuais.
         </p>
       )}
 
@@ -1740,9 +1767,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
             >
               <div className="flex items-center justify-between gap-4 text-sm font-bold text-slate-700">
                 <span>{analysisProgress.message}</span>
-                <span className="shrink-0 text-blue-700">
-                  {analysisProgress.completedSteps}/{Math.max(analysisProgress.totalSteps, 1)} etapas
-                </span>
+                <span className="shrink-0 text-blue-700">Em andamento</span>
               </div>
               <div
                 className="mt-3 h-2.5 overflow-hidden rounded-full bg-blue-100"
@@ -1762,7 +1787,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
                 />
               </div>
               <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                Cada parte é enviada e concluída separadamente. O relatório só aparece depois da integração integral.
+                Sua leitura completa aparecerá aqui quando estiver pronta.
               </p>
             </div>
           )}
@@ -1900,14 +1925,17 @@ export default function App() {
           setAuthMode('retrieve');
           setAuthStep('email');
           setAuthToken('');
-          showNotification('Sua sessão expirou. Informe seu e-mail para restaurar os dados avançados.', 'info');
+          showNotification('Sua sessão expirou. Informe seu e-mail para abrir novamente o mapa completo.', 'info');
           return;
         }
         if (error instanceof SavedMapHydrationError && error.kind === 'invalid-canonical-data') {
-          showNotification('Os dados avançados canônicos deste mapa estão inconsistentes.', 'error');
+          showNotification('Alguns detalhes deste mapa não puderam ser abertos. Tente novamente mais tarde.', 'error');
           return;
         }
-        showNotification('Os dados avançados deste mapa não puderam ser restaurados com segurança.', 'error');
+        showNotification(
+          'Não foi possível abrir todos os detalhes deste mapa agora. Tente novamente mais tarde.',
+          'error',
+        );
       })
       .finally(() => {
         if (savedMapArtifactsRequestRef.current === controller) {
@@ -2045,7 +2073,7 @@ export default function App() {
         showNotification(String(data.error), 'error');
       }
     } catch {
-      showNotification('Erro de conexão.', 'error');
+      showNotification('Não foi possível calcular o mapa agora. Tente novamente em alguns instantes.', 'error');
     }
     setLoading(false);
   };
@@ -2053,7 +2081,7 @@ export default function App() {
   const solicitarAnalise = async () => {
     if (!result) return;
     setLoadingAi(true);
-    setAnalysisProgress({ message: 'Iniciando a análise em partes...', completedSteps: 0, totalSteps: 1 });
+    setAnalysisProgress({ message: 'Preparando sua leitura...', completedSteps: 0, totalSteps: 1 });
     const storageKey = `astrologo_analysis_job:${result.id}`;
     let credentials: { jobId: string; capability: string } | null = null;
     try {
@@ -2084,7 +2112,9 @@ export default function App() {
       if (!credentials) {
         data = await requestAnalysisJob({ action: 'start', id: result.id });
         if (!data.success || !data.job?.id || !data.job.capability) {
-          throw new Error(data.error ?? 'A análise não pôde ser iniciada com segurança.');
+          throw new Error(
+            data.error ?? 'Não foi possível iniciar a análise agora. Tente novamente em alguns instantes.',
+          );
         }
         credentials = { jobId: data.job.id, capability: data.job.capability };
         sessionStorage.setItem(storageKey, JSON.stringify(credentials));
@@ -2093,7 +2123,9 @@ export default function App() {
       let consecutiveConnectionFailures = 0;
       while (data.job && data.job.status !== 'completed') {
         if (data.job.status === 'failed' || data.job.status === 'cancelled' || !data.success) {
-          throw new Error(data.error ?? 'Uma parte da análise não pôde ser concluída integralmente.');
+          throw new Error(
+            data.error ?? 'Não foi possível concluir a análise agora. Tente novamente em alguns instantes.',
+          );
         }
         setAnalysisProgress({
           message: data.job.message,
@@ -2120,7 +2152,7 @@ export default function App() {
         }
       }
       if (!data.analise) {
-        throw new Error(data.error ?? 'A análise foi concluída sem um relatório integral válido.');
+        throw new Error(data.error ?? 'Não foi possível apresentar a leitura completa. Solicite uma nova análise.');
       }
       setAnalysisProgress({
         message: 'Análise completa concluída.',
@@ -2131,7 +2163,7 @@ export default function App() {
       sessionStorage.removeItem(storageKey);
     } catch (error) {
       showNotification(
-        error instanceof Error ? error.message : 'A Inteligência não conseguiu concluir todas as partes.',
+        error instanceof Error ? error.message : 'A Inteligência não conseguiu concluir a análise.',
         'error',
       );
     }

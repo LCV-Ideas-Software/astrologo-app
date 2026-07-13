@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+## [v02.23.00] - 2026-07-12
+
+### Melhorado
+
+- **Análise dedicada ao consulente** — o relatório final deixa de repetir definições, métodos, contratos e detalhes de funcionamento já cobertos pelos diálogos “Saiba Mais”. A síntese passa a publicar somente interpretação personalizada dos cálculos, com um aviso fundamental fixo no início e uma orientação breve para a ajuda contextual.
+- **Profundidade interpretativa** — aspectos natais e Casas são conectados por prioridade e padrões; a sinastria integra comunicação, afeto, desejo, tensões, limites e sobreposições recíprocas; o Anjo Regente e a Falange Angelical passam a ter seções obrigatórias quando seus dados estão presentes.
+- **“Saiba Mais” ampliado** — Tatwas, sistemas astrológicos, casas, aspectos, trânsitos, sinastria, localidade, angelologia e roda natal recebem explicações para leitores leigos e poucas referências externas selecionadas.
+- **Roda natal interativa** — planetas, aspectos, casas, signos e ângulos reagem a ponteiro, foco e toque, exibem dicas em pt-BR e abrem detalhes curtos em painel envidraçado. A navegação por teclado, o retorno de foco e a preferência de movimento reduzido são respeitados sem acrescentar dependências.
+- **UI/UX coerente** — cards originais e novos adotam o mesmo acabamento, hierarquia, estados de hover/foco, ícones coloridos e comportamento responsivo. A legenda da roda mantém contraste integralmente branco sobre o fundo escuro.
+
+### Segurança e privacidade da apresentação
+
+- Uma barreira editorial bloqueia versões, hashes, identificadores, contratos, nomes de infraestrutura, mensagens sobre mapas antigos e outros detalhes internos antes da persistência. Tela, mapas salvos e e-mail também removem a antiga mensagem sobre dados posicionais indisponíveis.
+- Mensagens públicas de erro e estado passam a explicar somente o que o usuário pode fazer, enquanto o diagnóstico técnico permanece restrito à telemetria e aos logs internos.
+- A configuração do Biome adota a chave `rules.recommended` aceita pela versão instalada, restaurando o gate de formatação e análise estática.
+- O Dependabot passa a atualizar também as revisões fixadas em `.pre-commit-config.yaml` e o ambiente Python de `socketsecurity-requirements.txt`, completando a cobertura já existente para os dois projetos npm e para GitHub Actions; todas as agendas diárias foram normalizadas conforme a especificação do GitHub.
+
+### Compatibilidade
+
+- Cálculos, contratos persistidos, schema D1, autenticação, particionamento reentrante e artefatos históricos permanecem inalterados. A montagem antiga é preservada para trabalhos já iniciados; novos trabalhos usam a síntese editorial integrada.
+
 ## [v02.22.04] - 2026-07-12
 
 ### Corrigido

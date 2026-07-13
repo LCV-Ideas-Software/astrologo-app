@@ -1,4 +1,5 @@
 import { hasInternalAnalysisMarkerResidue, stripInternalAnalysisMarkers } from '../../../src/analysisOutput';
+import { finalizeUserAnalysisHtml, hasInternalImplementationLeakage } from './analysisEditorial';
 import { type D1DatabaseLike, type D1Statement, hashToken } from './requestSecurity';
 
 export type AnalysisJobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
@@ -479,9 +480,12 @@ export const completeAnalysisJob = async (options: {
   readonly promptVersion: string;
   readonly inputHash: string;
 }): Promise<void> => {
-  const analysisHtml = stripInternalAnalysisMarkers(options.analysisHtml);
+  const analysisHtml = finalizeUserAnalysisHtml(stripInternalAnalysisMarkers(options.analysisHtml));
   if (hasInternalAnalysisMarkerResidue(analysisHtml)) {
     throw new TypeError('A análise integral contém resíduo de uma sentinela interna.');
+  }
+  if (hasInternalImplementationLeakage(analysisHtml)) {
+    throw new TypeError('A análise integral contém informação interna do aplicativo.');
   }
   const batch = requireBatch(options.db);
   const finalResult = serializeJson(

@@ -443,7 +443,7 @@ export async function onRequestPost(context: Context) {
         {
           success: false,
           code: 'TATWA_SCHEMA_VALIDATION_FAILED',
-          error: 'O cálculo dos Tatwas não passou pelos invariantes de segurança.',
+          error: 'Não foi possível concluir o cálculo dos Tatwas. Confira os dados e tente novamente.',
         },
         500,
         corsHeaders,
@@ -496,7 +496,7 @@ export async function onRequestPost(context: Context) {
         {
           success: false,
           code: 'POSITIONAL_SCHEMA_VALIDATION_FAILED',
-          error: 'O cálculo posicional não passou pelos invariantes de segurança.',
+          error: 'Não foi possível concluir as posições do mapa. Confira os dados e tente novamente.',
         },
         500,
         corsHeaders,
@@ -511,7 +511,7 @@ export async function onRequestPost(context: Context) {
         {
           success: false,
           code: 'NATAL_ANALYSIS_SCHEMA_VALIDATION_FAILED',
-          error: 'A análise geométrica natal não passou pelos invariantes de segurança.',
+          error: 'Não foi possível concluir os detalhes do mapa natal. Confira os dados e tente novamente.',
         },
         500,
         corsHeaders,
@@ -555,7 +555,7 @@ export async function onRequestPost(context: Context) {
         {
           success: false,
           code: 'POSITIONAL_PERSISTENCE_FAILED',
-          error: 'O mapa foi calculado, mas não pôde ser persistido com segurança.',
+          error: 'O mapa foi calculado, mas não pôde ser salvo. Tente novamente em alguns instantes.',
           detail: error instanceof Error ? error.message : undefined,
         },
         503,
@@ -578,7 +578,8 @@ export async function onRequestPost(context: Context) {
       { headers: { 'Content-Type': 'application/json', ...corsHeaders, ...securityHeaders } },
     );
   } catch (error) {
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Erro desconhecido' }), {
+    console.error('Falha inesperada ao calcular o mapa.', error);
+    return new Response(JSON.stringify({ error: 'Não foi possível calcular o mapa agora. Tente novamente.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders, ...securityHeaders },
     });

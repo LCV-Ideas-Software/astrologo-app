@@ -41,13 +41,14 @@ const map = {
 } as unknown as LocalityMapV1;
 
 describe('apresentação do mapa de localidade', () => {
-  it('explica frame, linha e instante natal em pt-BR', () => {
+  it('apresenta linhas e instante natal em pt-BR sem detalhes internos', () => {
     const text = renderLocalityMapText(map);
     expect(text).toContain('MAPA PLANETÁRIO DE LOCALIDADE');
     expect(text).toContain('26/03/1979 às 16:45:00');
     expect(text).toContain('Sol — Meio do Céu');
-    expect(text).toContain('EQJ/J2000 → EQD verdadeiro da data');
-    expect(text).toContain('sem refração');
+    expect(text).not.toContain('EQJ/J2000');
+    expect(text).not.toContain('sem refração');
+    expect(text).not.toContain('Resolução latitudinal');
   });
 
   it('gera e-mail com cautela cartográfica', () => {
@@ -55,6 +56,8 @@ describe('apresentação do mapa de localidade', () => {
     expect(html).toContain('Mapa Planetário de Localidade');
     expect(html).toContain('Hora oficial de Brasília');
     expect(html).toContain('não recomenda mudança');
+    expect(html).not.toContain('EQJ/J2000');
+    expect(html).not.toContain('sem refração');
   });
 
   it('rejeita resposta de rede estruturalmente incompleta antes de desenhar', () => {

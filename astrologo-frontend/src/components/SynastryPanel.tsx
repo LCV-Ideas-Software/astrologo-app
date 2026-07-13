@@ -138,9 +138,9 @@ export function SynastryPanel({
         names: payload.subjects,
         ...(payload.secondaryMapId ? { secondaryMapId: payload.secondaryMapId } : {}),
       });
-      notify('Sinastria calculada e persistida com segurança.', 'success');
+      notify('Sinastria calculada com sucesso.', 'success');
     } catch {
-      notify('Falha de conexão ao calcular a sinastria.', 'error');
+      notify('Não foi possível calcular a sinastria agora. Tente novamente em alguns instantes.', 'error');
     } finally {
       setLoading(false);
     }
@@ -154,7 +154,8 @@ export function SynastryPanel({
   ) => (
     <li
       key={`${sourceName}-${targetName}-${bodyId}`}
-      className="flex items-center gap-3 rounded-xl border border-white bg-white/90 p-3 shadow-sm"
+      tabIndex={0}
+      className="flex items-center gap-3 rounded-xl border border-white bg-white/90 p-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-violet-200 hover:shadow-md focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:border-violet-300 focus-visible:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200 motion-reduce:transform-none motion-reduce:transition-none"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-100 text-2xl text-pink-700">
         {PLANET_SYMBOLS[bodyId] ?? '✦'}
@@ -276,7 +277,7 @@ export function SynastryPanel({
                   }`}
                 >
                   {candidate.disambiguation === 'earlier' ? 'Primeira ocorrência' : 'Segunda ocorrência'} ·{' '}
-                  {formatInstantInBrasilia(candidate.instantUtc)} · UTC{candidate.offsetAtBirth}
+                  {formatInstantInBrasilia(candidate.instantUtc)} — Hora oficial de Brasília
                 </button>
               ))}
             </div>
@@ -290,8 +291,8 @@ export function SynastryPanel({
             onChange={(event) => setConsentRecorded(event.target.checked)}
             className="mt-1 h-4 w-4 accent-pink-600"
           />
-          Confirmo que possuo autorização para usar os dados da Pessoa B nesta comparação e compreendo que um segundo
-          mapa será persistido com segurança para tornar o cálculo auditável.
+          Confirmo que possuo autorização para usar os dados da Pessoa B nesta comparação e compreendo que eles serão
+          salvos junto ao resultado.
         </label>
         <button
           type="submit"
@@ -314,7 +315,8 @@ export function SynastryPanel({
                 {result.run.aspects.map((aspect) => (
                   <li
                     key={aspect.recordId}
-                    className="rounded-2xl border border-pink-100 bg-linear-to-br from-white to-pink-50/65 p-4 shadow-sm"
+                    tabIndex={0}
+                    className="rounded-2xl border border-pink-100 bg-linear-to-br from-white to-pink-50/65 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-pink-200 hover:shadow-md focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:border-pink-300 focus-visible:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-200 motion-reduce:transform-none motion-reduce:transition-none"
                   >
                     <p className="text-xs font-black uppercase tracking-wider text-pink-700">
                       {aspect.displayNamePtBr}

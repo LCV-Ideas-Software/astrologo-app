@@ -9,7 +9,8 @@ const runtime = vi.hoisted(() => ({
   totalTokens: 100,
   model: 'gemini-3.1-pro-preview',
   fragmentHtml: '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>',
-  directHtml: '<p>Análise direta validada.</p>',
+  directHtml:
+    '<h2>Astrologia Tropical</h2><p>O Sol organiza a expressão pessoal e dialoga com a Lua e o Ascendente.</p><h2>Astrologia Astronômica Constelacional</h2><p>Os planetas em suas constelações acrescentam nuances simbólicas à leitura desta pessoa.</p><h2>Orixás e Astro</h2><p>O Orixá regente dialoga com o Astro da Hora Planetária e orienta sua expressão.</p><h2>Tatwas e Numerologia</h2><p>O Tatwa principal e o subtatwa se integram à Numerologia e ao Caminho da Vida.</p><h2>Síntese Integrada</h2><p>Os padrões reunidos revelam recursos, tensões e possibilidades que podem ser observados conscientemente.</p>',
   job: null as Record<string, unknown> | null,
   step: null as Record<string, unknown> | null,
   lastRetryOptions: null as Record<string, unknown> | null,
@@ -282,7 +283,8 @@ beforeEach(() => {
   runtime.totalTokens = 100;
   runtime.model = 'gemini-3.1-pro-preview';
   runtime.fragmentHtml = '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>';
-  runtime.directHtml = '<p>Análise direta validada.</p>';
+  runtime.directHtml =
+    '<h2>Astrologia Tropical</h2><p>O Sol organiza a expressão pessoal e dialoga com a Lua e o Ascendente.</p><h2>Astrologia Astronômica Constelacional</h2><p>Os planetas em suas constelações acrescentam nuances simbólicas à leitura desta pessoa.</p><h2>Orixás e Astro</h2><p>O Orixá regente dialoga com o Astro da Hora Planetária e orienta sua expressão.</p><h2>Tatwas e Numerologia</h2><p>O Tatwa principal e o subtatwa se integram à Numerologia e ao Caminho da Vida.</p><h2>Síntese Integrada</h2><p>Os padrões reunidos revelam recursos, tensões e possibilidades que podem ser observados conscientemente.</p>';
   runtime.job = null;
   runtime.step = null;
   runtime.lastRetryOptions = null;
@@ -291,6 +293,29 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks());
 
 describe('/api/analisar — protocolo reentrante', () => {
+  it('exige conteúdo dentro da seção correspondente, sem aceitar palavras soltas de outra seção', async () => {
+    const { assertIntegratedInterpretiveCoverage } = await import('./analisar');
+    expect(() =>
+      assertIntegratedInterpretiveCoverage(runtime.directHtml, [
+        'legacy.tropical',
+        'legacy.astronomical',
+        'canonical.tatwa',
+      ]),
+    ).not.toThrow();
+
+    const emptyOrixaSection = runtime.directHtml.replace(
+      /<h2>Orixás e Astro<\/h2><p>[\s\S]*?<\/p>/u,
+      '<h2>Orixás e Astro</h2><p></p>',
+    );
+    expect(() =>
+      assertIntegratedInterpretiveCoverage(emptyOrixaSection, [
+        'legacy.tropical',
+        'legacy.astronomical',
+        'canonical.tatwa',
+      ]),
+    ).toThrow(/Orixás e Astro/u);
+  });
+
   it('inicia, planeja e gera em requisições distintas, com no máximo uma geração por avanço', async () => {
     const { onRequestPost } = await import('./analisar');
 

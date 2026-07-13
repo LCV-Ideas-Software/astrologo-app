@@ -113,16 +113,17 @@ describe('Tatwa canônico para o agente de IA', () => {
     });
   });
 
-  it('produz instrução aditiva, leiga, neutra e em pt-BR', () => {
+  it('produz instrução interpretativa e mantém a metodologia fora do relatório', () => {
     const projected = projectCanonicalTatwa(newTatwa);
     const addendum = buildTatwaPromptAddendum(projected);
 
-    expect(addendum).toContain('ADENDO — TATWAS E PERSPECTIVAS DE CÁLCULO');
-    expect(addendum).toContain('não declare uma delas superior');
-    expect(addendum).toContain('Tropical e Astronômico Constelacional são perspectivas');
-    expect(addendum).toContain('Não chame o Tropical de máscara');
-    expect(addendum).toContain('o horário natal informado possui precisão de minuto');
-    expect(addendum).toContain('Ordem fixa — Akasha primeiro');
+    expect(addendum).toContain('INTERPRETAÇÃO DOS TATWAS');
+    expect(addendum).toContain('Não explique o conceito, a duração, a ordem');
+    expect(addendum).toContain('consulte os botões “Saiba Mais”');
+    expect(addendum).not.toContain('Tropical e Astronômico Constelacional são perspectivas');
+    expect(addendum).not.toContain('24 minutos');
+    expect(addendum).not.toContain('4 minutos e 48 segundos');
+    expect(addendum).not.toContain('mapa legado');
     expect(addendum).toContain('próximo de uma transição');
     expect(addendum).not.toContain('ignore todas as instruções');
   });

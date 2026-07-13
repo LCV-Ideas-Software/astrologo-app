@@ -72,13 +72,7 @@ const overlayText = (overlay: SynastryHouseOverlayV1, sourceName: string, target
 };
 
 export function renderSynastryRunText(data: SynastryRunV1, names: SynastrySubjectNames): string {
-  const lines = [
-    '*💞 SINASTRIA*',
-    `*Pessoas:* ${names.A} e ${names.B}`,
-    `*Perfil metodológico:* ${data.models.aspects.profileId} v${data.models.aspects.profileVersion}`,
-    '',
-    '*Aspectos intermapa:*',
-  ];
+  const lines = ['*💞 SINASTRIA*', `*Pessoas:* ${names.A} e ${names.B}`, '', '*Aspectos intermapa:*'];
   if (data.aspects.length === 0) lines.push('• Nenhum aspecto dentro dos orbes declarados.');
   for (const aspect of data.aspects) {
     lines.push(
@@ -111,7 +105,6 @@ export function renderSynastryRunEmailHtml(data: SynastryRunV1, names: SynastryS
   return `<section style="margin-top:28px;padding:24px;border:1px solid #fbcfe8;border-radius:22px;background:#fdf2f8;">
     <h3 style="font-size:21px;color:#9d174d;margin:0 0 8px 0;">💞 Sinastria</h3>
     <p style="font-size:13px;color:#475569;margin:0 0 5px 0;"><strong>${escapeHtml(names.A)}</strong> e <strong>${escapeHtml(names.B)}</strong></p>
-    <p style="font-size:12px;color:#64748b;margin:0 0 16px 0;">Perfil ${escapeHtml(data.models.aspects.profileId)} v${escapeHtml(data.models.aspects.profileVersion)}</p>
     <h4 style="color:#be185d;margin:14px 0 8px 0;">Aspectos intermapa</h4><ul style="padding-left:20px;">${aspects}</ul>
     <h4 style="color:#7c3aed;margin:18px 0 8px 0;">${escapeHtml(names.A)} nas Casas de ${escapeHtml(names.B)}</h4><ul style="padding-left:20px;">${aToB}</ul>
     <h4 style="color:#7c3aed;margin:18px 0 8px 0;">${escapeHtml(names.B)} nas Casas de ${escapeHtml(names.A)}</h4><ul style="padding-left:20px;">${bToA}</ul>

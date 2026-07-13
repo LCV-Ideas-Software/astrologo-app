@@ -178,23 +178,15 @@ export const buildTatwaPromptAddendum = (dto: TatwaPromptDto | null): string => 
   if (!dto) return '';
   return `
 
-ADENDO — TATWAS E PERSPECTIVAS DE CÁLCULO
+ADENDO — INTERPRETAÇÃO DOS TATWAS
 
-Este adendo é exclusivamente acumulativo. Preserve integralmente todas as instruções anteriores, sem resumir, substituir, omitir ou reordenar as análises exigidas.
+Este adendo fornece a combinação canônica que deve ser interpretada. Preserve o contrato editorial do relatório.
 
-Trate os Tatwas como um sistema simbólico tradicional, não como fato físico, diagnóstico ou verdade universal. A recepção ocidental documenta mais de uma forma de ordenar os subtatwas; apresente a perspectiva informada nos dados e não declare uma delas superior, definitiva ou universalmente correta.
+Use os Tatwas como linguagem simbólica tradicional, não como fato físico, diagnóstico ou verdade universal. Interprete somente a combinação selecionada em selected e relacione Tatwa principal e subtatwa aos demais padrões do mapa.
 
-Mantenha a mesma postura ao comparar os sistemas astrológicos: Tropical e Astronômico Constelacional são perspectivas construídas por referências diferentes. Não chame o Tropical de máscara, ilusão ou falsidade, nem o Constelacional de verdade absoluta ou assinatura verdadeira. Explique com precisão o que cada método mede e interprete-o dentro das regras declaradas, sem apagar as demais instruções analíticas.
+Não explique o conceito, a duração, a ordem, o ciclo, a origem, a precisão do cálculo nem as diferenças entre métodos. Para essas informações, consulte os botões “Saiba Mais”. Não compare o resultado selecionado a outra ordem e não exponha nomes internos de modo, versão ou proveniência.
 
-Explique em linguagem simples, sempre em português do Brasil:
-- Tatwa principal: corrente simbólica de 24 minutos dentro de um ciclo de 120 minutos alinhado ao nascer do Sol local.
-- Subtatwa: subdivisão de 4 minutos e 48 segundos que acrescenta uma nuance ao Tatwa principal e é especialmente sensível à precisão do horário natal.
-- Ordem fixa — Akasha primeiro: cada Tatwa principal subdivide-se sempre em Akasha, Vayu, Tejas, Apas e Prithvi.
-- Ordem pelo principal — Tatwa principal primeiro: cada bloco começa pelo próprio Tatwa principal e prossegue circularmente.
-
-Use somente o resultado selecionado em selected. Não recalcule, não troque o método e não misture as duas perspectivas. Se uncertainty.nearMainBoundary for verdadeiro, diga com clareza que o horário está próximo de uma transição e apresente adjacentMain apenas como possibilidade adjacente, sem substituir o resultado selecionado. Para registros legacy-rulingFirst, informe que se trata de um mapa legado e não invente nascer do Sol, margens ou proveniência ausentes.
-
-Nos mapas v2, diferencie resolução do cálculo de precisão do registro: os eventos solares e intermediários são calculados em segundos, mas o horário natal informado possui precisão de minuto. Não apresente essa resolução matemática como prova de que o nascimento foi registrado no segundo exato.
+Não recalcule, não troque o resultado e não misture perspectivas. Se uncertainty.nearMainBoundary for verdadeiro, acrescente somente uma frase curta dizendo que o horário está próximo de uma transição e apresente adjacentMain como possibilidade adjacente, sem explicar a matemática nem substituir o resultado selecionado. Se a incerteza não estiver presente, não crie cautela genérica.
 
 DADOS_TATWA_CANONICOS — INÍCIO
 ${JSON.stringify(dto)}

@@ -31,11 +31,17 @@ export interface InfoSection {
   readonly items: readonly string[];
 }
 
+export interface InfoSource {
+  readonly label: string;
+  readonly url: string;
+}
+
 export interface InfoContent {
   readonly title: string;
   readonly introduction: string;
   readonly sections: readonly InfoSection[];
   readonly closing: string;
+  readonly sources?: readonly InfoSource[];
 }
 
 const tropicalContent: InfoContent = {
@@ -59,6 +65,12 @@ const tropicalContent: InfoContent = {
     },
   ],
   closing: 'Leia este módulo como uma referência sazonal e simbólica, válida dentro das regras que adota.',
+  sources: [
+    {
+      label: 'Astrodienst — Zodíaco tropical, signos e constelações',
+      url: 'https://www.astro.com/astrowiki/en/Zodiac',
+    },
+  ],
 };
 
 const astronomicalContent: InfoContent = {
@@ -84,6 +96,16 @@ const astronomicalContent: InfoContent = {
   ],
   closing:
     'Compare os dois módulos como perspectivas construídas com regras diferentes, sem precisar descartar uma para compreender a outra.',
+  sources: [
+    {
+      label: 'União Astronômica Internacional — As constelações oficiais',
+      url: 'https://www.iau.org/Iau/Science/What-we-do/The-Constellations.aspx',
+    },
+    {
+      label: 'União Astronômica Internacional — Ofiúco e o caminho aparente do Sol',
+      url: 'https://www.iau.org/Iau/Iau/Science/What-we-do/FAQs.aspx',
+    },
+  ],
 };
 
 const formatBoundaryContext = (tatwa: TatwaPresentation | undefined): string => {
@@ -114,7 +136,7 @@ const tatwaContent = (tatwa: TatwaPresentation | undefined): InfoContent => ({
       title: 'Duas ordens tradicionais documentadas',
       items: [
         'Ordem fixa — Akasha primeiro: todo Tatwa principal divide-se na sequência Akasha, Vayu, Tejas, Apas e Prithvi. Este é o padrão adotado nos novos mapas.',
-        'Ordem pelo principal — Tatwa principal primeiro: cada período começa pelo próprio Tatwa principal e continua circularmente. Mapas antigos são preservados e identificados como registros legados desse método.',
+        'Ordem pelo principal — Tatwa principal primeiro: cada período começa pelo próprio Tatwa principal e continua circularmente. Alguns mapas calculados anteriormente usam essa ordem e preservam o resultado originalmente apresentado.',
         'As duas ordens são apresentadas como convenções interpretativas. O aplicativo não declara que uma delas seja uma verdade física ou universal.',
       ],
     },
@@ -122,9 +144,18 @@ const tatwaContent = (tatwa: TatwaPresentation | undefined): InfoContent => ({
       title: 'O que o seu mapa informa',
       items: [formatBoundaryContext(tatwa)],
     },
+    {
+      title: 'Como interpretar a combinação',
+      items: [
+        'O Tatwa principal apresenta o tema elementar dominante do instante; o subtatwa acrescenta uma nuance que modifica a maneira como esse tema tende a se expressar.',
+        'Akasha sugere abertura, integração e potencial; Vayu, movimento, ideias e comunicação; Tejas, impulso, transformação e decisão; Apas, sensibilidade, vínculo e adaptação; Prithvi, estabilidade, forma e concretização.',
+        'Leia os dois nomes juntos. Por exemplo, Tejas–Akasha combina iniciativa transformadora com busca de sentido e amplitude, enquanto Vayu–Prithvi aproxima ideias e movimento da necessidade de organização prática.',
+      ],
+    },
   ],
   closing:
     'Horários aproximados, arredondados ou próximos de uma transição pedem cautela: o aplicativo sinaliza essa incerteza em vez de ocultá-la.',
+  sources: [{ label: 'Rama Prasad — Nature’s Finer Forces', url: 'https://books.google.com/books?vid=bYOh6nZo9vAC' }],
 });
 
 const numerologyContent = (numerologia: NumerologyInfoContext | undefined): InfoContent => {
@@ -167,6 +198,7 @@ const detailedMapContent: InfoContent = {
       title: 'O que aparece em cada cartão',
       items: [
         'A posição tropical informa signo, grau e decanato dentro do zodíaco sazonal de 12 setores iguais.',
+        'O decanato é uma das três faixas de 10 graus que subdividem cada signo. Ele oferece uma camada adicional de leitura dentro do mesmo signo.',
         'A Casa Placidus informa em qual das 12 divisões astrológicas locais o corpo foi posicionado, usando o instante e o lugar de nascimento.',
         'O céu astronômico informa a região oficial da IAU que contém a coordenada celeste. Essa camada não calcula um grau dentro da constelação, porque as constelações oficiais são áreas bidimensionais de formatos irregulares.',
         'O quinário angelical informa qual intervalo tropical de 5 graus e qual anjo do catálogo do projeto correspondem à longitude do corpo. Essa associação é simbólica, não uma classificação astronômica.',
@@ -190,6 +222,10 @@ const detailedMapContent: InfoContent = {
   ],
   closing:
     'Use este quadro para comparar camadas posicionais e simbólicas com regras próprias; a interpretação nasce da leitura conjunta, não da mistura de suas unidades.',
+  sources: [
+    { label: 'Astrodienst — Decanatos', url: 'https://www.astro.com/astrowiki/en/Decans' },
+    { label: 'Astrodienst — Casas Placidus', url: 'https://www.astro.com/astrowiki/en/Placidus' },
+  ],
 };
 
 const celestialDistributionContent: InfoContent = {
@@ -216,6 +252,7 @@ const celestialDistributionContent: InfoContent = {
   ],
   closing:
     'As casas são uma estrutura interpretativa da astrologia. Confira com cuidado hora e local antes de atribuir significado às posições mostradas.',
+  sources: [{ label: 'Astrodienst — Sistemas de casas', url: 'https://www.astro.com/astrowiki/en/House_System' }],
 };
 
 const mapCorrespondencesContent: InfoContent = {
@@ -240,6 +277,14 @@ const mapCorrespondencesContent: InfoContent = {
       ],
     },
     {
+      title: 'Como ler os campos angelicais',
+      items: [
+        'O triplete hebraico identifica graficamente o nome dentro da tradição adotada. Coro e príncipe mostram o agrupamento hierárquico usado pelo catálogo; não são medidas de força pessoal.',
+        'A síntese tradicional reúne qualidades associadas ao anjo. Na leitura do mapa, essas qualidades são relacionadas à função simbólica do planeta correspondente: identidade no Sol, emoções na Lua, comunicação em Mercúrio, vínculos em Vênus e assim por diante.',
+        'Quando o mesmo anjo aparece ligado a mais de um planeta, a repetição sugere um tema simbólico recorrente em diferentes áreas do mapa, sem transformar esse anjo em um segundo regente.',
+      ],
+    },
+    {
       title: 'Limite desta metodologia',
       items: [
         'Este sistema angelical usa somente a longitude tropical. Ele ainda não foi adaptado às 13 constelações de referência nem às regiões oficiais da IAU exibidas na camada astronômica.',
@@ -249,6 +294,16 @@ const mapCorrespondencesContent: InfoContent = {
   ],
   closing:
     'Leia a falange como um mapa de correspondências dentro da metodologia declarada, distinguindo-a tanto da astronomia quanto de outras escolas espirituais.',
+  sources: [
+    {
+      label: 'Wiki de Ocultismo de Marcelo Del Debbio — Anjos Cabalísticos',
+      url: 'https://wiki.deldebbio.com.br/index.php/Anjos_Cabal%C3%ADsticos',
+    },
+    {
+      label: 'Ilustrações TdC/Project Mayhem — roda de correspondências',
+      url: 'https://www.behance.net/gallery/15162493/Ilustracoes-TdCProjectMayhem',
+    },
+  ],
 };
 
 const natalWheelContent: InfoContent = {
@@ -261,7 +316,7 @@ const natalWheelContent: InfoContent = {
       items: [
         'A faixa externa mostra símbolos e cores dos 12 signos tropicais. As linhas numeradas marcam o início e a extensão visual das 12 Casas Placidus.',
         'Os símbolos planetários mantêm a longitude calculada. Quando vários corpos estão muito próximos, eles podem ocupar anéis ligeiramente diferentes para continuar legíveis; essa separação gráfica não muda os graus do mapa.',
-        'As linhas no centro ligam os pares que atendem ao perfil de aspectos declarado. Cor e tracejado ajudam a distinguir cada tipo, mas a lista textual continua sendo a referência para valores exatos e acessibilidade.',
+        'As linhas no centro ligam os pares que atendem aos critérios de aspectos adotados. Cor e tracejado ajudam a distinguir cada tipo, mas a lista textual continua sendo a referência para valores exatos e acessibilidade.',
       ],
     },
     {
@@ -274,6 +329,12 @@ const natalWheelContent: InfoContent = {
   ],
   closing:
     'Use a roda para reconhecer relações espaciais e consulte a alternativa textual para graus, orbes, indisponibilidades e metodologia completa.',
+  sources: [
+    {
+      label: 'Astro.com — exemplo de roda astrológica interativa',
+      url: 'https://www.astro.com/cgi/aclch.cgi',
+    },
+  ],
 };
 
 const natalAspectsContent: InfoContent = {
@@ -284,21 +345,26 @@ const natalAspectsContent: InfoContent = {
     {
       title: 'Ângulo exato, separação e orbe',
       items: [
-        'Conjunção, Sextil, Quadratura, Trígono, Quincúncio e Oposição correspondem a ângulos exatos definidos pela metodologia. O aspecto observado raramente coincide com o valor perfeito.',
+        'Conjunção aproxima e funde funções; Sextil favorece cooperação e oportunidade; Quadratura cria atrito e exige ação; Trígono facilita circulação e talento; Quincúncio pede ajuste entre linguagens diferentes; Oposição coloca duas forças frente a frente e pede integração.',
         'O orbe é a diferença entre a separação observada e o ângulo exato. Quanto menor o orbe, mais próxima está a geometria do aspecto; isso não é uma medida científica de destino, personalidade ou intensidade psicológica.',
-        'Os limites aceitos pertencem a um perfil metodológico versionado. Assim, o aplicativo consegue explicar e reproduzir por que um par entrou ou não na lista, sem trocar regras silenciosamente.',
+        'Os limites aceitos seguem critérios estáveis adotados pelo projeto. Assim é possível compreender por que um par entrou ou não na lista sem trocar regras silenciosamente.',
+        'Um aspecto aplicativo caminha simbolicamente em direção à exatidão; um separativo já passou por ela. Quando essa fase não pode ser estabelecida com segurança, o aplicativo simplesmente não a atribui.',
       ],
     },
     {
       title: 'Corpos e ângulos considerados',
       items: [
-        'A versão inicial compara os dez corpos já presentes no mapa e os ângulos Ascendente e Meio do Céu. Descendente e Fundo do Céu são desenhados como eixos opostos, sem duplicar automaticamente todos os aspectos.',
+        'A leitura compara os dez corpos presentes no mapa e os ângulos Ascendente e Meio do Céu. Descendente e Fundo do Céu são desenhados como eixos opostos, sem duplicar automaticamente todos os aspectos.',
         'Tropical e Astronômico Constelacional não criam duas geometrias diferentes: os mesmos aspectos podem receber leituras distintas, mas conservam a separação angular calculada.',
       ],
     },
   ],
   closing:
     'Leia aspectos como relações simbólicas entre posições, nunca como diagnóstico, garantia de comportamento ou acontecimento inevitável.',
+  sources: [
+    { label: 'Astrodienst — Aspectos', url: 'https://www.astro.com/astrowiki/en/Aspect' },
+    { label: 'Astrodienst — Orbe', url: 'https://www.astro.com/astrowiki/en/Orb' },
+  ],
 };
 
 const houseInfluencesContent: InfoContent = {
@@ -310,7 +376,7 @@ const houseInfluencesContent: InfoContent = {
       title: 'Três números que não devem ser confundidos',
       items: [
         'O grau no signo vem da longitude tropical. O grau da cúspide marca o começo zodiacal de uma casa. O grau mundano indica o avanço do corpo dentro da divisão Placidus e usa uma escala própria de 0 a menos de 30 graus.',
-        'O grau mundano é preservado a partir da posição fracionária retornada por swe_house_pos. Ele não é estimado pelo tamanho do arco entre duas cúspides, porque essa aproximação confundiria geometrias diferentes.',
+        'A posição proporcional dentro da casa vem do mesmo cálculo das Casas Placidus. Ela não é estimada pelo tamanho do arco entre duas cúspides, porque essa aproximação confundiria referências diferentes.',
         'Mapas antigos não guardam o valor fracionário. Neles, ou quando Placidus não pode ser calculado com segurança, o grau mundano aparece como indisponível em vez de ser inventado.',
       ],
     },
@@ -335,7 +401,7 @@ const currentSkyContent: InfoContent = {
       title: 'O que é comparado',
       items: [
         'Um aspecto trânsito–natal liga um corpo no instante atual a um corpo ou ângulo natal. A lista informa o aspecto, a separação, o orbe e o intervalo de tempo considerado.',
-        'As posições do céu e o instante usado ficam versionados com os motores do cálculo. Na interface, datas e horários são sempre convertidos para a Hora oficial de Brasília.',
+        'As posições do céu usam um instante de referência claramente informado. Na interface, datas e horários são sempre apresentados na Hora oficial de Brasília.',
         'Quando houver uma janela futura, ela é limitada e declarada. O sistema não completa datas ausentes nem transforma uma aproximação num momento exato.',
       ],
     },
@@ -343,12 +409,13 @@ const currentSkyContent: InfoContent = {
       title: 'Limites da linguagem preditiva',
       items: [
         'A análise descreve temas e possibilidades dentro da tradição astrológica. Ela não é uma previsão inevitável, não garante eventos e não substitui decisões médicas, jurídicas, financeiras ou pessoais.',
-        'Um trânsito pode ser lido de formas diferentes conforme a escola. O aplicativo identifica o perfil de aspectos adotado para permitir comparação e revisão.',
+        'Um trânsito pode ser lido de formas diferentes conforme a escola. O aplicativo mantém critérios estáveis para que resultados possam ser comparados com coerência.',
       ],
     },
   ],
   closing:
     'Use os trânsitos como um calendário reflexivo de influências simbólicas, mantendo espaço para contexto, escolha e incerteza.',
+  sources: [{ label: 'Astrodienst — Aspectos e orbes', url: 'https://www.astro.com/astrowiki/en/Aspect' }],
 };
 
 const synastryContent: InfoContent = {
@@ -359,7 +426,7 @@ const synastryContent: InfoContent = {
     {
       title: 'Uma comparação em duas direções',
       items: [
-        'Os aspectos intermapa medem a distância angular entre um corpo de A e um corpo de B, usando um perfil de orbes próprio e versionado.',
+        'Os aspectos intermapa medem a distância angular entre um corpo de A e um corpo de B, usando critérios próprios para relações entre dois mapas.',
         'As sobreposições mostram os corpos de A nas Casas de B e os corpos de B nas Casas de A. As duas direções são mantidas porque as casas e os contextos natais não são intercambiáveis.',
         'Os nomes A e B servem apenas para identificar os sujeitos no cálculo; não criam hierarquia nem atribuem automaticamente papéis na relação.',
       ],
@@ -368,12 +435,24 @@ const synastryContent: InfoContent = {
       title: 'O que o resultado não decide',
       items: [
         'A sinastria não mede compatibilidade como porcentagem científica, não diagnostica vínculos e não determina sucesso, fracasso, segurança ou duração de uma relação.',
-        'Dados da segunda pessoa exigem conhecimento e consentimento apropriados. O aplicativo registra a proveniência e não deve expor informações pessoais desnecessárias no relatório.',
+        'Dados da segunda pessoa exigem conhecimento e consentimento apropriados. O aplicativo preserva a origem dos dados e não deve expor informações pessoais desnecessárias no relatório.',
+      ],
+    },
+    {
+      title: 'Como priorizar a leitura',
+      items: [
+        'Comece pelos contatos mais próximos da exatidão e pelos que envolvem Sol, Lua, Mercúrio, Vênus e Marte. Eles costumam tornar mais visíveis identidade, necessidades emocionais, comunicação, afeto e desejo.',
+        'Depois observe em quais casas esses planetas caem no mapa da outra pessoa. A direção importa: A pode ativar uma área de B de maneira diferente daquela com que B ativa a área correspondente de A.',
+        'Tensões não significam incompatibilidade, assim como harmonias não garantem uma relação saudável. O sentido nasce da combinação entre recursos, desafios, escolhas, comunicação e contexto real.',
       ],
     },
   ],
   closing:
     'Leia o resultado como um vocabulário simbólico de afinidades, contrastes e experiências possíveis, não como sentença sobre duas pessoas.',
+  sources: [
+    { label: 'Astrodienst — Interaspectos e sinastria', url: 'https://www.astro.com/astrowiki/en/Interaspect' },
+    { label: 'Astro.com — tipos de mapas relacionais', url: 'https://www.astro.com/faq/fq_fh_owtype_r.htm' },
+  ],
 };
 
 const localityMapContent: InfoContent = {
@@ -386,7 +465,7 @@ const localityMapContent: InfoContent = {
       items: [
         'Cada corpo pode gerar linhas de Ascendente, Descendente, Meio do Céu e Fundo do Céu. Elas derivam do mesmo instante natal; mudar o local de exibição não recalcula outra data de nascimento.',
         'As linhas são geometrias globais. Segmentos podem ser interrompidos no antimeridiano para que a passagem entre 180° leste e 180° oeste não desenhe um risco falso atravessando todo o mapa.',
-        'A legenda identifica corpo, ângulo, versão geométrica e eventuais regiões onde uma solução fica indisponível. Aproximar o mapa não aumenta a precisão astronômica original.',
+        'A legenda identifica corpo, ângulo e eventuais regiões onde uma linha não aparece. Aproximar o mapa melhora a visualização, mas não muda o significado original do traçado.',
       ],
     },
     {
@@ -398,7 +477,14 @@ const localityMapContent: InfoContent = {
     },
   ],
   closing:
-    'Use a cartografia como uma lente simbólica adicional e confira sempre a escala, o ângulo e a proveniência da linha selecionada.',
+    'Use a cartografia como uma lente simbólica adicional e confira sempre a escala, o ângulo e a origem da linha selecionada.',
+  sources: [
+    {
+      label: 'Astrodienst — Introdução à astrocartografia',
+      url: 'https://www.astro.com/astrowiki/en/Astrocartography',
+    },
+    { label: 'Astro.com — mapa de localidade interativo', url: 'https://www.astro.com/cgi/aclch.cgi?btyp=acm' },
+  ],
 };
 
 export const getInfoContent = (topic: InfoTopic, context: InfoContentContext = {}): InfoContent => {

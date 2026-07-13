@@ -59,9 +59,9 @@ describe('apresentação do céu atual', () => {
     expect(text).toContain('Quadratura — Sol em trânsito e Lua natal');
     expect(text).toContain('fase exata');
     expect(text).toContain('Aperfeiçoamento: 12/07/2026 às 12:00:00');
-    expect(text).toContain('astrologo-transit-major-v1 v1.0.0');
-    expect(text).toContain('constelação IAU Gêmeos');
-    expect(text).toContain('sem grau interno definido');
+    expect(text).toContain('constelação Gêmeos');
+    expect(text).not.toContain('astrologo-transit-major-v1');
+    expect(text).not.toContain('sem grau interno definido');
   });
 
   it('gera HTML de e-mail sem abandonar a rotulagem brasileira', () => {
@@ -70,8 +70,9 @@ describe('apresentação do céu atual', () => {
     expect(html).toContain('Hora oficial de Brasília');
     expect(html).toContain('Câncer');
     expect(html).toContain('Casa natal 8');
-    expect(html).toContain('Constelação IAU: Gêmeos');
-    expect(html).toContain('sem grau interno definido');
+    expect(html).toContain('Constelação: Gêmeos');
+    expect(html).not.toContain('astrologo-transit-major-v1');
+    expect(html).not.toContain('sem grau interno definido');
   });
 
   it('rejeita resposta de rede estruturalmente incompleta antes de renderizar', () => {

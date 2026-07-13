@@ -111,11 +111,14 @@ describe('formatação pública v2', () => {
 
     expect(report).toContain('*👼 ANJO REGENTE DO CONSULENTE*');
     expect(report).toContain('#1 Vehuiah');
-    expect(report).toContain('posição tropical natal do Sol');
+    expect(report).toContain('*Posição do Sol:* 1,25° de Áries');
     expect(report).toContain('#2 Jeliel: Lua.');
     expect(report).toContain('#1 Vehuiah: Sol.');
     expect(report).not.toContain(': moon.');
     expect(report).not.toContain(': sun.');
+    expect(report).not.toContain('Base do cálculo');
+    expect(report).not.toContain('Mapa calculado');
+    expect(report).not.toContain('método');
   });
 
   it('destaca o regente solar e lista a falange agregada no HTML do e-mail em pt-BR', () => {
@@ -123,11 +126,13 @@ describe('formatação pública v2', () => {
 
     expect(html).toContain('Anjo Regente do Consulente');
     expect(html).toContain('#1 Vehuiah');
-    expect(html).toContain('posição tropical natal do Sol');
+    expect(html).toContain('<strong>Posição do Sol:</strong>');
     expect(html).toContain('Falange Angelical do Mapa');
     expect(html).toContain('#2 Jeliel');
     expect(html).toContain('Lua');
     expect(html).not.toContain('>moon<');
     expect(html).not.toContain('>sun<');
+    expect(html).not.toContain('Base do cálculo');
+    expect(html).not.toContain('derivada exclusivamente');
   });
 });
