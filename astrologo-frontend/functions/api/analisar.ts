@@ -1,5 +1,5 @@
 // Módulo: astrologo-frontend/functions/api/analisar.ts
-// Versão: v02.23.02
+// Versão: v02.23.03
 // Descrição: API Gemini reentrante, com uma única etapa de geração por requisição HTTP.
 
 import { GoogleGenAI, HarmBlockThreshold, HarmCategory, ThinkingLevel } from '@google/genai';
@@ -727,111 +727,31 @@ const sanitizeCompleteGeneratedHtml = (input: string, stage: string): string => 
   return sanitized;
 };
 
-interface InterpretiveSection {
-  readonly title: string;
-  readonly body: string;
-}
-
-const plainHtmlText = (html: string): string =>
-  sanitizeHtml(html, { allowedTags: [], allowedAttributes: {} }).replace(/\s+/gu, ' ').trim();
-
-const extractInterpretiveSections = (html: string): readonly InterpretiveSection[] => {
-  const headings = [...html.matchAll(/<h([1-3])\b[^>]*>[\s\S]*?<\/h\1\s*>/giu)];
-  return headings.map((heading, index) => {
-    const start = (heading.index ?? 0) + heading[0].length;
-    const end = headings[index + 1]?.index ?? html.length;
-    return { title: plainHtmlText(heading[0]), body: plainHtmlText(html.slice(start, end)) };
-  });
-};
-
-export const assertIntegratedInterpretiveCoverage = (html: string, sourceEvidenceIds: readonly string[]): void => {
+export const integratedInterpretiveSectionLabels = (sourceEvidenceIds: readonly string[]): readonly string[] => {
   const sources = new Set(sourceEvidenceIds);
-  const sections = extractInterpretiveSections(html);
-  const required: Array<{
-    readonly label: string;
-    readonly heading: RegExp;
-    readonly bodyPatterns?: readonly RegExp[];
-  }> = [
-    { label: 'Astrologia Tropical', heading: /Astrologia Tropical/iu, bodyPatterns: [/Sol|Lua|Ascendente|planeta/iu] },
-    {
-      label: 'Astrologia Astronômica Constelacional',
-      heading: /Astrologia Astron[oô]mica|Astron[oô]mico Constelacional/iu,
-      bodyPatterns: [/Sol|Lua|planeta|constelaç[aã]o|regi[aã]o celeste/iu],
-    },
-    {
-      label: 'Orixás e Astro',
-      heading: /Orix[aá]s? e Astro/iu,
-      bodyPatterns: [/Orix[aá]/iu, /Astro|Hora Planet[aá]ria/iu],
-    },
-    {
-      label: 'Tatwas e Numerologia',
-      heading: /Tatwas? e Numerologia/iu,
-      bodyPatterns: [/Tatwas?|subtatwa/iu, /Numerologia|Caminho da Vida|Vibraç[aã]o da Hora|Express[aã]o/iu],
-    },
-    { label: 'Síntese Integrada', heading: /S[ií]ntese Integrada/iu },
+  const required = [
+    'Astrologia Tropical',
+    'Astrologia Astronômica Constelacional',
+    'Orixás e Astro',
+    'Tatwas e Numerologia',
   ];
-  if (sources.has('canonical.v2')) {
-    required.push(
-      {
-        label: 'Anjo Regente do Consulente',
-        heading: /Anjo Regente do Consulente/iu,
-        bodyPatterns: [/Sol|identidade|prop[oó]sito/iu],
-      },
-      {
-        label: 'Falange Angelical do Mapa',
-        heading: /Falange Angelical do Mapa/iu,
-        bodyPatterns: [/planeta|Sol|Lua|Merc[uú]rio|V[eê]nus|Marte/iu],
-      },
-    );
-  }
   if (sources.has('advanced.natal')) {
-    required.push(
-      {
-        label: 'Aspectos Natais',
-        heading: /Aspectos? Natais?/iu,
-        bodyPatterns: [/Conjunç[aã]o|Sextil|Quadratura|Tr[ií]gono|Quinc[uú]ncio|Oposiç[aã]o/iu],
-      },
-      { label: 'Análise das Casas', heading: /An[aá]lise das Casas/iu, bodyPatterns: [/Casa\s+(?:[1-9]|1[0-2])\b/iu] },
-    );
+    required.push('Aspectos Natais', 'Análise das Casas');
+  }
+  if (sources.has('canonical.v2')) {
+    required.push('Anjo Regente do Consulente', 'Falange Angelical do Mapa');
   }
   if (sources.has('advanced.transit')) {
-    required.push({
-      label: 'Céu Atual e Trânsitos',
-      heading: /C[eé]u Atual e Tr[aâ]nsitos/iu,
-      bodyPatterns: [/contato|influ[eê]ncia|tens[aã]o|oportunidade|movimento/iu],
-    });
+    required.push('Céu Atual e Trânsitos');
   }
   if (sources.has('advanced.synastry')) {
-    required.push({
-      label: 'Sinastria',
-      heading: /Sinastria/iu,
-      bodyPatterns: [/comunicaç[aã]o|afeto|desejo|reciprocidade|tens[aã]o|v[ií]nculo/iu],
-    });
+    required.push('Sinastria');
   }
   if ([...sources].some((source) => source.startsWith('advanced.locality'))) {
-    required.push({
-      label: 'Mapa Planetário de Localidade',
-      heading: /Mapa Planet[aá]rio de Localidade/iu,
-      bodyPatterns: [/linha|lugar|regi[aã]o|Ascendente|Meio do C[eé]u/iu],
-    });
+    required.push('Mapa Planetário de Localidade');
   }
-
-  const missing = required
-    .filter(({ heading, bodyPatterns = [] }) => {
-      const matchingBody = sections
-        .filter(({ title }) => heading.test(title))
-        .map(({ body }) => body)
-        .join(' ')
-        .trim();
-      const wordCount = matchingBody ? matchingBody.split(/\s+/u).length : 0;
-      return wordCount < 8 || bodyPatterns.some((pattern) => !pattern.test(matchingBody));
-    })
-    .map(({ label }) => label);
-  if (missing.length > 0) {
-    throw new GeminiGenerationValidationError(
-      `A análise omitiu seções interpretativas obrigatórias: ${missing.join(', ')}.`,
-    );
-  }
+  required.push('Síntese Integrada');
+  return required;
 };
 
 const analysisSourceEvidenceIds = (options: {
@@ -921,7 +841,9 @@ const buildSynthesisGenerationInput = (
   fixedInstructionPrefix: string,
   plan: PackedAnalysisPlan,
   sources: readonly AnalysisSynthesisSource[],
-): string => `${fixedInstructionPrefix}
+): string => {
+  const requiredSections = integratedInterpretiveSectionLabels(plan.coverage.sourceEvidenceIds);
+  return `${fixedInstructionPrefix}
 
 ETAPA INTERNA DE SÍNTESE INTEGRADA
 
@@ -934,7 +856,7 @@ REGRAS EDITORIAIS DESTA SÍNTESE FINAL:
 - não exponha versões, nomes de campos, contratos, payloads, fragmentos, IDs, hashes, banco de dados, API, mecanismos internos ou indisponibilidades técnicas;
 - não repita tabelas, listas completas de posições ou dados já visíveis nos quadros; selecione somente fatos úteis à interpretação;
 - use um título <h2> para cada seção e conteúdo interpretativo substancial antes do próximo título;
-- organize cada domínio disponível uma única vez, sem repetir abertura ou cautela, com estes títulos: “Astrologia Tropical”, “Astrologia Astronômica Constelacional”, “Orixás e Astro”, “Tatwas e Numerologia”, “Aspectos Natais”, “Análise das Casas”, “Anjo Regente do Consulente”, “Falange Angelical do Mapa”, “Céu Atual e Trânsitos”, “Sinastria”, “Mapa Planetário de Localidade” e “Síntese Integrada”; omita apenas as seções cujas evidências não existirem;
+- escreva exatamente uma seção substancial para cada título desta lista, nesta ordem, sem omitir, fundir ou renomear nenhum deles: ${requiredSections.map((label) => `“${label}”`).join(', ')};
 - dê profundidade aos aspectos ao integrar planetas, casas, padrões e prioridades; à sinastria ao integrar comunicação, afeto, desejo, tensões, limites, reciprocidades e sobreposições em ambas as direções; e à angelologia ao aplicar as qualidades catalogadas ao Sol regente e às funções dos planetas da falange;
 - produza texto coeso, personalizado e substancial, mas econômico: entre 1.400 e 2.400 palavras quando todos os domínios estiverem presentes, proporcionalmente menos quando houver menos dados;
 - não gere o Aviso Fundamental nem a orientação aos botões “Saiba Mais”; o aplicativo os acrescentará antes do relatório.`
@@ -963,6 +885,7 @@ ${JSON.stringify({
 DADOS_DA_SINTESE_DE_ANALISE_LONGA — FIM
 
 Como exceção exclusivamente de transporte interno, retorne somente html e warnings no objeto JSON solicitado. No campo html, escreva o relatório final em português do Brasil conforme as regras acima. Não repita hashes, IDs, versões nem cobertura técnica: o servidor anexará esses valores imutáveis.`;
+};
 
 const createReductionExpectation = async (
   plan: PackedAnalysisPlan,
@@ -1167,13 +1090,6 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
 
     try {
       if (!shouldPartition) {
-        const directSourceEvidenceIds = analysisSourceEvidenceIds({
-          canonicalV2: Boolean(canonicalV2),
-          natal: Boolean(canonicalNatal),
-          transit: Boolean(canonicalTransit),
-          synastry: Boolean(canonicalSynastry),
-          locality: Boolean(canonicalLocality),
-        });
         const generatedText = await generateValidated({
           ai,
           model: selectedModel,
@@ -1190,9 +1106,7 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
             if (typeof generated.text !== 'string' || generated.text.trim().length === 0) {
               throw new GeminiGenerationValidationError('A resposta direta concluída não contém texto.');
             }
-            const sanitized = sanitizeCompleteGeneratedHtml(generated.text, 'análise integral direta');
-            assertIntegratedInterpretiveCoverage(sanitized, directSourceEvidenceIds);
-            return sanitized;
+            return sanitizeCompleteGeneratedHtml(generated.text, 'análise integral direta');
           },
         });
         analise = generatedText;
@@ -1393,7 +1307,6 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
           assembleLongAnalysisHtml(plan, fragments, synthesis),
           'montagem integral',
         );
-        assertIntegratedInterpretiveCoverage(analise, plan.coverage.sourceEvidenceIds);
       }
 
       if (!analise || analise.trim().length === 0) {
@@ -1994,20 +1907,7 @@ const executeOneAnalysisStep = async (options: {
           if (typeof generated.text !== 'string' || generated.text.trim().length === 0) {
             throw new GeminiGenerationValidationError('A resposta direta concluída está vazia.');
           }
-          const sanitized = sanitizeCompleteGeneratedHtml(generated.text, 'análise integral direta');
-          assertIntegratedInterpretiveCoverage(
-            sanitized,
-            Array.isArray(payload.sourceEvidenceIds)
-              ? payload.sourceEvidenceIds
-              : analysisSourceEvidenceIds({
-                  canonicalV2: plan.canonicalV2,
-                  natal: false,
-                  transit: false,
-                  synastry: false,
-                  locality: false,
-                }),
-          );
-          return sanitized;
+          return sanitizeCompleteGeneratedHtml(generated.text, 'análise integral direta');
         },
       });
       result = { kind: 'direct', html: generatedText };
@@ -2308,7 +2208,6 @@ const finalizeReentrantAnalysis = async (options: {
       assembleLongAnalysisHtml(packedPlan, fragments, synthesis),
       'montagem integral reentrante',
     );
-    assertIntegratedInterpretiveCoverage(analysisHtml, packedPlan.coverage.sourceEvidenceIds);
   }
   analysisHtml = sanitizeCompleteGeneratedHtml(
     finalizeUserAnalysisHtml(analysisHtml),

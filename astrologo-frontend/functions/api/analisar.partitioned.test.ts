@@ -9,10 +9,12 @@ const runtime = vi.hoisted(() => ({
   totalTokens: 100,
   model: 'gemini-3.1-pro-preview',
   fragmentHtml: '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>',
+  synthesisHtml: '',
   directHtml:
     '<h2>Astrologia Tropical</h2><p>O Sol organiza a expressão pessoal e dialoga com a Lua e o Ascendente.</p><h2>Astrologia Astronômica Constelacional</h2><p>Os planetas em suas constelações acrescentam nuances simbólicas à leitura desta pessoa.</p><h2>Orixás e Astro</h2><p>O Orixá regente dialoga com o Astro da Hora Planetária e orienta sua expressão.</p><h2>Tatwas e Numerologia</h2><p>O Tatwa principal e o subtatwa se integram à Numerologia e ao Caminho da Vida.</p><h2>Síntese Integrada</h2><p>Os padrões reunidos revelam recursos, tensões e possibilidades que podem ser observados conscientemente.</p>',
   job: null as Record<string, unknown> | null,
   step: null as Record<string, unknown> | null,
+  steps: [] as Array<Record<string, unknown>>,
   lastRetryOptions: null as Record<string, unknown> | null,
 }));
 
@@ -30,6 +32,7 @@ vi.mock('@google/genai', () => ({
           | {
               responseJsonSchema?: {
                 properties?: {
+                  html?: unknown;
                   synthesisNotes?: {
                     items?: { properties?: { evidenceIds?: { items?: { enum?: string[] } } } };
                   };
@@ -37,12 +40,12 @@ vi.mock('@google/genai', () => ({
               };
             }
           | undefined;
-        const evidenceIds =
-          config?.responseJsonSchema?.properties?.synthesisNotes?.items?.properties?.evidenceIds?.items?.enum;
-        return {
-          text: evidenceIds
+        const responseSchema = config?.responseJsonSchema;
+        const evidenceIds = responseSchema?.properties?.synthesisNotes?.items?.properties?.evidenceIds?.items?.enum;
+        const structuredText = responseSchema
+          ? responseSchema.properties?.synthesisNotes
             ? JSON.stringify({
-                html: runtime.fragmentHtml,
+                ...(responseSchema.properties.html ? { html: runtime.fragmentHtml } : {}),
                 synthesisNotes: [
                   {
                     textPtBr: 'Síntese factual da parte validada.',
@@ -51,7 +54,10 @@ vi.mock('@google/genai', () => ({
                 ],
                 warnings: [],
               })
-            : runtime.directHtml,
+            : JSON.stringify({ html: runtime.synthesisHtml, warnings: [] })
+          : runtime.directHtml;
+        return {
+          text: structuredText,
           candidates: [{ finishReason: runtime.finishReasons.shift() ?? 'STOP' }],
           usageMetadata: { promptTokenCount: 1_000, candidatesTokenCount: 100, thoughtsTokenCount: 50 },
         };
@@ -136,43 +142,74 @@ vi.mock('./_shared/analysisJobRepository', () => {
       runtime.job?.status === 'running' ? { job: { ...runtime.job }, leaseOwner: 'lease' } : null,
     releaseAnalysisJob: async () => undefined,
     resetExpiredAnalysisSteps: async () => undefined,
-    storeAnalysisPlan: async (options: { plan: unknown; fixedPromptPrefix: string; steps: unknown[] }) => {
+    storeAnalysisPlan: async (options: {
+      plan: unknown;
+      fixedPromptPrefix: string;
+      steps: unknown[];
+      reservedFinalSteps: number;
+    }) => {
       if (!runtime.job) throw new Error('job ausente');
       runtime.job = {
         ...runtime.job,
         phase: 'analyzing',
         completed_steps: 1,
-        total_steps: 2,
+        total_steps: options.steps.length + 1 + options.reservedFinalSteps,
         plan_json: JSON.stringify(options.plan),
         fixed_prompt_prefix: options.fixedPromptPrefix,
       };
-      const input = options.steps[0] as {
-        stepKey: string;
-        ordinal: number;
-        kind: string;
-        payload: unknown;
-      };
-      runtime.step = {
-        job_id: runtime.job.id,
-        step_key: input.stepKey,
-        ordinal: input.ordinal,
-        kind: input.kind,
-        status: 'pending',
-        attempts: 0,
-        payload_json: JSON.stringify(input.payload),
-        result_json: null,
-        input_tokens: 0,
-        output_tokens: 0,
-      };
+      runtime.steps = options.steps.map((candidate) => {
+        const input = candidate as {
+          stepKey: string;
+          ordinal: number;
+          kind: string;
+          payload: unknown;
+        };
+        return {
+          job_id: runtime.job?.id,
+          step_key: input.stepKey,
+          ordinal: input.ordinal,
+          kind: input.kind,
+          status: 'pending',
+          attempts: 0,
+          payload_json: JSON.stringify(input.payload),
+          result_json: null,
+          input_tokens: 0,
+          output_tokens: 0,
+        };
+      });
+      runtime.step = runtime.steps[0] ?? null;
     },
-    claimNextAnalysisStep: async () => {
-      if (runtime.step?.status !== 'pending') return null;
-      runtime.step = { ...runtime.step, status: 'running', attempts: Number(runtime.step.attempts) + 1 };
-      return { ...runtime.step };
+    claimNextAnalysisStep: async (_db: unknown, _jobId: string, _leaseOwner: string, kind: string | string[]) => {
+      const kinds = Array.isArray(kind) ? kind : [kind];
+      const index = runtime.steps.findIndex((step) => step.status === 'pending' && kinds.includes(String(step.kind)));
+      if (index < 0) return null;
+      const claimed = {
+        ...runtime.steps[index],
+        status: 'running',
+        attempts: Number(runtime.steps[index]?.attempts) + 1,
+      };
+      runtime.steps[index] = claimed;
+      runtime.step = claimed;
+      return { ...claimed };
     },
-    completeAnalysisStep: async (options: { result: unknown; inputTokens: number; outputTokens: number }) => {
-      if (!runtime.job || !runtime.step) throw new Error('estado ausente');
-      runtime.step = { ...runtime.step, status: 'completed', result_json: JSON.stringify(options.result) };
+    completeAnalysisStep: async (options: {
+      stepKey: string;
+      result: unknown;
+      inputTokens: number;
+      outputTokens: number;
+    }) => {
+      if (!runtime.job) throw new Error('estado ausente');
+      const index = runtime.steps.findIndex((step) => step.step_key === options.stepKey);
+      if (index < 0) throw new Error('etapa ausente');
+      const completed = {
+        ...runtime.steps[index],
+        status: 'completed',
+        result_json: JSON.stringify(options.result),
+        error_code: null,
+        error_detail: null,
+      };
+      runtime.steps[index] = completed;
+      runtime.step = completed;
       runtime.job = {
         ...runtime.job,
         completed_steps: Number(runtime.job.completed_steps) + 1,
@@ -181,22 +218,26 @@ vi.mock('./_shared/analysisJobRepository', () => {
       };
     },
     retryOrFailAnalysisStep: async (options: {
-      step: { attempts: number };
+      step: { attempts: number; step_key: string };
       payload: unknown;
       retryable?: boolean;
       errorCode: string;
       errorDetail: string;
     }) => {
-      if (!runtime.job || !runtime.step) throw new Error('estado ausente');
+      if (!runtime.job) throw new Error('estado ausente');
       runtime.lastRetryOptions = options;
       const retry = options.retryable !== false && options.step.attempts < 3;
-      runtime.step = {
-        ...runtime.step,
+      const index = runtime.steps.findIndex((step) => step.step_key === options.step.step_key);
+      if (index < 0) throw new Error('etapa ausente');
+      const retried = {
+        ...runtime.steps[index],
         status: retry ? 'pending' : 'failed',
         payload_json: JSON.stringify(options.payload),
         error_code: options.errorCode,
         error_detail: options.errorDetail,
       };
+      runtime.steps[index] = retried;
+      runtime.step = retried;
       if (!retry) {
         runtime.job = {
           ...runtime.job,
@@ -208,7 +249,7 @@ vi.mock('./_shared/analysisJobRepository', () => {
       }
       return retry ? 'retry' : 'failed';
     },
-    listAnalysisSteps: async () => (runtime.step ? [runtime.step] : []),
+    listAnalysisSteps: async () => runtime.steps,
     completeAnalysisJob: async () => {
       if (!runtime.job) throw new Error('job ausente');
       runtime.job = {
@@ -219,9 +260,44 @@ vi.mock('./_shared/analysisJobRepository', () => {
         final_result_json: JSON.stringify({ persisted: true, mapaId: MAP_ID }),
       };
     },
-    appendAnalysisSteps: async () => undefined,
-    failAnalysisJob: async () => {
-      if (runtime.job) runtime.job = { ...runtime.job, status: 'failed', phase: 'failed' };
+    appendAnalysisSteps: async (options: {
+      phase: string;
+      steps: Array<{ stepKey: string; ordinal: number; kind: string; payload: unknown }>;
+      plan: unknown;
+      reserveWasAlreadyCounted?: boolean;
+    }) => {
+      if (!runtime.job) throw new Error('job ausente');
+      const appended = options.steps.map((input) => ({
+        job_id: runtime.job?.id,
+        step_key: input.stepKey,
+        ordinal: input.ordinal,
+        kind: input.kind,
+        status: 'pending',
+        attempts: 0,
+        payload_json: JSON.stringify(input.payload),
+        result_json: null,
+        input_tokens: 0,
+        output_tokens: 0,
+      }));
+      runtime.steps.push(...appended);
+      runtime.job = {
+        ...runtime.job,
+        phase: options.phase,
+        plan_json: JSON.stringify(options.plan),
+        total_steps:
+          Number(runtime.job.total_steps) +
+          (options.reserveWasAlreadyCounted ? Math.max(0, options.steps.length - 1) : options.steps.length),
+      };
+    },
+    failAnalysisJob: async (options: { errorCode: string; errorDetail: string }) => {
+      if (runtime.job)
+        runtime.job = {
+          ...runtime.job,
+          status: 'failed',
+          phase: 'failed',
+          error_code: options.errorCode,
+          error_detail: options.errorDetail,
+        };
     },
     parseStoredJson: (value: string) => JSON.parse(value),
   };
@@ -285,35 +361,43 @@ beforeEach(() => {
   runtime.fragmentHtml = '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>';
   runtime.directHtml =
     '<h2>Astrologia Tropical</h2><p>O Sol organiza a expressão pessoal e dialoga com a Lua e o Ascendente.</p><h2>Astrologia Astronômica Constelacional</h2><p>Os planetas em suas constelações acrescentam nuances simbólicas à leitura desta pessoa.</p><h2>Orixás e Astro</h2><p>O Orixá regente dialoga com o Astro da Hora Planetária e orienta sua expressão.</p><h2>Tatwas e Numerologia</h2><p>O Tatwa principal e o subtatwa se integram à Numerologia e ao Caminho da Vida.</p><h2>Síntese Integrada</h2><p>Os padrões reunidos revelam recursos, tensões e possibilidades que podem ser observados conscientemente.</p>';
+  runtime.synthesisHtml = runtime.directHtml;
   runtime.job = null;
   runtime.step = null;
+  runtime.steps = [];
   runtime.lastRetryOptions = null;
 });
 
 afterEach(() => vi.clearAllMocks());
 
 describe('/api/analisar — protocolo reentrante', () => {
-  it('exige conteúdo dentro da seção correspondente, sem aceitar palavras soltas de outra seção', async () => {
-    const { assertIntegratedInterpretiveCoverage } = await import('./analisar');
-    expect(() =>
-      assertIntegratedInterpretiveCoverage(runtime.directHtml, [
+  it('deriva do mapa a lista editorial completa enviada à síntese', async () => {
+    const { integratedInterpretiveSectionLabels } = await import('./analisar');
+    expect(
+      integratedInterpretiveSectionLabels([
         'legacy.tropical',
         'legacy.astronomical',
         'canonical.tatwa',
+        'canonical.v2',
+        'advanced.natal',
+        'advanced.transit',
+        'advanced.synastry',
+        'advanced.locality.mercury',
       ]),
-    ).not.toThrow();
-
-    const emptyOrixaSection = runtime.directHtml.replace(
-      /<h2>Orixás e Astro<\/h2><p>[\s\S]*?<\/p>/u,
-      '<h2>Orixás e Astro</h2><p></p>',
-    );
-    expect(() =>
-      assertIntegratedInterpretiveCoverage(emptyOrixaSection, [
-        'legacy.tropical',
-        'legacy.astronomical',
-        'canonical.tatwa',
-      ]),
-    ).toThrow(/Orixás e Astro/u);
+    ).toEqual([
+      'Astrologia Tropical',
+      'Astrologia Astronômica Constelacional',
+      'Orixás e Astro',
+      'Tatwas e Numerologia',
+      'Aspectos Natais',
+      'Análise das Casas',
+      'Anjo Regente do Consulente',
+      'Falange Angelical do Mapa',
+      'Céu Atual e Trânsitos',
+      'Sinastria',
+      'Mapa Planetário de Localidade',
+      'Síntese Integrada',
+    ]);
   });
 
   it('inicia, planeja e gera em requisições distintas, com no máximo uma geração por avanço', async () => {
@@ -436,6 +520,39 @@ describe('/api/analisar — protocolo reentrante', () => {
     expect(runtime.lastRetryOptions?.errorDetail).toEqual(
       expect.stringContaining('A geração só é completa quando finishReason é STOP.'),
     );
+  });
+
+  it('não transforma uma omissão editorial da síntese em falha estrutural do trabalho', async () => {
+    runtime.totalTokens = 6_001;
+    runtime.synthesisHtml = runtime.directHtml.replace(/<h2>Síntese Integrada<\/h2><p>[\s\S]*?<\/p>/u, '');
+    const { onRequestPost } = await import('./analisar');
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    const synthesisScheduled = await onRequestPost(
+      context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }),
+    );
+
+    expect(synthesisScheduled.status).toBe(202);
+    await expect(synthesisScheduled.json()).resolves.toMatchObject({
+      success: true,
+      job: { status: 'running', phase: 'synthesizing' },
+    });
+
+    const completed = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(completed.status).toBe(200);
+    await expect(completed.json()).resolves.toMatchObject({
+      success: true,
+      job: { status: 'completed', phase: 'completed' },
+    });
+    expect(runtime.steps.find((step) => step.kind === 'synthesis')).toMatchObject({
+      status: 'completed',
+      attempts: 1,
+      error_code: null,
+    });
+    expect(runtime.lastRetryOptions).toBeNull();
   });
 
   it('não repete erro HTTP determinístico do provedor', async () => {

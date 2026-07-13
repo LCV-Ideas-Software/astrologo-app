@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [v02.23.03] - 2026-07-13
+
+### Corrigido
+
+- **Erro 422 na síntese final da IA** — a barreira semântica introduzida na versão anterior deixa de transformar escolhas editoriais, títulos ou omissões do modelo em falha estrutural do trabalho. As validações de transporte, schema, integridade, sanitização e persistência permanecem inalteradas.
+- **Prompt editorial preciso** — a lista exata e ordenada de seções passa a ser derivada das evidências reais do mapa e entregue explicitamente ao modelo. A qualidade do texto volta a ser aperfeiçoada primeiro no prompt, sem alterar o mecanismo reentrante estável.
+
+### Testes
+
+- O protocolo reentrante cobre uma síntese com omissão editorial sem convertê-la em erro `422`, e verifica a lista completa de títulos produzida quando mapa natal, angelologia, trânsitos, sinastria e localidade estão disponíveis.
+
 ## [v02.23.02] - 2026-07-12
 
 ### Melhorado

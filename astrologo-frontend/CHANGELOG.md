@@ -1,5 +1,16 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.23.03] - 2026-07-13
+
+### Corrigido
+
+- A barreira semântica deixa de converter escolhas editoriais, títulos ou omissões da síntese em falha `422`; transporte, schema, integridade, sanitização e persistência continuam falhando de modo fechado quando tecnicamente inválidos.
+- Os títulos desejados são derivados dos domínios realmente disponíveis e informados ao modelo em ordem explícita, mantendo a melhoria de texto no prompt sem interferir no mecanismo reentrante.
+
+### Testes
+
+- O protocolo reentrante cobre uma síntese com omissão editorial sem falha estrutural e a composição completa do checklist quando todos os domínios opcionais estão presentes.
+
 ## [v02.22.04] - 2026-07-12
 
 ### Corrigido
