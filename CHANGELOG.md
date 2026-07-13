@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [v02.23.04] - 2026-07-13
+
+### Corrigido
+
+- **Profundidade integral restaurada** — o relatório particionado volta a preservar e concatenar todos os HTMLs interpretativos dos fragmentos antes de acrescentar a síntese. A montagem deixa de descartar conteúdo já produzido e não impõe limite editorial de palavras, parágrafos ou extensão.
+- **Prompt restaurado e corrigido no escopo solicitado** — a base anterior à regressão volta a reger fragmentos e síntese. Somente explicações conceituais, metodológicas e tecnológicas são excluídas; aspectos, Casas, sinastria, Anjo Regente, Falange Angelical, trânsitos e localidade permanecem profundos e cumulativos.
+- **Iconografia recuperada** — emojis e símbolos pictóricos voltam a ser obrigatórios nos títulos e ao longo da interpretação, com o repertório astrológico, zodiacal, espiritual e esotérico histórico do projeto.
+- **Fix do 422 preservado** — a restauração não reintroduz a antiga barreira semântica; transporte, schema, identidade, sanitização e persistência continuam validados separadamente.
+
+### Testes
+
+- As guardas passam a rejeitar teto artificial de extensão, fragmentos compactados, descarte do HTML interpretativo e enfraquecimento da iconografia. Trabalhos novos usam o contrato rico v3; trabalhos v2 ainda em andamento também deixam de perder seus fragmentos na montagem.
+
 ## [v02.23.03] - 2026-07-13
 
 ### Corrigido

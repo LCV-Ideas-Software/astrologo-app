@@ -1,6 +1,7 @@
 import type { AnalysisManifest, PackedAnalysisFragment, PackedAnalysisPlan } from './longAnalysisPlanner';
 
 export const INTEGRATED_ANALYSIS_PROMPT_VERSION = 'astrologo-long-analysis-v2';
+export const RICH_INTERPRETIVE_ANALYSIS_PROMPT_VERSION = 'astrologo-long-analysis-v3';
 
 export interface GeneratedTextCandidate {
   readonly finishReason?: unknown;
@@ -331,10 +332,6 @@ export const assembleLongAnalysisHtml = (
     { finishReason: 'STOP', text: JSON.stringify(synthesis) },
     plan,
   );
-
-  if (plan.manifest.promptVersion === INTEGRATED_ANALYSIS_PROMPT_VERSION) {
-    return validatedSynthesis.html.trim();
-  }
 
   const htmlParts = validatedFragments.map((fragment) => fragment.html.trim());
   htmlParts.push(validatedSynthesis.html.trim());

@@ -24,7 +24,7 @@ export const buildNatalAnalysisPromptAddendum = (natal: NatalChartAnalysisV1 | n
 
 ADENDO — MAPA NATAL COMPLETO, ASPECTOS E CASAS
 
-Este adendo fornece fatos natais adicionais. Preserve o contrato editorial e gere interpretação, não explicação metodológica.
+Este adendo é exclusivamente acumulativo. Preserve literalmente e cumpra integralmente todas as instruções anteriores: não resuma, substitua, simplifique, reordene nem elimine qualquer análise já exigida. Use os fatos natais adicionais para aprofundar a interpretação, nunca para gerar explicação metodológica.
 
 Acrescente duas seções <h2> autônomas, “Aspectos Natais” e “Análise das Casas”, aos módulos Tropical, Astronômico Constelacional e à Síntese. Priorize os aspectos de menor orbe e maior intensidade fornecida, os luminares, planetas pessoais, padrões repetidos e relações que estruturam o mapa. Integre planeta, aspecto e casa para revelar como as dinâmicas se apoiam, tensionam ou compensam.
 
@@ -46,7 +46,7 @@ export const buildTransitAnalysisPromptAddendum = (transit: TransitRunV1 | null 
 
 ADENDO — CÉU ATUAL, TRÂNSITOS E INFLUÊNCIAS VIGENTES
 
-Este adendo fornece os trânsitos calculados. Preserve o contrato editorial e acrescente somente interpretação personalizada.
+Este adendo é exclusivamente acumulativo. Preserve sem qualquer redução o prompt vigente e todas as análises anteriores. Use os trânsitos calculados para acrescentar somente interpretação personalizada, sem substituir, resumir, simplificar, omitir ou reordenar qualquer entrega já exigida.
 
 Acrescente uma seção <h2> “Céu Atual e Trânsitos” profunda sobre as influências vigentes e os aspectos trânsito–natal fornecidos. Priorize os contatos de menor orbe, os que envolvem luminares, planetas pessoais, ângulos e Casas mais ativadas. Integre facilidades, tensões, temas recorrentes e possibilidades de resposta consciente. Use somente os corpos, alvos, fases e exatidões presentes. Não recalcule posições ou orbes.
 
@@ -70,7 +70,7 @@ export const buildSynastryAnalysisPromptAddendum = (synastry: SynastryRunV1 | nu
 
 ADENDO — SINASTRIA E RECIPROCIDADE ENTRE DOIS MAPAS
 
-Este adendo fornece a sinastria calculada. Preserve o contrato editorial, acrescente uma seção <h2> autônoma “Sinastria” e integre seus eixos centrais à Síntese.
+Este adendo é exclusivamente acumulativo. Preserve sem qualquer redução o prompt vigente, a análise natal completa e o bloco de trânsitos. Use a sinastria calculada para acrescentar uma seção <h2> autônoma “Sinastria” e integrar seus eixos centrais à Síntese, sem substituir, resumir, simplificar, omitir ou reordenar qualquer entrega anterior.
 
 Trate Pessoa A e Pessoa B sem hierarquia. Analise e depois integre:
 - aspectos dos corpos de A com os corpos de B;
@@ -97,7 +97,7 @@ export const buildLocalityAnalysisPromptAddendum = (locality: LocalityMapV1 | nu
 
 ADENDO — MAPA PLANETÁRIO DE LOCALIDADE
 
-Este adendo fornece o mapa planetário de localidade. Preserve o contrato editorial e acrescente uma única seção <h2> consolidada “Mapa Planetário de Localidade”.
+Este adendo é exclusivamente acumulativo e vem depois de todos os anteriores. Preserve literalmente o prompt vigente e as entregas natal, de trânsitos e de sinastria. Use o mapa planetário de localidade para acrescentar uma seção <h2> consolidada “Mapa Planetário de Localidade”, sem resumir, substituir, simplificar, omitir ou reordenar qualquer entrega anterior.
 
 Interprete as linhas mais relevantes, agrupando temas convergentes e contrastantes por planeta e ângulo. Não crie uma introdução sobre cartografia, não defina MC, IC, ASC ou DSC e não repita a mesma cautela a cada linha.
 

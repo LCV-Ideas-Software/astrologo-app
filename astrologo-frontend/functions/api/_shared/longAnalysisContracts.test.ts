@@ -5,6 +5,7 @@ import {
   parseGeneratedAnalysisFragment,
   parseGeneratedAnalysisReduction,
   parseGeneratedAnalysisSynthesis,
+  RICH_INTERPRETIVE_ANALYSIS_PROMPT_VERSION,
 } from './longAnalysisContracts';
 import type { PackedAnalysisPlan } from './longAnalysisPlanner';
 
@@ -12,7 +13,7 @@ const plan: PackedAnalysisPlan = {
   manifest: {
     schemaId: 'urn:astrologo:ai-analysis-manifest',
     schemaVersion: '1.0.0',
-    promptVersion: 'prompt-v1',
+    promptVersion: RICH_INTERPRETIVE_ANALYSIS_PROMPT_VERSION,
     monolithicPromptHash: 'a'.repeat(64),
     rootInputHash: 'b'.repeat(64),
     evidenceIds: ['legacy.tropical', 'advanced.locality.line.sun:mc'],
@@ -203,7 +204,7 @@ describe('contratos puros dos fragmentos da análise longa', () => {
     ).toThrow(/notas|síntese/iu);
   });
 
-  it('monta deterministicamente todos os HTMLs na ordem do plano e acrescenta a síntese sem regerar conteúdo', () => {
+  it('no contrato rico vigente preserva todos os HTMLs na ordem do plano e acrescenta a síntese', () => {
     const first = parseGeneratedAnalysisFragment(
       { finishReason: 'STOP', text: fragmentJson(0, '<p>Primeira parte.</p>') },
       plan.manifest,
@@ -222,7 +223,7 @@ describe('contratos puros dos fragmentos da análise longa', () => {
     expect(() => assembleLongAnalysisHtml(plan, [first], synthesis)).toThrow(/todos os fragmentos/i);
   });
 
-  it('no contrato editorial integrado publica somente a síntese final e não concatena introduções dos fragmentos', () => {
+  it('preserva os fragmentos também em trabalhos v2 já iniciados, sem descartar conteúdo interpretativo', () => {
     const integratedPlan: PackedAnalysisPlan = {
       ...plan,
       manifest: { ...plan.manifest, promptVersion: INTEGRATED_ANALYSIS_PROMPT_VERSION },
@@ -245,12 +246,12 @@ describe('contratos puros dos fragmentos da análise longa', () => {
       });
     };
     const first = parseGeneratedAnalysisFragment(
-      { finishReason: 'STOP', text: integratedFragmentJson(0, '<p>Introdução repetida 1.</p>') },
+      { finishReason: 'STOP', text: integratedFragmentJson(0, '<p>Interpretação rica 1.</p>') },
       integratedPlan.manifest,
       integratedPlan.fragments[0]!,
     );
     const second = parseGeneratedAnalysisFragment(
-      { finishReason: 'STOP', text: integratedFragmentJson(1, '<p>Introdução repetida 2.</p>') },
+      { finishReason: 'STOP', text: integratedFragmentJson(1, '<p>Interpretação rica 2.</p>') },
       integratedPlan.manifest,
       integratedPlan.fragments[1]!,
     );
@@ -272,7 +273,9 @@ describe('contratos puros dos fragmentos da análise longa', () => {
     );
 
     expect(assembleLongAnalysisHtml(integratedPlan, [first, second], synthesis)).toBe(
-      '<p><strong>Relatório interpretativo final</strong></p>',
+      '<p>Interpretação rica 1.</p>\n' +
+        '<p>Interpretação rica 2.</p>\n' +
+        '<p><strong>Relatório interpretativo final</strong></p>',
     );
     expect(() =>
       assembleLongAnalysisHtml(integratedPlan, [{ ...first, inputHash: 'f'.repeat(64) }, second], synthesis),

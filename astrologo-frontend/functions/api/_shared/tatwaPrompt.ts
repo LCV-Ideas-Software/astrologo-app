@@ -180,7 +180,7 @@ export const buildTatwaPromptAddendum = (dto: TatwaPromptDto | null): string => 
 
 ADENDO — INTERPRETAÇÃO DOS TATWAS
 
-Este adendo fornece a combinação canônica que deve ser interpretada. Preserve o contrato editorial do relatório.
+Este adendo é exclusivamente acumulativo. Preserve integralmente todas as instruções anteriores, sem resumir, substituir, simplificar, omitir ou reordenar as análises exigidas. Use a combinação canônica somente para aprofundar a interpretação.
 
 Use os Tatwas como linguagem simbólica tradicional, não como fato físico, diagnóstico ou verdade universal. Interprete somente a combinação selecionada em selected e relacione Tatwa principal e subtatwa aos demais padrões do mapa.
 

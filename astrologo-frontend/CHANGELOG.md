@@ -1,5 +1,18 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.23.04] - 2026-07-13
+
+### Corrigido
+
+- A análise reentrante volta a preservar todos os fragmentos interpretativos e acrescenta a síntese sem substituir ou resumir o conteúdo já produzido.
+- O prompt não limita palavras, parágrafos ou extensão: remove somente metodologia, definições e informações tecnológicas destinadas aos diálogos “Saiba Mais”.
+- A regra histórica de emojis e símbolos pictóricos obrigatórios é restaurada integralmente, inclusive nos títulos e ao longo da interpretação.
+- Aspectos, Casas, sinastria, Anjo Regente, Falange Angelical, trânsitos e localidade mantêm instruções cumulativas de profundidade; o fix do erro `422` permanece intacto.
+
+### Testes
+
+- O contrato atual prova a montagem `fragmentos + síntese`, a ausência de tetos editoriais e a presença da diretiva pictórica completa nos caminhos particionado e direto.
+
 ## [v02.23.03] - 2026-07-13
 
 ### Corrigido

@@ -131,7 +131,9 @@ describe('adendos acumulativos das análises avançadas', () => {
 
     expect(expanded.startsWith(base)).toBe(true);
     expect(expanded.slice(0, base.length)).toBe(base);
-    expect(expanded).toContain('Este adendo fornece fatos natais adicionais');
+    expect(expanded).toContain('Este adendo é exclusivamente acumulativo');
+    expect(expanded).toContain('não resuma, substitua, simplifique, reordene nem elimine');
+    expect(expanded).toContain('fatos natais adicionais');
     expect(expanded).toContain('astrologo-natal-major-v1');
     expect(expanded).toContain('"aspectId":"sextile"');
     expect(expanded).toContain('"degreeWithinHouseDeg":12');

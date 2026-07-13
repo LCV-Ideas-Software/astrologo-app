@@ -142,6 +142,13 @@ describe('analysisPrompt', () => {
     expect(LEGACY_PROMPT_TEMPLATE).toContain('Umbanda Esotérica de W. W. da Matta e Silva');
     expect(LEGACY_PROMPT_TEMPLATE).not.toContain('Investigue as Influências Astrológicas');
     expect(LEGACY_PROMPT_TEMPLATE).not.toContain('verdade estelar oculta');
+    expect(LEGACY_PROMPT_TEMPLATE).toContain('USE OBRIGATORIAMENTE emojis e símbolos pictóricos Unicode');
+    expect(LEGACY_PROMPT_TEMPLATE).toContain('☀️🌙⭐✨🪐💫🌟');
+    expect(LEGACY_PROMPT_TEMPLATE).toContain('♈♉♊♋♌♍♎♏♐♑♒♓⛎');
+    expect(LEGACY_PROMPT_TEMPLATE).toContain('⚔️🌊🔥🌿🌪️⚡🏹🌹🕯️💀🌺');
+    expect(LEGACY_PROMPT_TEMPLATE).toContain('🔮🧿📿☯️🌀🗝️🌑🌕');
+    expect(LEGACY_PROMPT_TEMPLATE).toMatch(/não imponha limite artificial de palavras/iu);
+    expect(LEGACY_PROMPT_TEMPLATE).not.toMatch(/emojis[^.]*com moderação/iu);
   });
 
   it('renderiza o legado sem alterar texto, ordem ou interpolação', () => {

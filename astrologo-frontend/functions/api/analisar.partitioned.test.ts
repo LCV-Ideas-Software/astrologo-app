@@ -16,6 +16,7 @@ const runtime = vi.hoisted(() => ({
   step: null as Record<string, unknown> | null,
   steps: [] as Array<Record<string, unknown>>,
   lastRetryOptions: null as Record<string, unknown> | null,
+  completedAnalysisHtml: null as string | null,
 }));
 
 vi.mock('@google/genai', () => ({
@@ -250,8 +251,9 @@ vi.mock('./_shared/analysisJobRepository', () => {
       return retry ? 'retry' : 'failed';
     },
     listAnalysisSteps: async () => runtime.steps,
-    completeAnalysisJob: async () => {
+    completeAnalysisJob: async (options: { analysisHtml: string }) => {
       if (!runtime.job) throw new Error('job ausente');
+      runtime.completedAnalysisHtml = options.analysisHtml;
       runtime.job = {
         ...runtime.job,
         status: 'completed',
@@ -366,40 +368,12 @@ beforeEach(() => {
   runtime.step = null;
   runtime.steps = [];
   runtime.lastRetryOptions = null;
+  runtime.completedAnalysisHtml = null;
 });
 
 afterEach(() => vi.clearAllMocks());
 
 describe('/api/analisar — protocolo reentrante', () => {
-  it('deriva do mapa a lista editorial completa enviada à síntese', async () => {
-    const { integratedInterpretiveSectionLabels } = await import('./analisar');
-    expect(
-      integratedInterpretiveSectionLabels([
-        'legacy.tropical',
-        'legacy.astronomical',
-        'canonical.tatwa',
-        'canonical.v2',
-        'advanced.natal',
-        'advanced.transit',
-        'advanced.synastry',
-        'advanced.locality.mercury',
-      ]),
-    ).toEqual([
-      'Astrologia Tropical',
-      'Astrologia Astronômica Constelacional',
-      'Orixás e Astro',
-      'Tatwas e Numerologia',
-      'Aspectos Natais',
-      'Análise das Casas',
-      'Anjo Regente do Consulente',
-      'Falange Angelical do Mapa',
-      'Céu Atual e Trânsitos',
-      'Sinastria',
-      'Mapa Planetário de Localidade',
-      'Síntese Integrada',
-    ]);
-  });
-
   it('inicia, planeja e gera em requisições distintas, com no máximo uma geração por avanço', async () => {
     const { onRequestPost } = await import('./analisar');
 
@@ -447,6 +421,7 @@ describe('/api/analisar — protocolo reentrante', () => {
     expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
       mode: 'partitioned',
       model: 'gemini-3.1-pro-preview',
+      promptVersion: 'astrologo-long-analysis-v3',
     });
     expect(runtime.step).toMatchObject({ kind: 'fragment', status: 'pending', attempts: 0 });
     expect(runtime.job?.fixed_prompt_prefix).not.toContain('ASTROLOGO_PAYLOAD');
@@ -468,6 +443,11 @@ describe('/api/analisar — protocolo reentrante', () => {
       runtime.generateRequests[0]?.config as { responseJsonSchema?: { required?: string[] } } | undefined
     )?.responseJsonSchema;
     expect(responseSchema?.required).toEqual(['html', 'synthesisNotes', 'warnings']);
+    const fragmentPrompt = String(runtime.generateRequests[0]?.contents);
+    expect(fragmentPrompt).toContain('USE OBRIGATORIAMENTE emojis e símbolos pictóricos Unicode');
+    expect(fragmentPrompt).toContain('O html é a entrega definitiva e integral deste domain');
+    expect(fragmentPrompt).toMatch(/não imponha limite artificial de palavras/iu);
+    expect(fragmentPrompt).not.toContain('no máximo dois parágrafos');
 
     const storedResult = JSON.parse(String(runtime.step?.result_json)) as {
       fragment: Record<string, unknown>;
@@ -552,6 +532,12 @@ describe('/api/analisar — protocolo reentrante', () => {
       attempts: 1,
       error_code: null,
     });
+    expect(runtime.completedAnalysisHtml).toContain(runtime.fragmentHtml);
+    expect(runtime.completedAnalysisHtml).toContain(runtime.synthesisHtml);
+    const synthesisPrompt = String(runtime.generateRequests.at(-1)?.contents);
+    expect(synthesisPrompt).toContain('será concatenado sem perda');
+    expect(synthesisPrompt).toMatch(/sem limite artificial de palavras[^.]*parágrafos/iu);
+    expect(synthesisPrompt).not.toMatch(/1\.400[^\n]*2\.400/iu);
     expect(runtime.lastRetryOptions).toBeNull();
   });
 

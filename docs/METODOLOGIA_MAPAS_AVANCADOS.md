@@ -98,7 +98,7 @@ Cada artefato possui um estado explícito: `available`, `absent`, `invalid` ou `
 
 O prompt histórico e todos os adendos permanecem cumulativos. O caminho direto é reservado a entradas de até 6.000 tokens e ainda precisa caber em 75% do limite publicado pelo modelo configurado. Esse teto operacional deliberadamente menor separa mapas avançados mesmo quando o contexto total tecnicamente caberia no modelo, reduzindo latência e risco de timeout. A resposta direta também precisa terminar com `finishReason=STOP`.
 
-Quando o contexto ultrapassa esse teto, o servidor ativa `astrologo-long-analysis-v2`:
+Quando o contexto ultrapassa esse teto, o servidor ativa `astrologo-long-analysis-v3`:
 
 1. preserva os bytes UTF-8 e o SHA-256 do prompt monolítico original;
 2. substitui exclusivamente cada payload serializado por uma sentinela ligada ao seu hash e comprova que a restauração reproduz o prompt byte por byte; essa sentinela permanece apenas no artefato interno de restauração e é retirada do prefixo entregue ao modelo;
@@ -106,14 +106,14 @@ Quando o contexto ultrapassa esse teto, o servidor ativa `astrologo-long-analysi
 4. mantém cada linha cartográfica como unidade indivisível enquanto ela couber; documentos ou linhas isoladamente excessivos são divididos por uma árvore JSON genérica e reversível, com índices e hashes suficientes para comprovar a reconstrução exata;
 5. usa divisão balanceada e consulta `countTokens` somente para grupos finais ou subgrupos que ainda precisam ser divididos, evitando uma chamada remota para cada unidade;
 6. cria um trabalho persistido e executa exatamente uma geração por requisição HTTP, sempre depois que a etapa anterior foi validada e gravada;
-7. valida cada envelope estruturado antes de coletar seu extrato interno e suas notas interpretativas;
+7. valida cada envelope estruturado antes de preservar seu HTML interpretativo definitivo e suas notas de integração;
 8. inicia a síntese apenas quando a cobertura conjunta coincide exatamente com o manifesto;
 9. quando as notas ainda excedem o contexto, executa reduções hierárquicas token-aware que preservam toda a cobertura antes da síntese final;
-10. usa as notas completas para redigir uma única síntese definitiva; os extratos dos fragmentos são validados, mas não são concatenados nem apresentados ao consulente.
+10. usa as notas completas para redigir uma síntese comparativa adicional e concatena, na ordem do manifesto, todos os HTMLs definitivos dos fragmentos mais essa síntese, sem perda ou regeneração do conteúdo já produzido.
 
-O contrato editorial da versão 2 separa rigorosamente interpretação e documentação. O relatório ao consulente não ensina conceitos, métodos, sistemas, contratos ou funcionamento interno; essas explicações ficam nos diálogos “Saiba Mais”. A síntese deve interpretar cada domínio disponível uma única vez, aprofundar relações relevantes e incluir explicitamente aspectos natais, sinastria, Anjo Regente e Falange Angelical quando as respectivas evidências existirem. A lista exata e ordenada de títulos desejados é derivada das evidências do próprio mapa e entregue ao modelo. Na versão 02.23.03, essa cobertura é deliberadamente tratada como instrução editorial: omissões ou escolhas vocabulares não derrubam o trabalho. Permanecem obrigatórias as validações técnicas de transporte, schema, integridade, sanitização e persistência.
+O contrato editorial da versão 3 separa rigorosamente interpretação e documentação sem reduzir a análise. O relatório ao consulente não ensina conceitos, métodos, sistemas, contratos ou funcionamento interno; essas explicações ficam nos diálogos “Saiba Mais”. Em contrapartida, não existe teto editorial de palavras, parágrafos ou extensão: cada domínio deve preservar toda interpretação relevante, aspectos natais, Casas, sinastria, Anjo Regente, Falange Angelical, trânsitos e localidade, com iconografia pictórica obrigatória. Omissões ou escolhas vocabulares continuam sem derrubar o trabalho; permanecem obrigatórias as validações técnicas de transporte, schema, integridade, sanitização e persistência.
 
-O Aviso Fundamental e a orientação para consultar os botões “Saiba Mais” são textos fixos do aplicativo, acrescentados na fronteira final. Eles não são regenerados pelo modelo. Trabalhos iniciados com a versão anterior mantêm sua regra histórica de montagem; novos trabalhos usam exclusivamente a síntese consolidada.
+O Aviso Fundamental e a orientação para consultar os botões “Saiba Mais” são textos fixos do aplicativo, acrescentados na fronteira final. Eles não são regenerados pelo modelo. A montagem preserva os fragmentos validados inclusive em trabalhos v2 ainda em andamento; trabalhos novos usam o prompt v3 e acrescentam a síntese sem substituir as análises de domínio.
 
 O empacotamento usa um limite conservador equivalente a no máximo 48.000 bytes UTF-8 por entrada completa da etapa — cada token necessariamente consome ao menos um byte, portanto esse valor é também um limite superior seguro de tokens e, em português/JSON usuais, resulta em muito menos tokens reais. São reservados tokens para saída e uma margem adicional de 2.048 tokens. A contagem remota inicial decide entre caminho direto e particionado; toda divisão posterior usa o limite local em bytes, evitando várias chamadas remotas de planejamento dentro da mesma requisição. O plano admite no máximo 40 fragmentos, mantendo criação e transições abaixo do teto de 50 consultas por invocação do D1 Free; volumes superiores falham de modo fechado antes de qualquer geração.
 

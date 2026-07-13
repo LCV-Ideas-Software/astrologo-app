@@ -19,12 +19,13 @@ Currently, two official plugins are available:
 
 ## Change History
 
-**Status.** Stable. Current release: **v02.23.03**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.23.04**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release     | Notes                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v02.23.04` | Restaura fragmentos interpretativos completos, extensão sem teto artificial e iconografia obrigatória, mantendo apenas a exclusão de metodologia e o fix do 422.     |
 | `v02.23.03` | Remove a barreira semântica responsável pelo 422 final e orienta a cobertura por um checklist editorial derivado das evidências reais do mapa.                       |
 | `v02.23.02` | Relatório dedicado à interpretação, ajuda contextual ampliada, barreira contra detalhes internos, roda natal interativa e padronização completa de UI/UX.            |
 | `v02.22.04` | Impede que sentinelas internas do particionamento apareçam na tela, em mapas salvos e nos formatos HTML/texto do e-mail.                                               |
