@@ -359,7 +359,7 @@ export function NatalChartWheel({
             longitude: midheavenLongitudeDeg + 180,
             color: '#c4b5fd',
           },
-        ]),
+        ] as const),
   ];
 
   const angleElements: WheelInteractiveElement[] = angleDefinitions.map((angle) => {
@@ -666,8 +666,9 @@ export function NatalChartWheel({
 
           {planetElements.map((element) => {
             if (element.selection.kind !== 'planet') return null;
-            const point = geometry.planetPoints.find(({ id }) => id === element.selection.id);
-            const planet = planetsById.get(element.selection.id);
+            const planetId = element.selection.id;
+            const point = geometry.planetPoints.find(({ id }) => id === planetId);
+            const planet = planetsById.get(planetId);
             if (!point || !planet) return null;
             return (
               <g
