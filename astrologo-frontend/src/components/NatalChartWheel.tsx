@@ -396,8 +396,8 @@ export function NatalChartWheel({
   const [focusedElement, setFocusedElement] = useState<WheelInteractiveElement | null>(null);
   const [rovingKey, setRovingKey] = useState(interactiveElements[0]?.key ?? '');
   const [selectedContent, setSelectedContent] = useState<WheelModalContent | null>(null);
+  const [modalTrigger, setModalTrigger] = useState<FocusableElement | null>(null);
   const elementRefs = useRef(new Map<string, SVGGElement>());
-  const modalTriggerRef = useRef<FocusableElement | null>(null);
   const activeElement = focusedElement ?? hoveredElement;
   const effectiveRovingKey = elementsByKey.has(rovingKey) ? rovingKey : (interactiveElements[0]?.key ?? '');
 
@@ -405,7 +405,7 @@ export function NatalChartWheel({
 
   const openElement = (element: WheelInteractiveElement, trigger: Element) => {
     if ('focus' in trigger && typeof (trigger as FocusableElement).focus === 'function') {
-      modalTriggerRef.current = trigger as FocusableElement;
+      setModalTrigger(trigger as FocusableElement);
     }
     setSelectedContent(element.content);
   };
@@ -786,7 +786,7 @@ export function NatalChartWheel({
         </span>
       </figcaption>
 
-      <WheelElementModal content={selectedContent} onClose={closeModal} returnFocusTo={modalTriggerRef.current} />
+      <WheelElementModal content={selectedContent} onClose={closeModal} returnFocusTo={modalTrigger} />
     </figure>
   );
 }

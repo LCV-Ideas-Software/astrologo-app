@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [v02.23.00] - 2026-07-12
+## [v02.23.01] - 2026-07-12
 
 ### Melhorado
 
@@ -22,6 +22,8 @@
 ### Compatibilidade
 
 - Cálculos, contratos persistidos, schema D1, autenticação, particionamento reentrante e artefatos históricos permanecem inalterados. A montagem antiga é preservada para trabalhos já iniciados; novos trabalhos usam a síntese editorial integrada.
+- O acionador do painel da roda passa a ser mantido em estado React, sem leitura de referência durante a renderização, e os utilitários do modal foram isolados do componente para preservar o Fast Refresh e os gates de entrega.
+- O lock hashado do Socket Security passa a ser compilado de uma entrada direta rastreada, evitando atualizações parciais que omitam novas dependências transitivas.
 
 ## [v02.22.04] - 2026-07-12
 

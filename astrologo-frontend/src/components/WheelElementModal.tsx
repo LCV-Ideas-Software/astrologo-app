@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { WheelModalContent } from './wheelElementContent';
+import { visibleWheelModalFacts } from './wheelElementModalUtils';
 
 type FocusableElement = Element & { focus: () => void };
 
@@ -10,11 +11,6 @@ interface WheelElementModalProps {
   readonly onClose: () => void;
   readonly returnFocusTo: FocusableElement | null;
 }
-
-export const MAX_WHEEL_MODAL_FACTS = 5;
-
-export const visibleWheelModalFacts = (facts: readonly string[]): readonly string[] =>
-  facts.slice(0, MAX_WHEEL_MODAL_FACTS);
 
 const canReceiveFocus = (element: Element | null): element is FocusableElement =>
   Boolean(element && 'focus' in element && typeof (element as FocusableElement).focus === 'function');

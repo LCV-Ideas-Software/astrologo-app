@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_WHEEL_MODAL_FACTS, visibleWheelModalFacts } from './WheelElementModal';
+import { MAX_WHEEL_MODAL_FACTS, visibleWheelModalFacts } from './wheelElementModalUtils';
 
 describe('painel de detalhes da roda natal', () => {
   it('limita os fatos para manter o conteúdo visível abaixo de dez linhas', () => {
