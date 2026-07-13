@@ -511,7 +511,6 @@ export function NatalChartWheel({
         <svg
           className="h-auto w-full drop-shadow-[0_22px_38px_rgba(49,46,129,0.28)]"
           viewBox="0 0 720 720"
-          role="group"
           aria-labelledby={titleId}
           aria-describedby={instructionsId}
         >
@@ -560,7 +559,6 @@ export function NatalChartWheel({
                   fontWeight="700"
                   textAnchor="middle"
                   dominantBaseline="central"
-                  aria-hidden="true"
                 >
                   {sign.symbol}
                 </text>
@@ -609,7 +607,6 @@ export function NatalChartWheel({
                     isActive(element.key) ? 3.4 : line.houseIndex1 === 1 || line.houseIndex1 === 10 ? 2.4 : 1.15
                   }
                   filter={isActive(element.key) ? `url(#${glowFilterId})` : undefined}
-                  aria-hidden="true"
                 />
                 <text
                   x={element.anchor.x}
@@ -619,7 +616,6 @@ export function NatalChartWheel({
                   fontWeight={isActive(element.key) ? 900 : 400}
                   textAnchor="middle"
                   dominantBaseline="central"
-                  aria-hidden="true"
                 >
                   {line.houseIndex1}
                 </text>
@@ -654,7 +650,6 @@ export function NatalChartWheel({
                   strokeOpacity={isActive(element.key) ? 1 : 0.72}
                   strokeDasharray={definition.dash}
                   filter={isActive(element.key) ? `url(#${glowFilterId})` : undefined}
-                  aria-hidden="true"
                 />
                 <line
                   x1={leftInner.x}
@@ -664,7 +659,6 @@ export function NatalChartWheel({
                   stroke="transparent"
                   strokeWidth="18"
                   pointerEvents="stroke"
-                  aria-hidden="true"
                 />
               </g>
             );
@@ -684,7 +678,7 @@ export function NatalChartWheel({
                 }`}
                 style={{ opacity: opacityFor(element.key), transformBox: 'fill-box', transformOrigin: 'center' }}
               >
-                <circle cx={point.x} cy={point.y} r="27" fill="transparent" pointerEvents="all" aria-hidden="true" />
+                <circle cx={point.x} cy={point.y} r="27" fill="transparent" pointerEvents="all" />
                 <circle
                   cx={point.x}
                   cy={point.y}
@@ -693,7 +687,6 @@ export function NatalChartWheel({
                   stroke={planet.color}
                   strokeWidth={isActive(element.key) ? 3.6 : 2.2}
                   filter={`url(#${glowFilterId})`}
-                  aria-hidden="true"
                 />
                 <text
                   x={point.x}
@@ -703,7 +696,6 @@ export function NatalChartWheel({
                   fontWeight="700"
                   textAnchor="middle"
                   dominantBaseline="central"
-                  aria-hidden="true"
                 >
                   {planet.symbol}
                 </text>
@@ -736,7 +728,6 @@ export function NatalChartWheel({
                   textAnchor="middle"
                   dominantBaseline="central"
                   filter={isActive(element.key) ? `url(#${glowFilterId})` : undefined}
-                  aria-hidden="true"
                 >
                   {angle.shortId}
                 </text>

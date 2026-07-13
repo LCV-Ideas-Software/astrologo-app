@@ -32,7 +32,7 @@ describe('Roda do mapa natal', () => {
       />,
     );
 
-    expect(html).toContain('role="group"');
+    expect(html).toContain('aria-labelledby=');
     expect(html).toContain('Roda natal tropical com Casas Placidus, planetas e aspectos interativos');
     expect(html.match(/data-house-line=/g)).toHaveLength(12);
     expect(html).toContain('aria-label="Sol a 12,00 graus de Touro, Casa 2"');

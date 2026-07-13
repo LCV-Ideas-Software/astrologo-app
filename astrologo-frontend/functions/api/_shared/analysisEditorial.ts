@@ -10,7 +10,7 @@ const CONCEPT_GUIDANCE_PARAGRAPH = `<p style="text-align:justify;text-indent:2em
 const OBSOLETE_POSITIONAL_FALLBACK = /Dados posicionais v2 indisponíveis para este mapa legado\.?/giu;
 const GENERATED_FUNDAMENTAL_NOTICE = /<p\b[^>]*>(?:(?!<\/p>)[\s\S])*?Aviso Fundamental:(?:(?!<\/p>)[\s\S])*?<\/p>/giu;
 const GENERATED_CONCEPT_GUIDANCE =
-  /<p\b[^>]*>(?:(?!<\/p>)[\s\S])*?consulte os botões [“\"]Saiba Mais[”\"](?:(?!<\/p>)[\s\S])*?<\/p>/giu;
+  /<p\b[^>]*>(?:(?!<\/p>)[\s\S])*?consulte os botões [“"]Saiba Mais[”"](?:(?!<\/p>)[\s\S])*?<\/p>/giu;
 const EMPTY_PARAGRAPH = /<p\b[^>]*>\s*<\/p>/giu;
 
 const INTERNAL_IMPLEMENTATION_PATTERNS: readonly RegExp[] = [

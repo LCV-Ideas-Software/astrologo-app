@@ -167,7 +167,6 @@ export function NatalAnalysisPanel({ positional, analysis, openInfoModal }: Nata
             {analysis.aspects.map((aspect) => (
               <li
                 key={aspect.recordId}
-                tabIndex={0}
                 className="rounded-2xl border border-rose-100 bg-linear-to-br from-white to-rose-50/60 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-rose-200 hover:shadow-md focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:border-rose-300 focus-visible:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 motion-reduce:transform-none motion-reduce:transition-none"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -242,7 +241,6 @@ export function NatalAnalysisPanel({ positional, analysis, openInfoModal }: Nata
             return (
               <li
                 key={houseIndex1}
-                tabIndex={0}
                 className="rounded-[1.6rem] border border-emerald-100 bg-linear-to-br from-white to-emerald-50/55 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-emerald-200 hover:shadow-md focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:border-emerald-300 focus-visible:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 motion-reduce:transform-none motion-reduce:transition-none"
               >
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Casa {houseIndex1}</p>

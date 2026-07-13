@@ -154,7 +154,6 @@ export function SynastryPanel({
   ) => (
     <li
       key={`${sourceName}-${targetName}-${bodyId}`}
-      tabIndex={0}
       className="flex items-center gap-3 rounded-xl border border-white bg-white/90 p-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-violet-200 hover:shadow-md focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:border-violet-300 focus-visible:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200 motion-reduce:transform-none motion-reduce:transition-none"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-100 text-2xl text-pink-700">
@@ -315,7 +314,6 @@ export function SynastryPanel({
                 {result.run.aspects.map((aspect) => (
                   <li
                     key={aspect.recordId}
-                    tabIndex={0}
                     className="rounded-2xl border border-pink-100 bg-linear-to-br from-white to-pink-50/65 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-pink-200 hover:shadow-md focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:border-pink-300 focus-visible:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-200 motion-reduce:transform-none motion-reduce:transition-none"
                   >
                     <p className="text-xs font-black uppercase tracking-wider text-pink-700">

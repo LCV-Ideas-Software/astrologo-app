@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 // Módulo: astrologo-frontend/src/App.tsx
-// Versão: v02.23.01
+// Versão: v02.23.02
 // Descrição: Frontend principal do Oráculo Celestial com análise astrológica via Gemini.
 
 import DOMPurify from 'dompurify';
@@ -73,7 +73,7 @@ import { isSynastryRunV1, renderSynastryRunEmailHtml, renderSynastryRunText } fr
 import { formatTatwaDurationPtBr, presentTatwa } from './tatwaPresentation';
 import { isTransitRunV1, renderTransitRunEmailHtml, renderTransitRunText, type TransitRunV1 } from './transitRunV1';
 
-const APP_VERSION = 'APP v02.23.01';
+const APP_VERSION = 'APP v02.23.02';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (value: string): boolean => emailRegex.test(value.trim());
@@ -709,7 +709,6 @@ export const RenderBlocoAstrologico: React.FC<BlocoProps> = ({
           {dadosAstrologia.map((a, i) => (
             <div
               key={i}
-              tabIndex={0}
               className={`flex flex-col justify-center rounded-[1.6rem] border p-4 shadow-sm md:p-5 ${cardTheme} ${RESULT_CARD_INTERACTION}`}
             >
               <p className="mb-2 truncate text-[10px] font-black uppercase tracking-wider text-slate-500 md:text-xs">
@@ -733,7 +732,6 @@ export const RenderBlocoAstrologico: React.FC<BlocoProps> = ({
           {dadosUmbanda.map((u, i) => (
             <div
               key={i}
-              tabIndex={0}
               className={`flex h-full w-full min-w-0 flex-col items-center justify-between rounded-[1.6rem] border p-3 shadow-sm md:p-5 ${cardTheme} ${RESULT_CARD_INTERACTION}`}
             >
               <span className="text-2xl md:text-4xl mb-2 md:mb-3 mt-1 drop-shadow-sm shrink-0">{u.simbolo}</span>
@@ -904,7 +902,6 @@ const PositionalV2Panel: React.FC<{
         {rulingPosition && rulingZodiac && (
           <article
             aria-labelledby="anjo-regente-titulo"
-            tabIndex={0}
             className={`relative mx-4 mt-6 overflow-hidden rounded-[2rem] border border-amber-200 bg-linear-to-br from-amber-50 via-white to-violet-50 p-5 shadow-[0_14px_40px_rgba(217,119,6,0.12)] hover:border-amber-300 focus-visible:border-amber-400 focus-visible:ring-amber-200 md:mx-8 md:mt-8 md:p-7 ${RESULT_CARD_INTERACTION}`}
           >
             <div
@@ -986,7 +983,6 @@ const PositionalV2Panel: React.FC<{
                 <li
                   key={planet.bodyId}
                   aria-label={`Posição de ${planetPresentation.label}`}
-                  tabIndex={0}
                   className={`group rounded-[1.6rem] border border-slate-200/80 bg-linear-to-br from-white to-slate-50/70 p-4 shadow-sm hover:border-violet-200 focus-visible:border-violet-300 focus-visible:ring-violet-200 md:p-5 ${RESULT_CARD_INTERACTION}`}
                 >
                   <div className="flex items-center gap-3">
@@ -1098,7 +1094,6 @@ const PositionalV2Panel: React.FC<{
               return (
                 <li
                   key={cusp.houseIndex1}
-                  tabIndex={0}
                   className={`flex min-w-0 items-center gap-3 rounded-2xl border border-emerald-100 bg-linear-to-br from-white to-emerald-50/60 p-3 shadow-sm hover:border-emerald-200 focus-visible:border-emerald-300 focus-visible:ring-emerald-200 md:p-4 ${RESULT_CARD_INTERACTION}`}
                 >
                   <span
@@ -1169,7 +1164,6 @@ const PositionalV2Panel: React.FC<{
             return (
               <li
                 key={group.angelId}
-                tabIndex={0}
                 className={`rounded-[1.6rem] border border-violet-100 bg-white/85 p-4 shadow-sm hover:border-violet-200 focus-visible:border-violet-300 focus-visible:ring-violet-200 md:p-5 ${RESULT_CARD_INTERACTION}`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -1573,7 +1567,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
           </div>
           <div className="space-y-3">
             <div
-              tabIndex={0}
               className={`flex items-center justify-between rounded-[1.35rem] border border-sky-100 bg-white/85 p-3 shadow-sm hover:border-sky-200 focus-visible:border-sky-300 focus-visible:ring-sky-200 md:p-4 ${RESULT_CARD_INTERACTION}`}
             >
               <p className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Principal</p>
@@ -1582,7 +1575,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
               </p>
             </div>
             <div
-              tabIndex={0}
               className={`flex items-center justify-between rounded-[1.35rem] border border-sky-100 bg-white/85 p-3 shadow-sm hover:border-sky-200 focus-visible:border-sky-300 focus-visible:ring-sky-200 md:p-4 ${RESULT_CARD_INTERACTION}`}
             >
               <p className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Subtatwa</p>
@@ -1627,7 +1619,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
           </div>
           <div className="space-y-3">
             <div
-              tabIndex={0}
               className={`flex items-center justify-between rounded-[1.35rem] border border-violet-100 bg-white/85 p-3 shadow-sm hover:border-violet-200 focus-visible:border-violet-300 focus-visible:ring-violet-200 md:p-4 ${RESULT_CARD_INTERACTION}`}
             >
               <span className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Expressão</span>
@@ -1636,7 +1627,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
               </strong>
             </div>
             <div
-              tabIndex={0}
               className={`flex items-center justify-between rounded-[1.35rem] border border-violet-100 bg-white/85 p-3 shadow-sm hover:border-violet-200 focus-visible:border-violet-300 focus-visible:ring-violet-200 md:p-4 ${RESULT_CARD_INTERACTION}`}
             >
               <span className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Caminho</span>
@@ -1645,7 +1635,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
               </strong>
             </div>
             <div
-              tabIndex={0}
               className={`flex items-center justify-between rounded-[1.35rem] border border-violet-100 bg-white/85 p-3 shadow-sm hover:border-violet-200 focus-visible:border-violet-300 focus-visible:ring-violet-200 md:p-4 ${RESULT_CARD_INTERACTION}`}
             >
               <span className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wide">Hora</span>

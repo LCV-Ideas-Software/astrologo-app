@@ -128,7 +128,6 @@ export function CurrentSkyPanel({ mapaId, run, onRunChange, openInfoModal, notif
               {run.positionsAtReference.map((position) => (
                 <li
                   key={position.bodyId}
-                  tabIndex={0}
                   className="rounded-2xl border border-sky-100 bg-linear-to-br from-white to-sky-50/60 p-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-sky-200 hover:shadow-md focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:border-sky-300 focus-visible:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 motion-reduce:transform-none motion-reduce:transition-none"
                 >
                   <div className="flex items-center gap-3">
@@ -172,7 +171,6 @@ export function CurrentSkyPanel({ mapaId, run, onRunChange, openInfoModal, notif
                 {run.aspects.map((aspect) => (
                   <li
                     key={aspect.recordId}
-                    tabIndex={0}
                     className="rounded-2xl border border-indigo-100 bg-linear-to-br from-white to-indigo-50/60 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-indigo-200 hover:shadow-md focus-visible:-translate-y-0.5 focus-visible:scale-[1.01] focus-visible:border-indigo-300 focus-visible:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 motion-reduce:transform-none motion-reduce:transition-none"
                   >
                     <p className="text-xs font-black uppercase tracking-wider text-indigo-700">
