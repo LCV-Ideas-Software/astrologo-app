@@ -8,6 +8,8 @@ const runtime = vi.hoisted(() => ({
   finishReasons: ['STOP'] as string[],
   totalTokens: 100,
   model: 'gemini-3.1-pro-preview',
+  fragmentHtml: '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>',
+  directHtml: '<p>Análise direta validada.</p>',
   job: null as Record<string, unknown> | null,
   step: null as Record<string, unknown> | null,
   lastRetryOptions: null as Record<string, unknown> | null,
@@ -39,7 +41,7 @@ vi.mock('@google/genai', () => ({
         return {
           text: evidenceIds
             ? JSON.stringify({
-                html: '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>',
+                html: runtime.fragmentHtml,
                 synthesisNotes: [
                   {
                     textPtBr: 'Síntese factual da parte validada.',
@@ -48,7 +50,7 @@ vi.mock('@google/genai', () => ({
                 ],
                 warnings: [],
               })
-            : '<p>Análise direta validada.</p>',
+            : runtime.directHtml,
           candidates: [{ finishReason: runtime.finishReasons.shift() ?? 'STOP' }],
           usageMetadata: { promptTokenCount: 1_000, candidatesTokenCount: 100, thoughtsTokenCount: 50 },
         };
@@ -279,6 +281,8 @@ beforeEach(() => {
   runtime.finishReasons = ['STOP'];
   runtime.totalTokens = 100;
   runtime.model = 'gemini-3.1-pro-preview';
+  runtime.fragmentHtml = '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>';
+  runtime.directHtml = '<p>Análise direta validada.</p>';
   runtime.job = null;
   runtime.step = null;
   runtime.lastRetryOptions = null;
@@ -336,6 +340,7 @@ describe('/api/analisar — protocolo reentrante', () => {
       model: 'gemini-3.1-pro-preview',
     });
     expect(runtime.step).toMatchObject({ kind: 'fragment', status: 'pending', attempts: 0 });
+    expect(runtime.job?.fixed_prompt_prefix).not.toContain('ASTROLOGO_PAYLOAD');
     expect(runtime.generateCalls).toBe(0);
 
     const advanced = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
@@ -368,6 +373,27 @@ describe('/api/analisar — protocolo reentrante', () => {
     expect(storedResult.fragment.fragmentId).toEqual(expect.any(String));
     expect(storedResult.fragment.coveredEvidenceIds).toEqual(expect.any(Array));
     expect(runtime.job?.output_tokens).toBe(150);
+  });
+
+  it('remove sentinelas internas do HTML antes de persistir cada fragmento', async () => {
+    runtime.totalTokens = 6_001;
+    runtime.fragmentHtml =
+      `<p>Antes ⟦ASTROLOGO_PAYLOAD:legacy.query:${'a'.repeat(64)}⟧ depois.</p>` +
+      `<p>&#x27E6;ASTROLOGO_PAYLOAD:canonical.tatwa:${'b'.repeat(64)}&#x27E7;</p>`;
+    const { onRequestPost } = await import('./analisar');
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    const storedResult = JSON.parse(String(runtime.step?.result_json)) as {
+      fragment: { html: string };
+    };
+    expect(storedResult.fragment.html).toContain('Antes');
+    expect(storedResult.fragment.html).toContain('depois.');
+    expect(storedResult.fragment.html).not.toContain('ASTROLOGO_PAYLOAD');
+    expect(storedResult.fragment.html).not.toContain('⟦');
+    expect(storedResult.fragment.html).not.toContain('⟧');
   });
 
   it('preserva de modo seguro o finishReason e a causa estrutural da tentativa particionada', async () => {

@@ -1,5 +1,13 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.22.04] - 2026-07-12
+
+### Corrigido
+
+- Marcadores técnicos `ASTROLOGO_PAYLOAD` não são mais apresentados na Síntese do Mestre, no relatório em texto, no e-mail ou ao reabrir um mapa salvo.
+- O prefixo entregue ao Gemini não contém mais as sentinelas de restauração; a sanitização central e a última fronteira de persistência impedem que uma resposta do modelo volte a expô-las.
+- O endpoint de e-mail limpa independentemente HTML e texto simples, inclusive quando recebe uma análise histórica contaminada.
+
 ## [v02.22.03] - 2026-07-12
 
 ### Corrigido

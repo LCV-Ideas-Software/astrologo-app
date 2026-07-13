@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.22.03**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.22.04**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.22.04`**                      | **Saída da IA sem marcadores internos.** Sentinelas de restauração deixam de chegar ao Gemini e são removidas nas fronteiras de persistência, tela, mapas salvos e e-mail, inclusive para análises históricas.                                                                                                                                                     |
 | **`v02.22.03`**                      | **IA fragmentada estabilizada.** O Gemini devolve somente conteúdo, o servidor anexa identidades e cobertura imutáveis, fragmentos usam `thinking=LOW` e falhas preservam diagnóstico sanitizado sem ultrapassar a conexão Cloudflare.                                                                                                                             |
 | **`v02.22.02`**                      | **IA reentrante sem 524.** Processa uma única parte por requisição, persiste progresso e tentativas no D1, retoma pela mesma aba e só apresenta o relatório depois da síntese e cobertura integrais.                                                                                                                                                                |
 | **`v02.22.01`**                      | **Sanitização estrutural da IA.** Substitui a remoção de tags por regex pelo parser `sanitize-html` com allowlist, fechando o alerta CodeQL de sanitização incompleta sem alterar o conteúdo funcional da análise.                                                                                                                                                  |

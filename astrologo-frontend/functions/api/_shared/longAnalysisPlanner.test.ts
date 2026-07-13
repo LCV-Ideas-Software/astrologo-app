@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   captureMonolithicPrompt,
   createAnalysisManifest,
+  createModelInstructionPrefix,
   extractMonolithicPromptPayloads,
   extractSemanticAnalysisUnits,
   packAnalysisUnits,
@@ -95,6 +96,13 @@ describe('planejador puro da análise longa', () => {
       extracted.fixedInstructionPrefix.indexOf('INSTRUÇÃO FINAL INTACTA.'),
     );
     expect(extracted.payloads.map(({ payloadId }) => payloadId)).toEqual(['legacy', 'locality']);
+    expect(extracted.fixedInstructionPrefix).toContain('ASTROLOGO_PAYLOAD');
+    const modelInstructionPrefix = createModelInstructionPrefix(extracted);
+    expect(modelInstructionPrefix).not.toContain('ASTROLOGO_PAYLOAD');
+    expect(modelInstructionPrefix).not.toContain('⟦');
+    expect(modelInstructionPrefix).not.toContain('⟧');
+    expect(modelInstructionPrefix).toContain('INSTRUÇÃO ANTERIOR INTACTA.');
+    expect(modelInstructionPrefix).toContain('INSTRUÇÃO FINAL INTACTA.');
     await expect(restoreMonolithicPromptPayloads(extracted)).resolves.toBe(prompt);
   });
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 // Módulo: astrologo-frontend/src/App.tsx
-// Versão: v02.22.03
+// Versão: v02.22.04
 // Descrição: Frontend principal do Oráculo Celestial com análise astrológica via Gemini.
 
 import DOMPurify from 'dompurify';
@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { stripInternalAnalysisMarkers } from './analysisOutput';
 import {
   type DadosPosicionaisV2,
   findConsultantRulingPosition,
@@ -71,7 +72,7 @@ import { isSynastryRunV1, renderSynastryRunEmailHtml, renderSynastryRunText } fr
 import { formatTatwaDurationPtBr, presentTatwa, renderTatwaEmailCautionHtml } from './tatwaPresentation';
 import { isTransitRunV1, renderTransitRunEmailHtml, renderTransitRunText, type TransitRunV1 } from './transitRunV1';
 
-const APP_VERSION = 'APP v02.22.03';
+const APP_VERSION = 'APP v02.22.04';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (value: string): boolean => emailRegex.test(value.trim());
@@ -98,18 +99,21 @@ const isSynastryViewResult = (value: unknown): value is SynastryViewResult => {
   );
 };
 const sanitizeRichHtml = (html: string): string =>
-  DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['p', 'strong', 'ul', 'li', 'em', 'b', 'i', 'h1', 'h2', 'h3', 'br'],
-    ALLOWED_ATTR: ['style'],
-  });
+  stripInternalAnalysisMarkers(
+    DOMPurify.sanitize(stripInternalAnalysisMarkers(html), {
+      ALLOWED_TAGS: ['p', 'strong', 'ul', 'li', 'em', 'b', 'i', 'h1', 'h2', 'h3', 'br'],
+      ALLOWED_ATTR: ['style'],
+    }),
+  );
 
 const htmlToPlainText = (html: string): string => {
+  const safeHtml = stripInternalAnalysisMarkers(html);
   if (typeof DOMParser === 'undefined') {
-    return html;
+    return safeHtml;
   }
 
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return (doc.body.textContent ?? '').replace(/\u00a0/g, ' ');
+  const doc = new DOMParser().parseFromString(safeHtml, 'text/html');
+  return stripInternalAnalysisMarkers((doc.body.textContent ?? '').replace(/\u00a0/g, ' '));
 };
 
 interface AstroData {
@@ -1848,7 +1852,7 @@ export default function App() {
     setRehydratingMapId(savedMap.id);
 
     setResult(savedMap);
-    setAnaliseIa(savedMap.analiseIa ?? '');
+    setAnaliseIa(stripInternalAnalysisMarkers(savedMap.analiseIa ?? ''));
     window.scrollTo({ top: 300, behavior: 'smooth' });
 
     const sessionToken = sessionStorage.getItem('astrologo_session_token');
@@ -2123,7 +2127,7 @@ export default function App() {
         completedSteps: data.job?.totalSteps ?? 1,
         totalSteps: data.job?.totalSteps ?? 1,
       });
-      setAnaliseIa(data.analise);
+      setAnaliseIa(stripInternalAnalysisMarkers(data.analise));
       sessionStorage.removeItem(storageKey);
     } catch (error) {
       showNotification(

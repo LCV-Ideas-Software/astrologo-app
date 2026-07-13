@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [v02.22.04] - 2026-07-12
+
+### Corrigido
+
+- **Sentinelas internas visíveis na análise** — os marcadores `ASTROLOGO_PAYLOAD` usados para provar a restauração do prompt deixam de integrar o prefixo enviado ao Gemini. O mapa interno referencia apenas as evidências canônicas transferidas para cada unidade.
+- **Tela, e-mail e mapas salvos** — a fronteira de saída remove exclusivamente sentinelas completas antes de persistir o HTML. Frontend, relatório em texto e Worker de e-mail repetem a proteção para limpar também análises históricas já armazenadas.
+
+### Segurança e integridade
+
+- Resíduos incompletos do namespace reservado falham de modo fechado antes da persistência final; hashes, manifesto, cobertura, ordem dos fragmentos e restauração byte a byte do prompt original permanecem inalterados.
+
 ## [v02.22.03] - 2026-07-12
 
 ### Corrigido

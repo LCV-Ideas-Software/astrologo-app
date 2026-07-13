@@ -275,6 +275,31 @@ export const restoreMonolithicPromptPayloads = async (extracted: ExtractedMonoli
   return restored;
 };
 
+/**
+ * Deriva o prefixo entregue ao modelo sem expor as sentinelas usadas apenas
+ * para provar a restauração byte a byte do prompt monolítico.
+ */
+export const createModelInstructionPrefix = (extracted: ExtractedMonolithicPrompt): string => {
+  let modelInstructionPrefix = extracted.fixedInstructionPrefix;
+  for (const payload of extracted.payloads) {
+    const firstIndex = modelInstructionPrefix.indexOf(payload.placeholder);
+    const secondIndex =
+      firstIndex < 0
+        ? -1
+        : modelInstructionPrefix.indexOf(payload.placeholder, firstIndex + payload.placeholder.length);
+    if (firstIndex < 0 || secondIndex >= 0) {
+      throw new TypeError(`O placeholder interno de ${payload.payloadId} está ausente ou duplicado.`);
+    }
+    modelInstructionPrefix =
+      modelInstructionPrefix.slice(0, firstIndex) +
+      modelInstructionPrefix.slice(firstIndex + payload.placeholder.length);
+  }
+  if (/ASTROLOGO_PAYLOAD/iu.test(modelInstructionPrefix)) {
+    throw new TypeError('O prefixo destinado ao modelo ainda contém uma sentinela interna.');
+  }
+  return modelInstructionPrefix;
+};
+
 const makeUnit = async (
   unitId: string,
   sourcePath: string,

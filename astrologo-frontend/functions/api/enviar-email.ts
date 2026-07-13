@@ -1,4 +1,5 @@
 import sanitizeHtml from 'sanitize-html';
+import { stripInternalAnalysisMarkers } from '../../src/analysisOutput';
 import {
   type D1DatabaseLike,
   enforceRateLimit,
@@ -19,49 +20,54 @@ interface Context {
 
 const isValidEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 export const sanitizeRichEmailHtml = (input: string): string =>
-  sanitizeHtml(String(input ?? '').slice(0, 120000), {
-    allowedTags: [
-      'p',
-      'div',
-      'span',
-      'br',
-      'hr',
-      'strong',
-      'b',
-      'em',
-      'i',
-      'u',
-      's',
-      'h1',
-      'h2',
-      'h3',
-      'h4',
-      'h5',
-      'h6',
-      'ul',
-      'ol',
-      'li',
-      'table',
-      'thead',
-      'tbody',
-      'tr',
-      'th',
-      'td',
-      'bdi',
-      'a',
-      'img',
-    ],
-    allowedAttributes: {
-      '*': ['style', 'class'],
-      a: ['href', 'target', 'rel'],
-      bdi: ['lang', 'dir'],
-      img: ['src', 'alt', 'width', 'height'],
-    },
-    allowedSchemes: ['http', 'https', 'mailto'],
-    allowedSchemesByTag: { img: ['http', 'https', 'data'] },
-    disallowedTagsMode: 'discard',
-    allowProtocolRelative: false,
-  });
+  stripInternalAnalysisMarkers(
+    sanitizeHtml(stripInternalAnalysisMarkers(String(input ?? '')).slice(0, 120000), {
+      allowedTags: [
+        'p',
+        'div',
+        'span',
+        'br',
+        'hr',
+        'strong',
+        'b',
+        'em',
+        'i',
+        'u',
+        's',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'ul',
+        'ol',
+        'li',
+        'table',
+        'thead',
+        'tbody',
+        'tr',
+        'th',
+        'td',
+        'bdi',
+        'a',
+        'img',
+      ],
+      allowedAttributes: {
+        '*': ['style', 'class'],
+        a: ['href', 'target', 'rel'],
+        bdi: ['lang', 'dir'],
+        img: ['src', 'alt', 'width', 'height'],
+      },
+      allowedSchemes: ['http', 'https', 'mailto'],
+      allowedSchemesByTag: { img: ['http', 'https', 'data'] },
+      disallowedTagsMode: 'discard',
+      allowProtocolRelative: false,
+    }),
+  );
+
+export const sanitizeRichEmailText = (input: string): string =>
+  stripInternalAnalysisMarkers(String(input ?? '')).slice(0, 120000);
 
 export async function onRequestOptions(context: Context) {
   return new Response(null, {
@@ -89,7 +95,7 @@ export async function onRequestPost(context: Context) {
     const payload = (await request.json()) as Record<string, string>;
     const emailDestino = String(payload.emailDestino ?? '').trim();
     const relatorioHtml = sanitizeRichEmailHtml(String(payload.relatorioHtml ?? ''));
-    const relatorioTexto = String(payload.relatorioTexto ?? '');
+    const relatorioTexto = sanitizeRichEmailText(String(payload.relatorioTexto ?? ''));
     const nomeConsulente = String(payload.nomeConsulente ?? '').trim();
     const envRec = env as unknown as Record<string, unknown>;
     const RESEND_API_KEY = (env.RESEND_API_KEY ||
