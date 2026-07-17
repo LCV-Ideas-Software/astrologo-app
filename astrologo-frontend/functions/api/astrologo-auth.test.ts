@@ -167,25 +167,25 @@ describe('POST /api/astrologo-auth', () => {
     expect(response.status).toBe(401);
   });
 
-  it.each([
-    'data-inválida',
-    new Date(Date.now() - 1_000).toISOString(),
-  ])('rejeita sessão com expiração inválida ou vencida: %s', async (expiresAt) => {
-    const db = createDb((query) => {
-      if (query.includes('astrologo_rate_limit_policies')) return { enabled: 0 };
-      if (query.includes("action = 'session'")) {
-        return { id: 'session-1', email: 'consulente@example.com', expires_at: expiresAt };
-      }
-      return null;
-    });
+  it.each(['data-inválida', new Date(Date.now() - 1_000).toISOString()])(
+    'rejeita sessão com expiração inválida ou vencida: %s',
+    async (expiresAt) => {
+      const db = createDb((query) => {
+        if (query.includes('astrologo_rate_limit_policies')) return { enabled: 0 };
+        if (query.includes("action = 'session'")) {
+          return { id: 'session-1', email: 'consulente@example.com', expires_at: expiresAt };
+        }
+        return null;
+      });
 
-    const response = await onRequestPost({
-      request: makeRequest({ action: 'session-retrieve', token: 'sessao-invalida' }),
-      env: { BIGDATA_DB: db, RESEND_API_KEY: '' },
-    });
+      const response = await onRequestPost({
+        request: makeRequest({ action: 'session-retrieve', token: 'sessao-invalida' }),
+        env: { BIGDATA_DB: db, RESEND_API_KEY: '' },
+      });
 
-    expect(response.status).toBe(401);
-  });
+      expect(response.status).toBe(401);
+    },
+  );
 
   it('responde com o mesmo 404 para mapa fora da conta e mapa inexistente', async () => {
     const call = async (savedIds: readonly string[]) => {

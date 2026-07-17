@@ -67,7 +67,7 @@
     "wrangler": "4.111.0"
   },
   "overrides": {
-    "picomatch": "4.0.4",
+    "picomatch": "4.0.5",
     "@fusionstrings/swiss-eph": {
       "undici": "6.27.0"
     },

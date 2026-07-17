@@ -317,17 +317,16 @@ describe('barreiras runtime do contrato v2', () => {
     expectInvalid(nestedExtra, 'additionalProperties');
   });
 
-  it.each([
-    Number.NaN,
-    Number.POSITIVE_INFINITY,
-    Number.NEGATIVE_INFINITY,
-  ])('rejeita número não finito: %s', (invalidNumber) => {
-    const payload = mutableFixture();
-    const first = payload.positions[0];
-    if (!first) throw new Error('Fixture sem primeiro planeta.');
-    first.coordinates.eclipticLatitudeDeg = invalidNumber;
-    expectInvalid(payload, 'finite');
-  });
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'rejeita número não finito: %s',
+    (invalidNumber) => {
+      const payload = mutableFixture();
+      const first = payload.positions[0];
+      if (!first) throw new Error('Fixture sem primeiro planeta.');
+      first.coordinates.eclipticLatitudeDeg = invalidNumber;
+      expectInvalid(payload, 'finite');
+    },
+  );
 
   it.each([
     [-1, 'minimum'],
