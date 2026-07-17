@@ -40,19 +40,17 @@ describe('apresentação backward-compatible dos Tatwas', () => {
     });
   });
 
-  it.each([
-    null,
-    undefined,
-    {},
-    { principal: 'inexistente', sub: 'Akasha (Éter)' },
-  ])('não transforma payload ausente ou malformado em registro legado: %j', (value) => {
-    expect(presentTatwa(value)).toMatchObject({
-      mode: 'unknown',
-      modeLabelPtBr: 'Ordem não informada',
-      provenanceAvailable: false,
-      subIsIndicative: false,
-    });
-  });
+  it.each([null, undefined, {}, { principal: 'inexistente', sub: 'Akasha (Éter)' }])(
+    'não transforma payload ausente ou malformado em registro legado: %j',
+    (value) => {
+      expect(presentTatwa(value)).toMatchObject({
+        mode: 'unknown',
+        modeLabelPtBr: 'Ordem não informada',
+        provenanceAvailable: false,
+        subIsIndicative: false,
+      });
+    },
+  );
 
   it('não anuncia proveniência quando a âncora está vazia', () => {
     expect(
