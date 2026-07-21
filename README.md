@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.23.04**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.23.05**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.23.05`**                      | **Dependency security patch.** Updates the transitive `protobufjs` override used by `@google/genai` to 7.6.5, resolving GHSA-j3f2-48v5-ccww / CVE-2026-59877 without changing application APIs or prompts. |
 | **`v02.23.04`**                      | **Profundidade e iconografia restauradas.** Volta a preservar todos os fragmentos interpretativos e acrescentar a síntese sem teto artificial de extensão; remove somente metodologia e detalhes internos, mantém o fix do 422 e recupera os símbolos pictóricos obrigatórios.                                                                                   |
 | **`v02.23.03`**                      | **Síntese final restaurada.** Remove a barreira semântica que convertia decisões editoriais da IA em erro 422 e transfere a melhoria de cobertura para um checklist explícito no prompt, preservando intactas as validações técnicas do mecanismo reentrante.                                                                                                     |
 | **`v02.23.02`**                      | **Interpretação útil e experiência integrada.** A análise final exclui aulas metodológicas e detalhes internos, aprofunda aspectos, sinastria e angelologia; os “Saiba Mais” absorvem as explicações; a roda natal ganha interação acessível e toda a UI/UX adota o mesmo acabamento e movimento.                                                                 |

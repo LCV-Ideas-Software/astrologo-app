@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 // Módulo: astrologo-frontend/src/App.tsx
-// Versão: v02.23.04
+// Versão: v02.23.05
 // Descrição: Frontend principal do Oráculo Celestial com análise astrológica via Gemini.
 
 import DOMPurify from 'dompurify';
@@ -73,7 +73,7 @@ import { isSynastryRunV1, renderSynastryRunEmailHtml, renderSynastryRunText } fr
 import { formatTatwaDurationPtBr, presentTatwa } from './tatwaPresentation';
 import { isTransitRunV1, renderTransitRunEmailHtml, renderTransitRunText, type TransitRunV1 } from './transitRunV1';
 
-const APP_VERSION = 'APP v02.23.04';
+const APP_VERSION = 'APP v02.23.05';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (value: string): boolean => emailRegex.test(value.trim());

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [v02.23.05] - 2026-07-21
+
+### Segurança
+
+- Atualiza o override transitivo de `protobufjs` de `7.6.3` para `7.6.5` na cadeia do `@google/genai`, corrigindo a possibilidade de negação de serviço por loop infinito durante a análise de opções `.proto` malformadas (GHSA-j3f2-48v5-ccww / CVE-2026-59877).
+- Preserva APIs, prompts e comportamento da aplicação; a mudança funcional restringe-se ao patch da dependência e ao lockfile correspondente.
+
 ## [v02.23.04] - 2026-07-13
 
 ### Corrigido

@@ -1,5 +1,5 @@
 // Módulo: astrologo-frontend/functions/api/analisar.ts
-// Versão: v02.23.04
+// Versão: v02.23.05
 // Descrição: API Gemini reentrante, com uma única etapa de geração por requisição HTTP.
 
 import { GoogleGenAI, HarmBlockThreshold, HarmCategory, ThinkingLevel } from '@google/genai';

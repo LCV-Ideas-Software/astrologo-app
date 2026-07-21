@@ -19,12 +19,13 @@ Currently, two official plugins are available:
 
 ## Change History
 
-**Status.** Stable. Current release: **v02.23.04**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.23.05**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release     | Notes                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v02.23.05` | Atualiza o `protobufjs` transitivo para 7.6.5 e corrige GHSA-j3f2-48v5-ccww / CVE-2026-59877 sem alterar APIs ou prompts. |
 | `v02.23.04` | Restaura fragmentos interpretativos completos, extensão sem teto artificial e iconografia obrigatória, mantendo apenas a exclusão de metodologia e o fix do 422.     |
 | `v02.23.03` | Remove a barreira semântica responsável pelo 422 final e orienta a cobertura por um checklist editorial derivado das evidências reais do mapa.                       |
 | `v02.23.02` | Relatório dedicado à interpretação, ajuda contextual ampliada, barreira contra detalhes internos, roda natal interativa e padronização completa de UI/UX.            |

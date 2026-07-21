@@ -1,5 +1,11 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.23.05] - 2026-07-21
+
+### Segurança
+
+- Atualiza `protobufjs` para `7.6.5` por meio do override transitivo usado pelo `@google/genai`, corrigindo GHSA-j3f2-48v5-ccww / CVE-2026-59877 sem alterar a API do frontend ou das Pages Functions.
+
 ## [v02.23.04] - 2026-07-13
 
 ### Corrigido
