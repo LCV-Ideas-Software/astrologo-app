@@ -44,6 +44,8 @@ updates:
       prefix: "deps"
       include: "scope"
     versioning-strategy: increase
+    cooldown:
+      default-days: 10
     groups:
       react:
         patterns:
