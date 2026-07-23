@@ -78,6 +78,13 @@ updates:
       interval: "daily"
       time: "01:00"
       timezone: "America/Los_Angeles"
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    open-pull-requests-limit: 10
 
   - package-ecosystem: "pre-commit"
     directory: "/"
