@@ -305,6 +305,11 @@ vi.mock('./_shared/analysisJobRepository', () => {
   };
 });
 
+// Import once after all mocks are registered. Counting this large module graph
+// inside the first test's five-second budget made a cold, loaded runner time out;
+// its still-running promise then mutated the shared fake runtime of the next test.
+const { onRequestPost } = await import('./analisar');
+
 const MAP_ID = '00000000-0000-4000-8000-000000000002';
 const CAPABILITY = 'b'.repeat(64);
 const JOB_ID = 'analysis:00000000-0000-4000-8000-000000000001';
@@ -375,8 +380,6 @@ afterEach(() => vi.clearAllMocks());
 
 describe('/api/analisar — protocolo reentrante', () => {
   it('inicia, planeja e gera em requisições distintas, com no máximo uma geração por avanço', async () => {
-    const { onRequestPost } = await import('./analisar');
-
     const started = await onRequestPost(context({ action: 'start', id: MAP_ID }));
     expect(started.status).toBe(202);
     expect(runtime.generateCalls).toBe(0);
@@ -397,7 +400,6 @@ describe('/api/analisar — protocolo reentrante', () => {
 
   it('transforma cada tentativa em uma nova requisição e nunca repete dentro do mesmo avanço', async () => {
     runtime.finishReasons = ['MAX_TOKENS', 'STOP'];
-    const { onRequestPost } = await import('./analisar');
     await onRequestPost(context({ action: 'start', id: MAP_ID }));
     await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
 
@@ -412,7 +414,6 @@ describe('/api/analisar — protocolo reentrante', () => {
 
   it('fragmenta acima de 6.000 tokens, injeta a identidade no servidor e usa thinking LOW em uma única geração', async () => {
     runtime.totalTokens = 6_001;
-    const { onRequestPost } = await import('./analisar');
 
     await onRequestPost(context({ action: 'start', id: MAP_ID }));
     const planned = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
@@ -469,7 +470,6 @@ describe('/api/analisar — protocolo reentrante', () => {
     runtime.fragmentHtml =
       `<p>Antes ⟦ASTROLOGO_PAYLOAD:legacy.query:${'a'.repeat(64)}⟧ depois.</p>` +
       `<p>&#x27E6;ASTROLOGO_PAYLOAD:canonical.tatwa:${'b'.repeat(64)}&#x27E7;</p>`;
-    const { onRequestPost } = await import('./analisar');
 
     await onRequestPost(context({ action: 'start', id: MAP_ID }));
     await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
@@ -488,7 +488,6 @@ describe('/api/analisar — protocolo reentrante', () => {
   it('preserva de modo seguro o finishReason e a causa estrutural da tentativa particionada', async () => {
     runtime.totalTokens = 6_001;
     runtime.finishReasons = ['SAFETY'];
-    const { onRequestPost } = await import('./analisar');
 
     await onRequestPost(context({ action: 'start', id: MAP_ID }));
     await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
@@ -505,7 +504,6 @@ describe('/api/analisar — protocolo reentrante', () => {
   it('não transforma uma omissão editorial da síntese em falha estrutural do trabalho', async () => {
     runtime.totalTokens = 6_001;
     runtime.synthesisHtml = runtime.directHtml.replace(/<h2>Síntese Integrada<\/h2><p>[\s\S]*?<\/p>/u, '');
-    const { onRequestPost } = await import('./analisar');
 
     await onRequestPost(context({ action: 'start', id: MAP_ID }));
     await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
@@ -551,7 +549,6 @@ describe('/api/analisar — protocolo reentrante', () => {
         { status: 400 },
       ),
     ];
-    const { onRequestPost } = await import('./analisar');
 
     await onRequestPost(context({ action: 'start', id: MAP_ID }));
     await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
