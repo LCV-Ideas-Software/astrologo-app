@@ -147,6 +147,12 @@ test("fails closed when any Wrangler signature field changes", () => {
 test("rejects malformed or empty SARIF documents", () => {
   assert.throws(() => unapprovedFindings({}), /runs array/);
   assert.throws(() => unapprovedFindings({ runs: [] }), /at least one run/);
+  for (const malformedRun of [null, undefined, false, 0, "run", []]) {
+    assert.throws(
+      () => unapprovedFindings({ runs: [malformedRun] }),
+      /run must be an object/,
+    );
+  }
   assert.throws(
     () => unapprovedFindings({ runs: [{ results: "not-an-array" }] }),
     /results value must be an array/,

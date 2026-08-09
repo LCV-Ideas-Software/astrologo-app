@@ -63,12 +63,15 @@ export function unapprovedFindings(sarif) {
 
   const findings = [];
   for (const run of sarif.runs) {
-    if (run?.results !== undefined && !Array.isArray(run.results)) {
+    if (run === null || typeof run !== "object" || Array.isArray(run)) {
+      throw new TypeError("Every Scorecard SARIF run must be an object");
+    }
+    if (run.results !== undefined && !Array.isArray(run.results)) {
       throw new TypeError(
         "Every Scorecard SARIF results value must be an array",
       );
     }
-    for (const result of run?.results ?? []) {
+    for (const result of run.results ?? []) {
       if (!isApprovedFinding(result)) {
         const physicalLocation = location(result);
         findings.push({
