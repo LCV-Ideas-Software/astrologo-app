@@ -26,15 +26,50 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Set up Node.js for the workflow regression
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
       - name: Test Scorecard policy enforcement
-        run: node --test .github/scripts/enforce-scorecard.test.mjs
-      - uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+        run: >-
+          node --test
+          .github/scripts/enforce-scorecard.test.mjs
+          .github/scripts/scorecard-workflow.test.mjs
+      - name: Run Scorecard on supported events
+        if: github.event_name != 'merge_group'
+        uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
         with:
           results_file: scorecard-results.sarif
           results_format: sarif
           # OpenSSF's publication API rejects workflows with organization-mandated write-all.
           # SARIF and artifacts remain enabled below.
           publish_results: false
+      - name: Run Scorecard on merge group
+        if: github.event_name == 'merge_group'
+        shell: bash
+        env:
+          # v2.4.4 validates token presence before selecting its tokenless local client.
+          INPUT_REPO_TOKEN: local-merge-group-no-credential
+          INPUT_RESULTS_FILE: scorecard-results.sarif
+          INPUT_RESULTS_FORMAT: sarif
+        run: |
+          set -euo pipefail
+          # v2.4.4 supports local candidate analysis only through its pull_request mode.
+          # Run that exact official image over GitHub's checked-out merge-group commit.
+          docker run --rm \
+            --volume "$GITHUB_EVENT_PATH:/github/event.json:ro" \
+            --volume "$GITHUB_WORKSPACE:/github/workspace" \
+            --workdir /github/workspace \
+            --env GITHUB_EVENT_NAME=pull_request \
+            --env GITHUB_EVENT_PATH=/github/event.json \
+            --env GITHUB_WORKSPACE=/github/workspace \
+            --env INPUT_REPO_TOKEN \
+            --env INPUT_RESULTS_FILE \
+            --env INPUT_RESULTS_FORMAT \
+            ghcr.io/ossf/scorecard-action:v2.4.4@sha256:ae5104dd3cc28466ebeb11144354be4cac4b7ff829654f9fab89021d71c46670
+      - name: Require Scorecard SARIF
+        shell: bash
+        run: test -s scorecard-results.sarif
       - name: Upload SARIF artifact
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
