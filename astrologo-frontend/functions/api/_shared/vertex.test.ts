@@ -3,9 +3,9 @@ import { VertexGenAI, VertexHttpError } from './vertex';
 
 const te = new TextEncoder();
 
-const b64urlToBuf = (s: string): Uint8Array => {
+const b64urlToBuf = (s: string): Uint8Array<ArrayBuffer> => {
   const b64 = s.replace(/-/g, '+').replace(/_/g, '/');
-  return Uint8Array.from(Buffer.from(b64, 'base64'));
+  return new Uint8Array(Buffer.from(b64, 'base64'));
 };
 
 const b64urlToJson = (s: string): Record<string, unknown> =>
@@ -88,14 +88,14 @@ describe('autenticação por service account (JWT RS256 → OAuth2)', () => {
     await client(sa, mock).models.countTokens({ model: 'm', contents: 'oi' });
 
     expect(mock.calls.token).toHaveLength(1);
-    const req = mock.calls.token[0];
+    const req = mock.calls.token[0]!;
     expect(req.url).toBe('https://oauth2.test.invalid/token');
     expect(req.init.method).toBe('POST');
     const params = new URLSearchParams(req.init.body as string);
     expect(params.get('grant_type')).toBe('urn:ietf:params:oauth:grant-type:jwt-bearer');
 
     const assertion = params.get('assertion') ?? '';
-    const [h, c, s] = assertion.split('.');
+    const [h = '', c = '', s = ''] = assertion.split('.');
     expect(b64urlToJson(h)).toEqual({ alg: 'RS256', typ: 'JWT', kid: 'kid-claims' });
     const claims = b64urlToJson(c) as { iss: string; scope: string; aud: string; iat: number; exp: number };
     expect(claims.iss).toBe('kid-claims@proj-x.iam.gserviceaccount.com');
@@ -111,7 +111,7 @@ describe('autenticação por service account (JWT RS256 → OAuth2)', () => {
     const sa = await makeTestSa('kid-nokey');
     const mock = makeFetchMock();
     await client(sa, mock).models.generateContent({ model: 'm', contents: 'oi' });
-    const { url, init } = mock.calls.api[0];
+    const { url, init } = mock.calls.api[0]!;
     expect(url).not.toMatch(/[?&]key=/u);
     const headers = init.headers as Record<string, string>;
     expect(Object.keys(headers).map((k) => k.toLowerCase())).not.toContain('x-goog-api-key');
@@ -161,7 +161,7 @@ describe('montagem das requisições REST do Vertex', () => {
     const sa = await makeTestSa('kid-url');
     const mock = makeFetchMock();
     await client(sa, mock).models.generateContent({ model: 'gemini-2.5-flash', contents: 'oi' });
-    expect(mock.calls.api[0].url).toBe(
+    expect(mock.calls.api[0]!.url).toBe(
       'https://aiplatform.googleapis.com/v1/projects/proj-x/locations/global/publishers/google/models/gemini-2.5-flash:generateContent',
     );
 
@@ -173,7 +173,7 @@ describe('montagem das requisições REST do Vertex', () => {
       fetchImpl: mock2.fetchImpl,
     });
     await regional.models.countTokens({ model: 'm', contents: 'oi' });
-    expect(mock2.calls.api[0].url).toBe(
+    expect(mock2.calls.api[0]!.url).toBe(
       'https://us-central1-aiplatform.googleapis.com/v1/projects/proj-x/locations/us-central1/publishers/google/models/m:countTokens',
     );
   });
@@ -193,7 +193,7 @@ describe('montagem das requisições REST do Vertex', () => {
         thinkingConfig: { thinkingLevel: 'MEDIUM' },
       },
     });
-    const body = JSON.parse(mock.calls.api[0].init.body as string);
+    const body = JSON.parse(mock.calls.api[0]!.init.body as string);
     expect(body.contents).toEqual([{ role: 'user', parts: [{ text: 'pergunta' }] }]);
     expect(body.systemInstruction).toEqual({ role: 'user', parts: [{ text: 'seja literal' }] });
     expect(body.generationConfig).toEqual({
@@ -220,7 +220,7 @@ describe('montagem das requisições REST do Vertex', () => {
       contents: 'x',
       config: { maxOutputTokens: 512, responseMimeType: 'application/json', responseJsonSchema: schema },
     });
-    const body = JSON.parse(mock.calls.api[0].init.body as string);
+    const body = JSON.parse(mock.calls.api[0]!.init.body as string);
     expect(body.generationConfig.responseMimeType).toBe('application/json');
     expect(body.generationConfig.responseJsonSchema).toEqual(schema);
   });
@@ -233,9 +233,9 @@ describe('montagem das requisições REST do Vertex', () => {
       contents: 'x',
       config: { httpOptions: { timeout: 20_000 } },
     });
-    expect(mock.calls.token[0].init.signal).toBeInstanceOf(AbortSignal); // teto próprio da mint (20s)
-    expect(mock.calls.api[0].init.signal).toBeInstanceOf(AbortSignal);
-    const body = JSON.parse(mock.calls.api[0].init.body as string);
+    expect(mock.calls.token[0]!.init.signal).toBeInstanceOf(AbortSignal); // teto próprio da mint (20s)
+    expect(mock.calls.api[0]!.init.signal).toBeInstanceOf(AbortSignal);
+    const body = JSON.parse(mock.calls.api[0]!.init.body as string);
     expect(body.generationConfig).toBeUndefined();
   });
 
@@ -243,12 +243,12 @@ describe('montagem das requisições REST do Vertex', () => {
     const sa = await makeTestSa('kid-min');
     const mock = makeFetchMock();
     await client(sa, mock).models.generateContent({ model: 'm', contents: 'x' });
-    const body = JSON.parse(mock.calls.api[0].init.body as string);
+    const body = JSON.parse(mock.calls.api[0]!.init.body as string);
     expect(body.generationConfig).toBeUndefined();
     expect(body.systemInstruction).toBeUndefined();
     expect(body.safetySettings).toBeUndefined();
-    expect(mock.calls.api[0].init.signal ?? undefined).toBeUndefined();
-    expect(mock.calls.token[0].init.signal).toBeInstanceOf(AbortSignal);
+    expect(mock.calls.api[0]!.init.signal ?? undefined).toBeUndefined();
+    expect(mock.calls.token[0]!.init.signal).toBeInstanceOf(AbortSignal);
   });
 });
 
@@ -282,7 +282,7 @@ describe('normalização das respostas', () => {
     const sa = await makeTestSa('kid-count');
     const mock = makeFetchMock({ apiPayload: { totalTokens: 42 } });
     const res = await client(sa, mock).models.countTokens({ model: 'm', contents: 'conte' });
-    expect(mock.calls.api[0].url).toMatch(/:countTokens$/u);
+    expect(mock.calls.api[0]!.url).toMatch(/:countTokens$/u);
     expect(res.totalTokens).toBe(42);
   });
 });
