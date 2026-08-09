@@ -55,7 +55,10 @@ function hasCanonicalRepositoryPolicyLocation(result) {
     return false;
   }
   if (
-    !hasOnlyKeys(physicalLocation.artifactLocation, new Set(["uri", "uriBaseId"]))
+    !hasOnlyKeys(
+      physicalLocation.artifactLocation,
+      new Set(["uri", "uriBaseId"]),
+    )
   ) {
     return false;
   }

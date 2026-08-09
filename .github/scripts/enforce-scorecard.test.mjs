@@ -145,11 +145,7 @@ test("accepts only the intentional repository-policy signatures", () => {
 });
 
 test("rejects every non-policy Scorecard result, including binary artifacts", () => {
-  const ruleIds = [
-    "FuzzingID",
-    "BinaryArtifactsID",
-    "VulnerabilitiesID",
-  ];
+  const ruleIds = ["FuzzingID", "BinaryArtifactsID", "VulnerabilitiesID"];
   assert.deepEqual(
     unapprovedFindings(sarif(ruleIds.map((ruleId) => finding(ruleId)))).map(
       ({ ruleId }) => ruleId,
