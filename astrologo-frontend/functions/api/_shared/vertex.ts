@@ -90,6 +90,10 @@ const JWT_LIFETIME_S = 3600; // máximo permitido pelo fluxo server-to-server do
 const JWT_CLOCK_SKEW_S = 30;
 const TOKEN_SAFETY_MARGIN_S = 300;
 const ERROR_BODY_EXCERPT = 300;
+// A mint de token não herda o httpOptions.timeout do caller (esse contrato é
+// da chamada da API); um teto próprio evita que um endpoint OAuth travado
+// pendure o single-flight e todos os callers que aguardam a mesma mint.
+const TOKEN_MINT_TIMEOUT_MS = 20_000;
 
 // Cache module-level: sobrevive entre requests no mesmo isolate. Chaveado pela
 // identidade da chave para nunca vazar token entre credenciais distintas.
@@ -104,7 +108,8 @@ const base64UrlFromBytes = (bytes: Uint8Array): string => {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
-const base64UrlFromJson = (value: unknown): string => base64UrlFromBytes(new TextEncoder().encode(JSON.stringify(value)));
+const base64UrlFromJson = (value: unknown): string =>
+  base64UrlFromBytes(new TextEncoder().encode(JSON.stringify(value)));
 
 const pemToPkcs8Bytes = (pem: string): Uint8Array<ArrayBuffer> => {
   const body = pem.replace(/-----(BEGIN|END) PRIVATE KEY-----/g, '').replace(/\s+/g, '');
@@ -120,11 +125,11 @@ const parseServiceAccountKey = (saKeyJson: string): ServiceAccountKey => {
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(saKeyJson) as Record<string, unknown>;
-  } catch (err) {
-    throw new Error(
-      `VERTEX_SA_KEY inválido: o conteúdo do secret não é JSON parseável (${err instanceof Error ? err.message : 'erro desconhecido'}).`,
-      { cause: err },
-    );
+  } catch {
+    // Mensagem genérica de propósito: o SyntaxError do V8 pode embutir trechos
+    // do input (a própria SA, incluindo a chave privada) e os handlers logam
+    // a cadeia de erros — nada do parse pode vazar para logs.
+    throw new Error('VERTEX_SA_KEY inválido: o conteúdo do secret não é JSON parseável.');
   }
   for (const field of ['client_email', 'private_key', 'private_key_id', 'token_uri'] as const) {
     if (typeof parsed[field] !== 'string' || !parsed[field]) {
@@ -157,6 +162,7 @@ const mintAccessToken = async (
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ grant_type: OAUTH_GRANT_TYPE, assertion }).toString(),
+    signal: AbortSignal.timeout(TOKEN_MINT_TIMEOUT_MS),
   });
   if (!res.ok) {
     const detail = (await res.text()).slice(0, ERROR_BODY_EXCERPT);
@@ -263,7 +269,9 @@ export class VertexGenAI {
 
   private baseUrl(): string {
     const { location } = this.options;
-    return location === 'global' ? 'https://aiplatform.googleapis.com' : `https://${location}-aiplatform.googleapis.com`;
+    return location === 'global'
+      ? 'https://aiplatform.googleapis.com'
+      : `https://${location}-aiplatform.googleapis.com`;
   }
 
   private async request(
@@ -280,7 +288,9 @@ export class VertexGenAI {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-      ...(Number.isFinite(timeoutMs) && Number(timeoutMs) > 0 ? { signal: AbortSignal.timeout(Number(timeoutMs)) } : {}),
+      ...(Number.isFinite(timeoutMs) && Number(timeoutMs) > 0
+        ? { signal: AbortSignal.timeout(Number(timeoutMs)) }
+        : {}),
     });
     if (!res.ok) {
       const detail = (await res.text()).slice(0, ERROR_BODY_EXCERPT);

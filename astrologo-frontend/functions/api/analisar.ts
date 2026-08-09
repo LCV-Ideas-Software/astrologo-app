@@ -65,7 +65,6 @@ import {
   sha256Text,
 } from './_shared/longAnalysisPlanner';
 import { loadConfiguredAstrologerModel } from './_shared/modelConfig';
-import { VertexGenAI } from './_shared/vertex';
 import {
   type D1DatabaseLike,
   enforceRateLimit,
@@ -75,6 +74,7 @@ import {
   securityHeaders,
 } from './_shared/requestSecurity';
 import { buildAnalysisGlobalsWithCanonicalTatwa, loadCanonicalTatwa } from './_shared/tatwaPrompt';
+import { VertexGenAI } from './_shared/vertex';
 
 interface EnvBindings {
   VERTEX_SA_KEY: string;

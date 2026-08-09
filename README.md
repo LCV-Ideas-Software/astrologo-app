@@ -131,12 +131,16 @@ npx wrangler d1 create example_db
 
 Apply the versioned migrations before serving requests. Pages Functions deliberately do not execute DDL at request time. In the LCV deployment, migrations `015_bigdata_astrologo_schema_regularization.sql`, `016_bigdata_astrologo_advanced_charts.sql`, and `017_astrologo_saved_map_claims.sql` live in `admin-app/db/migrations` because `bigdata_db` is shared and administratively governed there. A fork must apply equivalent schema to its own D1 before enabling the endpoints.
 
-### 5. Configure Gemini secret
+### 5. Configure the Vertex AI credential
+
+The analysis API authenticates to Vertex AI with a Google Cloud service account (JWT RS256 → OAuth2). Create a service account with the `roles/aiplatform.user` role in your project, download its JSON key, and store the whole JSON as the `VERTEX_SA_KEY` secret:
 
 ```bash
-npx wrangler secret put GEMINI_API_KEY --env production
-# paste your Google AI Studio API key when prompted
+npx wrangler secret put VERTEX_SA_KEY --env production
+# paste the full service-account JSON when prompted
 ```
+
+By default the client targets the LCV project (`lcv-ideas-and-software`) on the `global` endpoint. Forks must set the optional bindings `VERTEX_PROJECT` (your Google Cloud project id) and, if desired, `VERTEX_LOCATION` so requests target a project the service account can access.
 
 ### 6. Build + deploy
 

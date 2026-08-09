@@ -233,7 +233,7 @@ describe('montagem das requisições REST do Vertex', () => {
       contents: 'x',
       config: { httpOptions: { timeout: 20_000 } },
     });
-    expect(mock.calls.token[0].init.signal ?? undefined).toBeUndefined();
+    expect(mock.calls.token[0].init.signal).toBeInstanceOf(AbortSignal); // teto próprio da mint (20s)
     expect(mock.calls.api[0].init.signal).toBeInstanceOf(AbortSignal);
     const body = JSON.parse(mock.calls.api[0].init.body as string);
     expect(body.generationConfig).toBeUndefined();
@@ -248,6 +248,7 @@ describe('montagem das requisições REST do Vertex', () => {
     expect(body.systemInstruction).toBeUndefined();
     expect(body.safetySettings).toBeUndefined();
     expect(mock.calls.api[0].init.signal ?? undefined).toBeUndefined();
+    expect(mock.calls.token[0].init.signal).toBeInstanceOf(AbortSignal);
   });
 });
 
@@ -344,12 +345,22 @@ describe('regressão workerd e erros diagnósticos', () => {
 
   it('credencial JSON malformada ou sem campo obrigatório falha com erro diagnóstico', async () => {
     const mock = makeFetchMock();
-    const broken = new VertexGenAI({ saKeyJson: 'não-é-json', project: 'p', location: 'global', fetchImpl: mock.fetchImpl });
+    const broken = new VertexGenAI({
+      saKeyJson: 'não-é-json',
+      project: 'p',
+      location: 'global',
+      fetchImpl: mock.fetchImpl,
+    });
     await expect(broken.models.countTokens({ model: 'm', contents: 'x' })).rejects.toThrow(/VERTEX_SA_KEY.*JSON/su);
 
     const sa = await makeTestSa('kid-campo');
     const missing = JSON.stringify({ ...JSON.parse(sa.saJson), private_key: undefined });
-    const partial = new VertexGenAI({ saKeyJson: missing, project: 'p', location: 'global', fetchImpl: mock.fetchImpl });
+    const partial = new VertexGenAI({
+      saKeyJson: missing,
+      project: 'p',
+      location: 'global',
+      fetchImpl: mock.fetchImpl,
+    });
     await expect(partial.models.countTokens({ model: 'm', contents: 'x' })).rejects.toThrow(/private_key/u);
   });
 });
