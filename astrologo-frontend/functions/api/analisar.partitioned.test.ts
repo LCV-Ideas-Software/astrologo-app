@@ -401,6 +401,35 @@ describe('/api/analisar — protocolo reentrante', () => {
     });
   });
 
+  it('normaliza modelo e teto de saída ao retomar um plano persistido pela versão anterior', async () => {
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    if (!runtime.job || !runtime.steps[0]) throw new Error('plano de teste ausente');
+
+    const legacyPlan = {
+      ...JSON.parse(String(runtime.job.plan_json)),
+      model: 'gemini-pro-latest',
+      modelInputTokenLimit: 2_000_000,
+      modelOutputTokenLimit: 999_999,
+      fragmentOutputBudget: 999_999,
+      synthesisInputBudget: 999_999,
+    };
+    const legacyPayload = {
+      ...JSON.parse(String(runtime.steps[0].payload_json)),
+      maxOutputTokens: 999_999,
+    };
+    runtime.job = { ...runtime.job, plan_json: JSON.stringify(legacyPlan) };
+    runtime.steps[0] = { ...runtime.steps[0], payload_json: JSON.stringify(legacyPayload) };
+
+    const completed = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(completed.status).toBe(200);
+    expect(runtime.generateRequests[0]).toMatchObject({
+      model: 'gemini-3.1-pro-preview',
+      config: { maxOutputTokens: 65_536 },
+    });
+  });
+
   it('recusa variantes Vertex sem os contratos de texto estruturado da análise', async () => {
     runtime.model = 'gemini-3.1-flash-lite-image';
 

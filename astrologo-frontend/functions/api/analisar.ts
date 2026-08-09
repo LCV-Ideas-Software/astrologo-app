@@ -1516,7 +1516,24 @@ const loadPersistedJobPlan = (job: AnalysisJobRecord): PersistedAnalysisJobPlan 
   if (value.mode === 'partitioned' && !isRecord(value.packedPlan)) {
     throw new TypeError('O plano particionado persistido está ausente.');
   }
-  return value as unknown as PersistedAnalysisJobPlan;
+  const persisted = value as unknown as PersistedAnalysisJobPlan;
+  const currentModelProfile = resolveVertexAnalysisModel(persisted.model);
+  const modelInputTokenLimit = Math.min(persisted.modelInputTokenLimit, currentModelProfile.inputTokenLimit);
+  const modelOutputTokenLimit = Math.min(persisted.modelOutputTokenLimit, currentModelProfile.outputTokenLimit);
+  const fragmentOutputBudget = Math.min(persisted.fragmentOutputBudget, modelOutputTokenLimit);
+  const synthesisInputBudget = Math.min(
+    persisted.synthesisInputBudget,
+    Math.max(0, modelInputTokenLimit - fragmentOutputBudget - 2_048),
+  );
+
+  return {
+    ...persisted,
+    model: currentModelProfile.model,
+    modelInputTokenLimit,
+    modelOutputTokenLimit,
+    fragmentOutputBudget,
+    synthesisInputBudget,
+  };
 };
 
 const loadStepPayload = (step: AnalysisStepRecord): PersistedStepPayload => {

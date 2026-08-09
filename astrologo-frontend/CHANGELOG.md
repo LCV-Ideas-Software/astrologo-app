@@ -6,6 +6,7 @@
 
 - Migra o transporte de IA do endpoint AI Studio (API key `GEMINI_API_KEY`) para o **Vertex AI** (Gemini Enterprise Agent Platform), autenticando com service account (`VERTEX_SA_KEY`) via JWT RS256 (WebCrypto) trocado por access token OAuth2. O consumo passa a faturar no pós-pago padrão do Cloud Billing. Prompts, seletor de modelo do admin (D1 `admin_module_configs`/`astrologo-config`, com fallback legado), orquestração reentrante (jobs, fragmentos, reduções, síntese), saída estruturada (`responseJsonSchema`), `thinkingLevel` por família de modelo, retries e telemetria permanecem com o mesmo comportamento.
 - A seleção dinâmica passa por uma tabela fail-closed de publisher models Vertex compatíveis com `Count Tokens` e `Structured Output`: aliases legados, variantes incompatíveis e IDs desconhecidos usam `gemini-3.1-pro-preview`; a orquestração conserva o teto de entrada de 128 mil tokens e limita cada escalada de `MAX_TOKENS` à capacidade oficial do modelo selecionado.
+- Planos persistidos pela versão anterior são normalizados em memória ao retomar a execução: o modelo legado e seus limites são reduzidos ao perfil Vertex atual antes de qualquer nova geração.
 
 ### Adicionado
 
@@ -17,7 +18,7 @@
 
 ### Testes
 
-- Novo `functions/api/_shared/vertex.test.ts` — 21 testes do cliente (assinatura JWT verificada criptograficamente, cache/expiração/single-flight, mapeamento REST incluindo `responseJsonSchema` e timeout, validação fail-closed de endpoints, regressão do `this` do workerd, erros com `status`). Suíte total: 324/324.
+- Novo `functions/api/_shared/vertex.test.ts` — 21 testes do cliente (assinatura JWT verificada criptograficamente, cache/expiração/single-flight, mapeamento REST incluindo `responseJsonSchema` e timeout, validação fail-closed de endpoints, regressão do `this` do workerd, erros com `status`); o protocolo reentrante cobre a retomada de planos legados. Suíte total: 325/325.
 
 ## [v02.23.05] - 2026-07-21
 
