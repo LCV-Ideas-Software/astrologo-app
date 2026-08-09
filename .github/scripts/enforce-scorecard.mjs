@@ -8,9 +8,88 @@ const APPROVED_WRANGLER_SNIPPETS = new Set([
   'npm install --prefix "$wrangler_prefix" --save-exact --ignore-scripts --no-audit --no-fund wrangler@latest',
   'npm install --prefix "$wrangler_prefix" --ignore-scripts --no-audit --no-fund',
 ]);
+const REPOSITORY_POLICY_PATH = "no file associated with this alert";
+const BRANCH_PROTECTION_MESSAGE = `score is 3: branch protection is not maximal on development and all release branches:
+Warn: 'stale review dismissal' is disabled on branch 'main'
+Warn: branch 'main' does not require approvers
+Warn: codeowners review is not required on branch 'main'
+Warn: 'last push approval' is disabled on branch 'main'
+Warn: no status checks found to merge onto branch 'main'
+Click Remediation section below to solve this issue`;
+const CODE_REVIEW_MESSAGE =
+  /^score is 0: Found 0\/[1-9]\d* approved changesets -- score normalized to 0\nClick Remediation section below to solve this issue$/;
+const CII_BEST_PRACTICES_MESSAGE =
+  "score is 0: no effort to earn an OpenSSF best practices badge detected\nClick Remediation section below to solve this issue";
 
 function location(result) {
   return result?.locations?.[0]?.physicalLocation ?? {};
+}
+
+function hasExactKeys(object, keys) {
+  if (object === null || typeof object !== "object" || Array.isArray(object)) {
+    return false;
+  }
+  const objectKeys = Object.keys(object);
+  return (
+    objectKeys.length === keys.size && objectKeys.every((key) => keys.has(key))
+  );
+}
+
+function isRepositoryPolicyLocation(physicalLocation) {
+  return (
+    physicalLocation.artifactLocation?.uri === REPOSITORY_POLICY_PATH &&
+    physicalLocation.artifactLocation?.uriBaseId === "%SRCROOT%" &&
+    physicalLocation.region?.startLine === 1 &&
+    physicalLocation.region?.snippet === undefined
+  );
+}
+
+function hasCanonicalRepositoryPolicyLocation(result) {
+  if (!Array.isArray(result?.locations) || result.locations.length !== 1) {
+    return false;
+  }
+  const [entry] = result.locations;
+  if (!hasExactKeys(entry, new Set(["physicalLocation"]))) {
+    return false;
+  }
+
+  const physicalLocation = entry.physicalLocation;
+  if (
+    !hasExactKeys(physicalLocation, new Set(["artifactLocation", "region"]))
+  ) {
+    return false;
+  }
+  if (
+    !hasExactKeys(
+      physicalLocation.artifactLocation,
+      new Set(["uri", "uriBaseId"]),
+    )
+  ) {
+    return false;
+  }
+  if (!hasExactKeys(physicalLocation.region, new Set(["startLine"]))) {
+    return false;
+  }
+
+  return isRepositoryPolicyLocation(physicalLocation);
+}
+
+function hasCanonicalRepositoryPolicyResult(result) {
+  if (
+    !hasExactKeys(
+      result,
+      new Set(["ruleId", "ruleIndex", "message", "locations"]),
+    )
+  ) {
+    return false;
+  }
+  if (!Number.isSafeInteger(result.ruleIndex) || result.ruleIndex < 0) {
+    return false;
+  }
+  if (!hasExactKeys(result.message, new Set(["text"]))) {
+    return false;
+  }
+  return hasCanonicalRepositoryPolicyLocation(result);
 }
 
 function tokenPermissionsMessages(workflowFile) {
@@ -48,6 +127,25 @@ export function isApprovedFinding(result) {
       message === PINNED_DEPENDENCY_MESSAGE &&
       APPROVED_WRANGLER_SNIPPETS.has(snippet)
     );
+  }
+
+  if (result?.ruleId === "BranchProtectionID") {
+    if (!hasCanonicalRepositoryPolicyResult(result)) {
+      return false;
+    }
+    return message === BRANCH_PROTECTION_MESSAGE;
+  }
+  if (result?.ruleId === "CodeReviewID") {
+    if (!hasCanonicalRepositoryPolicyResult(result)) {
+      return false;
+    }
+    return CODE_REVIEW_MESSAGE.test(message);
+  }
+  if (result?.ruleId === "CIIBestPracticesID") {
+    if (!hasCanonicalRepositoryPolicyResult(result)) {
+      return false;
+    }
+    return message === CII_BEST_PRACTICES_MESSAGE;
   }
 
   return false;
