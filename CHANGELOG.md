@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [v02.25.02] - 2026-08-09
+
+**Adaptação de teto em runtime (achados codex P1 + Copilot no PR da v02.25.01).**
+
+### Alterado
+
+- O teto conservador de saída para IDs fora da tabela validada volta a ter headroom (65.535): o cap de 8.192 da v02.25.01 eliminava a escalada de `MAX_TOKENS` e criava um beco de truncamento — respostas longas em modelos desconhecidos falhavam o job repetindo o mesmo request (achado codex P1).
+- Novo comportamento no retry de etapa: um 400 de `maxOutputTokens` reduz o valor pela metade (piso 1.024) e mantém a etapa retryable — o teto real do modelo é descoberto em runtime em vez de assumido. A garantia absoluta descrita na v02.25.01 ("nenhum 400 possível") era mais forte que o implementado (achado Copilot); esta versão a substitui por recuperação automática documentada.
+
 ## [v02.25.01] - 2026-08-09
 
 **Correções dos achados dos bots do PR da v02.25.00.**

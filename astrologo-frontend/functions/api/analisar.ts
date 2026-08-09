@@ -75,7 +75,7 @@ import {
   securityHeaders,
 } from './_shared/requestSecurity';
 import { buildAnalysisGlobalsWithCanonicalTatwa, loadCanonicalTatwa } from './_shared/tatwaPrompt';
-import { VertexGenAI } from './_shared/vertex';
+import { VertexGenAI, VertexHttpError } from './_shared/vertex';
 import { DEFAULT_VERTEX_ANALYSIS_MODEL, resolveVertexAnalysisModel } from './_shared/vertexModelCapabilities';
 
 interface EnvBindings {
@@ -1977,12 +1977,25 @@ const executeOneAnalysisStep = async (options: {
     return { kind: payload.kind, completed: true };
   } catch (error) {
     const detail = describeErrorChain(error, error instanceof GeminiStepAttemptError ? error.finishReason : undefined);
+    // Adaptação descendente: se o modelo (tipicamente fora da tabela validada)
+    // rejeitar o teto atual com 400 de maxOutputTokens, reduz pela metade
+    // (piso 1.024) e mantém a etapa retryable — o teto real é descoberto em
+    // runtime em vez de assumido, e a escalada ascendente de MAX_TOKENS
+    // continua disponível para respostas longas.
+    const attemptCause = error instanceof GeminiStepAttemptError ? error.cause : undefined;
+    const outputCapRejected =
+      attemptCause instanceof VertexHttpError &&
+      attemptCause.status === 400 &&
+      /max_?output_?tokens/iu.test(attemptCause.message) &&
+      payload.maxOutputTokens > 1_024;
     const retryPayload =
       error instanceof GeminiStepAttemptError &&
       error.finishReason === 'MAX_TOKENS' &&
       payload.maxOutputTokens < plan.modelOutputTokenLimit
         ? { ...payload, maxOutputTokens: Math.min(plan.modelOutputTokenLimit, payload.maxOutputTokens * 2) }
-        : payload;
+        : outputCapRejected
+          ? { ...payload, maxOutputTokens: Math.max(1_024, Math.floor(payload.maxOutputTokens / 2)) }
+          : payload;
     const retryState = await retryOrFailAnalysisStep({
       db: options.env.BIGDATA_DB,
       jobId: options.job.id,
@@ -1999,6 +2012,7 @@ const executeOneAnalysisStep = async (options: {
       retryable:
         !(error instanceof GeminiStepAttemptError) ||
         error.category === 'validation' ||
+        outputCapRejected ||
         isRetryableTransportError(error.cause),
       inputTokens: usageTotals.inputTokens,
       outputTokens: usageTotals.outputTokens,

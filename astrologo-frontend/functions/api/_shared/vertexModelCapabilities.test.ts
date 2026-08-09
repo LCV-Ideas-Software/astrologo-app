@@ -12,7 +12,7 @@ describe('resolveVertexAnalysisModel — seletor sempre respeitado', () => {
   it('respeita ID desconhecido-mas-válido como está, com limites conservadores (nunca rebaixa na seleção)', () => {
     const profile = resolveVertexAnalysisModel('gemini-9.9-ultra');
     expect(profile.model).toBe('gemini-9.9-ultra');
-    expect(profile.outputTokenLimit).toBe(8_192);
+    expect(profile.outputTokenLimit).toBe(65_535);
     expect(profile.inputTokenLimit).toBe(128_000);
   });
 
