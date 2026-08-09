@@ -141,7 +141,7 @@ npx wrangler pages secret put VERTEX_SA_KEY --project-name astrologo-frontend
 # paste the full service-account JSON when prompted
 ```
 
-By default the client targets the LCV project (`lcv-ideas-and-software`) on the `global` endpoint. Forks must set the optional bindings `VERTEX_PROJECT` (your Google Cloud project id) and, if desired, `VERTEX_LOCATION` so requests target a project the service account can access.
+By default the client targets the LCV project (`lcv-ideas-and-software`) on the `global` endpoint. Forks must set the optional bindings `VERTEX_PROJECT` (your Google Cloud project id) and, if desired, `VERTEX_LOCATION` so requests target a project the service account can access. The location may be `global`, the `us`/`eu` multi-region, or an official regional Vertex AI location ID; unknown values are rejected before OAuth credentials are obtained or transmitted.
 
 ### 6. Build + deploy
 

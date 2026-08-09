@@ -178,6 +178,41 @@ describe('montagem das requisições REST do Vertex', () => {
     );
   });
 
+  it.each([
+    ['us', 'https://aiplatform.us.rep.googleapis.com'],
+    ['eu', 'https://aiplatform.eu.rep.googleapis.com'],
+  ])('mapeia a multirregião %s para o hostname oficial', async (location, endpoint) => {
+    const sa = await makeTestSa(`kid-${location}`);
+    const mock = makeFetchMock();
+    const ai = new VertexGenAI({ saKeyJson: sa.saJson, project: 'proj-x', location, fetchImpl: mock.fetchImpl });
+
+    await ai.models.countTokens({ model: 'm', contents: 'oi' });
+
+    expect(mock.calls.api[0]!.url).toBe(
+      `${endpoint}/v1/projects/proj-x/locations/${location}/publishers/google/models/m:countTokens`,
+    );
+  });
+
+  it.each(['attacker.example/path?', 'not-a-vertex-region'])(
+    'rejeita VERTEX_LOCATION não reconhecida (%s) antes de obter ou transmitir o bearer token',
+    async (location) => {
+      const sa = await makeTestSa('kid-location-origin');
+      const mock = makeFetchMock();
+
+      expect(
+        () =>
+          new VertexGenAI({
+            saKeyJson: sa.saJson,
+            project: 'proj-x',
+            location,
+            fetchImpl: mock.fetchImpl,
+          }),
+      ).toThrow(/VERTEX_LOCATION/);
+      expect(mock.calls.token).toHaveLength(0);
+      expect(mock.calls.api).toHaveLength(0);
+    },
+  );
+
   it('mapeia config do formato do SDK para o corpo REST (generationConfig + top-level)', async () => {
     const sa = await makeTestSa('kid-map');
     const mock = makeFetchMock();

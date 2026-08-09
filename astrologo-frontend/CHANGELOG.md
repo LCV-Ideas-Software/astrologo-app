@@ -17,7 +17,7 @@
 
 ### Testes
 
-- Novo `functions/api/_shared/vertex.test.ts` — 17 testes do cliente (assinatura JWT verificada criptograficamente, cache/expiração/single-flight, mapeamento REST incluindo `responseJsonSchema` e timeout, regressão do `this` do workerd, erros com `status`). Suíte total: 320/320.
+- Novo `functions/api/_shared/vertex.test.ts` — 21 testes do cliente (assinatura JWT verificada criptograficamente, cache/expiração/single-flight, mapeamento REST incluindo `responseJsonSchema` e timeout, validação fail-closed de endpoints, regressão do `this` do workerd, erros com `status`). Suíte total: 324/324.
 
 ## [v02.23.05] - 2026-07-21
 

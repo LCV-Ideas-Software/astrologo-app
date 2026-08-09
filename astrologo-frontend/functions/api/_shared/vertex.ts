@@ -95,6 +95,58 @@ const ERROR_BODY_EXCERPT = 300;
 // pendure o single-flight e todos os callers que aguardam a mesma mint.
 const TOKEN_MINT_TIMEOUT_MS = 20_000;
 
+// Lista canônica de service endpoints regionais do Vertex AI. O allowlist evita
+// que configuração livre altere a origem de uma requisição com bearer token.
+// Fonte: https://cloud.google.com/vertex-ai/docs/reference/rest#service-endpoint
+const REGIONAL_VERTEX_LOCATIONS = new Set([
+  'africa-south1',
+  'asia-east1',
+  'asia-east2',
+  'asia-northeast1',
+  'asia-northeast2',
+  'asia-northeast3',
+  'asia-south1',
+  'asia-southeast1',
+  'asia-southeast2',
+  'australia-southeast1',
+  'australia-southeast2',
+  'europe-central2',
+  'europe-north1',
+  'europe-southwest1',
+  'europe-west1',
+  'europe-west2',
+  'europe-west3',
+  'europe-west4',
+  'europe-west6',
+  'europe-west8',
+  'europe-west9',
+  'europe-west12',
+  'me-central1',
+  'me-central2',
+  'me-west1',
+  'northamerica-northeast1',
+  'northamerica-northeast2',
+  'southamerica-east1',
+  'southamerica-west1',
+  'us-central1',
+  'us-east1',
+  'us-east4',
+  'us-east5',
+  'us-south1',
+  'us-west1',
+  'us-west2',
+  'us-west3',
+  'us-west4',
+]);
+
+const resolveVertexBaseUrl = (location: string): string => {
+  if (location === 'global') return 'https://aiplatform.googleapis.com';
+  if (location === 'us' || location === 'eu') return `https://aiplatform.${location}.rep.googleapis.com`;
+  if (REGIONAL_VERTEX_LOCATIONS.has(location)) return `https://${location}-aiplatform.googleapis.com`;
+
+  throw new Error('VERTEX_LOCATION inválida: use global, us, eu ou uma região oficial do Vertex AI');
+};
+
 // Cache module-level: sobrevive entre requests no mesmo isolate. Chaveado pela
 // identidade da chave para nunca vazar token entre credenciais distintas.
 const tokenCache = new Map<string, { token: string; expiresAtMs: number }>();
@@ -237,6 +289,7 @@ const extractText = (candidates: VertexCandidate[] | undefined): string => {
 /** Espelha a superfície do SDK @google/genai consumida por analisar.ts. */
 export class VertexGenAI {
   private readonly options: VertexGenAIOptions;
+  private readonly vertexBaseUrl: string;
   private readonly fetchImpl: typeof fetch;
   private readonly now: () => number;
 
@@ -260,7 +313,8 @@ export class VertexGenAI {
   };
 
   constructor(options: VertexGenAIOptions) {
-    this.options = options;
+    this.vertexBaseUrl = resolveVertexBaseUrl(options.location);
+    this.options = Object.freeze({ ...options });
     // O fetch global do workerd exige `this` global; chamar via this.fetchImpl
     // vazaria a instância como `this` e lança Illegal invocation em produção.
     this.fetchImpl = options.fetchImpl ?? ((input, init) => fetch(input, init));
@@ -268,10 +322,7 @@ export class VertexGenAI {
   }
 
   private baseUrl(): string {
-    const { location } = this.options;
-    return location === 'global'
-      ? 'https://aiplatform.googleapis.com'
-      : `https://${location}-aiplatform.googleapis.com`;
+    return this.vertexBaseUrl;
   }
 
   private async request(
