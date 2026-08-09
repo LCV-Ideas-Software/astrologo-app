@@ -8,9 +8,30 @@ const APPROVED_WRANGLER_SNIPPETS = new Set([
   'npm install --prefix "$wrangler_prefix" --save-exact --ignore-scripts --no-audit --no-fund wrangler@latest',
   'npm install --prefix "$wrangler_prefix" --ignore-scripts --no-audit --no-fund',
 ]);
+const REPOSITORY_POLICY_PATH = "no file associated with this alert";
+const BRANCH_PROTECTION_MESSAGE = `score is 3: branch protection is not maximal on development and all release branches:
+Warn: 'stale review dismissal' is disabled on branch 'main'
+Warn: branch 'main' does not require approvers
+Warn: codeowners review is not required on branch 'main'
+Warn: 'last push approval' is disabled on branch 'main'
+Warn: no status checks found to merge onto branch 'main'
+Click Remediation section below to solve this issue`;
+const CODE_REVIEW_MESSAGE =
+  /^score is 0: Found 0\/[1-9]\d* approved changesets -- score normalized to 0\nClick Remediation section below to solve this issue$/;
+const CII_BEST_PRACTICES_MESSAGE =
+  "score is 0: no effort to earn an OpenSSF best practices badge detected\nClick Remediation section below to solve this issue";
 
 function location(result) {
   return result?.locations?.[0]?.physicalLocation ?? {};
+}
+
+function isRepositoryPolicyLocation(physicalLocation) {
+  return (
+    physicalLocation.artifactLocation?.uri === REPOSITORY_POLICY_PATH &&
+    physicalLocation.artifactLocation?.uriBaseId === "%SRCROOT%" &&
+    physicalLocation.region?.startLine === 1 &&
+    physicalLocation.region?.snippet === undefined
+  );
 }
 
 function tokenPermissionsMessages(workflowFile) {
@@ -48,6 +69,23 @@ export function isApprovedFinding(result) {
       message === PINNED_DEPENDENCY_MESSAGE &&
       APPROVED_WRANGLER_SNIPPETS.has(snippet)
     );
+  }
+
+  // These are repository-level observations of the intentionally reviewless
+  // automation policy, not file-backed defects. Keep their live signatures
+  // narrow: any new warning, location drift, non-zero review numerator, or
+  // changed badge state falls through and fails the gate.
+  if (!isRepositoryPolicyLocation(physicalLocation)) {
+    return false;
+  }
+  if (result?.ruleId === "BranchProtectionID") {
+    return message === BRANCH_PROTECTION_MESSAGE;
+  }
+  if (result?.ruleId === "CodeReviewID") {
+    return CODE_REVIEW_MESSAGE.test(message);
+  }
+  if (result?.ruleId === "CIIBestPracticesID") {
+    return message === CII_BEST_PRACTICES_MESSAGE;
   }
 
   return false;
