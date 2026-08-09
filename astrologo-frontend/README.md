@@ -19,12 +19,13 @@ Currently, two official plugins are available:
 
 ## Change History
 
-**Status.** Stable. Current release: **v02.23.05**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.24.00**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release     | Notes                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v02.24.00` | Migra a autenticação para service account com OAuth2 e substitui o SDK pelo transporte REST do Vertex AI, preservando a orquestração e os contratos de saída. |
 | `v02.23.05` | Atualiza o `protobufjs` transitivo para 7.6.5 e corrige GHSA-j3f2-48v5-ccww / CVE-2026-59877 sem alterar APIs ou prompts. |
 | `v02.23.04` | Restaura fragmentos interpretativos completos, extensão sem teto artificial e iconografia obrigatória, mantendo apenas a exclusão de metodologia e o fix do 422.     |
 | `v02.23.03` | Remove a barreira semântica responsável pelo 422 final e orienta a cobertura por um checklist editorial derivado das evidências reais do mapa.                       |

@@ -3,8 +3,8 @@ import type { D1DatabaseLike, D1Statement } from './_shared/requestSecurity';
 
 const captured = vi.hoisted(() => ({ prompt: '' }));
 
-vi.mock('@google/genai', () => ({
-  GoogleGenAI: class {
+vi.mock('./_shared/vertex', () => ({
+  VertexGenAI: class {
     readonly models = {
       countTokens: async () => ({ totalTokens: 100 }),
       generateContent: async (request: { contents: unknown }) => {
@@ -12,14 +12,6 @@ vi.mock('@google/genai', () => ({
         return { text: '<p>Análise segura.</p>', usageMetadata: {} };
       },
     };
-  },
-  HarmBlockThreshold: { BLOCK_ONLY_HIGH: 'BLOCK_ONLY_HIGH' },
-  HarmCategory: {
-    HARM_CATEGORY_DANGEROUS_CONTENT: 'DANGEROUS_CONTENT',
-    HARM_CATEGORY_HARASSMENT: 'HARASSMENT',
-    HARM_CATEGORY_HATE_SPEECH: 'HATE_SPEECH',
-    HARM_CATEGORY_SEXUALLY_EXPLICIT: 'SEXUALLY_EXPLICIT',
-    HARM_CATEGORY_CIVIC_INTEGRITY: 'CIVIC_INTEGRITY',
   },
 }));
 
@@ -56,7 +48,7 @@ describe('/api/analisar — autoridade do Tatwa', () => {
           query: { nome: 'Consulente' },
         }),
       }),
-      env: { GEMINI_API_KEY: 'test', BIGDATA_DB: createEmptyDb() },
+      env: { VERTEX_SA_KEY: 'test', BIGDATA_DB: createEmptyDb() },
     });
 
     expect(response.status).toBe(503);

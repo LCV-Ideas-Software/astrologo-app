@@ -111,7 +111,7 @@ describe('/api/calcular v2', () => {
           localNascimentoId: 3451190,
         }),
       }),
-      env: { GEMINI_API_KEY: 'test', BIGDATA_DB: db },
+      env: { VERTEX_SA_KEY: 'test', BIGDATA_DB: db },
     });
     const payload = (await response.json()) as CalculationResponse;
 

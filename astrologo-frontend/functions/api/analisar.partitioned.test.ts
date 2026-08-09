@@ -19,10 +19,9 @@ const runtime = vi.hoisted(() => ({
   completedAnalysisHtml: null as string | null,
 }));
 
-vi.mock('@google/genai', () => ({
-  GoogleGenAI: class {
+vi.mock('./_shared/vertex', () => ({
+  VertexGenAI: class {
     readonly models = {
-      get: async () => ({ inputTokenLimit: 1_000_000, outputTokenLimit: 65_536 }),
       countTokens: async () => ({ totalTokens: runtime.totalTokens }),
       generateContent: async (request: Record<string, unknown>) => {
         runtime.generateCalls += 1;
@@ -65,15 +64,6 @@ vi.mock('@google/genai', () => ({
       },
     };
   },
-  HarmBlockThreshold: { BLOCK_ONLY_HIGH: 'BLOCK_ONLY_HIGH' },
-  HarmCategory: {
-    HARM_CATEGORY_DANGEROUS_CONTENT: 'DANGEROUS_CONTENT',
-    HARM_CATEGORY_HARASSMENT: 'HARASSMENT',
-    HARM_CATEGORY_HATE_SPEECH: 'HATE_SPEECH',
-    HARM_CATEGORY_SEXUALLY_EXPLICIT: 'SEXUALLY_EXPLICIT',
-    HARM_CATEGORY_CIVIC_INTEGRITY: 'CIVIC_INTEGRITY',
-  },
-  ThinkingLevel: { LOW: 'LOW', MEDIUM: 'MEDIUM' },
 }));
 
 vi.mock('./_shared/advancedAnalysisPrompt', async (importOriginal) => {
@@ -355,7 +345,7 @@ const request = (body: Record<string, unknown>) =>
 
 const context = (body: Record<string, unknown>) => ({
   request: request(body),
-  env: { GEMINI_API_KEY: 'test', BIGDATA_DB: createDb() },
+  env: { VERTEX_SA_KEY: 'test', BIGDATA_DB: createDb() },
 });
 
 beforeEach(() => {
@@ -395,6 +385,70 @@ describe('/api/analisar — protocolo reentrante', () => {
       success: true,
       analise: '<p>Análise direta validada.</p>',
       job: { status: 'completed', completedSteps: 2, totalSteps: 2 },
+    });
+  });
+
+  it('substitui o alias legado por um publisher model Vertex compatível', async () => {
+    runtime.model = 'gemini-pro-latest';
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
+      model: 'gemini-3.1-pro-preview',
+      modelInputTokenLimit: 128_000,
+      modelOutputTokenLimit: 65_536,
+    });
+  });
+
+  it('normaliza modelo e teto de saída ao retomar um plano persistido pela versão anterior', async () => {
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    if (!runtime.job || !runtime.steps[0]) throw new Error('plano de teste ausente');
+
+    const legacyPlan = {
+      ...JSON.parse(String(runtime.job.plan_json)),
+      model: 'gemini-pro-latest',
+      modelInputTokenLimit: 2_000_000,
+      modelOutputTokenLimit: 999_999,
+      fragmentOutputBudget: 999_999,
+      synthesisInputBudget: 999_999,
+    };
+    const legacyPayload = {
+      ...JSON.parse(String(runtime.steps[0].payload_json)),
+      maxOutputTokens: 999_999,
+    };
+    runtime.job = { ...runtime.job, plan_json: JSON.stringify(legacyPlan) };
+    runtime.steps[0] = { ...runtime.steps[0], payload_json: JSON.stringify(legacyPayload) };
+
+    const completed = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(completed.status).toBe(200);
+    expect(runtime.generateRequests[0]).toMatchObject({
+      model: 'gemini-3.1-pro-preview',
+      config: { maxOutputTokens: 65_536 },
+    });
+  });
+
+  it('recusa variantes Vertex sem os contratos de texto estruturado da análise', async () => {
+    runtime.model = 'gemini-3.1-flash-lite-image';
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({ model: 'gemini-3.1-pro-preview' });
+  });
+
+  it('limita a escalada de saída à capacidade oficial do publisher model selecionado', async () => {
+    runtime.model = 'gemini-2.5-flash-lite';
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
+      model: 'gemini-2.5-flash-lite',
+      modelInputTokenLimit: 128_000,
+      modelOutputTokenLimit: 65_535,
     });
   });
 

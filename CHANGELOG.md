@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [v02.24.00] - 2026-08-08
+
+### Alterado
+
+- **Transporte de IA migrado para o Vertex AI** — a análise astrológica deixa a API key do AI Studio e passa a autenticar com service account (`VERTEX_SA_KEY`, secret do projeto Pages) via JWT RS256 → OAuth2, faturando no pós-pago padrão do Cloud Billing. Comportamento preservado integralmente: prompts, seletor de modelo do admin, orquestração reentrante, saída estruturada, `thinkingLevel`, retries e telemetria.
+- O modelo configurado passa por uma tabela fail-closed de publisher models Vertex compatíveis com `Count Tokens` e `Structured Output`: aliases legados, variantes incompatíveis e IDs desconhecidos usam `gemini-3.1-pro-preview`; a entrada continua limitada a 128 mil tokens pela orquestração e cada escalada de `MAX_TOKENS` respeita o teto oficial do modelo selecionado.
+- Trabalhos iniciados antes da migração também normalizam o modelo e os limites do plano persistido ao serem retomados, preservando análises em andamento sem enviar aliases da Developer API ao Vertex AI.
+
+### Segurança
+
+- `VERTEX_LOCATION` passa por um allowlist dos endpoints oficiais antes da autenticação. Isso impede que delimitadores ou regiões inventadas alterem a origem que receberia o bearer token e mapeia `us`/`eu` para os hostnames multirregionais `.rep` documentados pelo Google.
+
+### Removido
+
+- Dependência `@google/genai` (e seu lockfile transitivo) e a entrada `generativelanguage.googleapis.com` da CSP.
+
 ## [v02.23.05] - 2026-07-21
 
 ### Segurança
