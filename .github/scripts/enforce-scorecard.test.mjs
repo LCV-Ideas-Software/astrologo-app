@@ -167,6 +167,14 @@ test("fails closed when a repository-policy signature drifts", () => {
   const changedBase = structuredClone(exactCiiBestPracticesFinding);
   changedBase.locations[0].physicalLocation.artifactLocation.uriBaseId =
     "%OTHERROOT%";
+  const extraLocation = structuredClone(exactBranchProtectionFinding);
+  extraLocation.locations.push(structuredClone(extraLocation.locations[0]));
+  const extraLocationField = structuredClone(exactCodeReviewFinding);
+  extraLocationField.locations[0].analysisTarget = { uri: "ignored" };
+  const extraArtifactField = structuredClone(exactBranchProtectionFinding);
+  extraArtifactField.locations[0].physicalLocation.artifactLocation.index = 0;
+  const extraRegionField = structuredClone(exactCiiBestPracticesFinding);
+  extraRegionField.locations[0].physicalLocation.region.endLine = 1;
 
   for (const changed of [
     repositoryPolicyFinding(
@@ -199,6 +207,10 @@ test("fails closed when a repository-policy signature drifts", () => {
     changedLocation,
     changedLine,
     changedBase,
+    extraLocation,
+    extraLocationField,
+    extraArtifactField,
+    extraRegionField,
   ]) {
     assert.equal(isApprovedFinding(changed), false);
   }

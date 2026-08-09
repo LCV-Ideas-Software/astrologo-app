@@ -25,6 +25,13 @@ function location(result) {
   return result?.locations?.[0]?.physicalLocation ?? {};
 }
 
+function hasOnlyKeys(object, keys) {
+  if (object === null || typeof object !== "object" || Array.isArray(object)) {
+    return false;
+  }
+  return Object.keys(object).every((key) => keys.has(key));
+}
+
 function isRepositoryPolicyLocation(physicalLocation) {
   return (
     physicalLocation.artifactLocation?.uri === REPOSITORY_POLICY_PATH &&
@@ -32,6 +39,31 @@ function isRepositoryPolicyLocation(physicalLocation) {
     physicalLocation.region?.startLine === 1 &&
     physicalLocation.region?.snippet === undefined
   );
+}
+
+function hasCanonicalRepositoryPolicyLocation(result) {
+  if (!Array.isArray(result?.locations) || result.locations.length !== 1) {
+    return false;
+  }
+  const [entry] = result.locations;
+  if (!hasOnlyKeys(entry, new Set(["physicalLocation"]))) {
+    return false;
+  }
+
+  const physicalLocation = entry.physicalLocation;
+  if (!hasOnlyKeys(physicalLocation, new Set(["artifactLocation", "region"]))) {
+    return false;
+  }
+  if (
+    !hasOnlyKeys(physicalLocation.artifactLocation, new Set(["uri", "uriBaseId"]))
+  ) {
+    return false;
+  }
+  if (!hasOnlyKeys(physicalLocation.region, new Set(["startLine"]))) {
+    return false;
+  }
+
+  return isRepositoryPolicyLocation(physicalLocation);
 }
 
 function tokenPermissionsMessages(workflowFile) {
@@ -75,7 +107,7 @@ export function isApprovedFinding(result) {
   // automation policy, not file-backed defects. Keep their live signatures
   // narrow: any new warning, location drift, non-zero review numerator, or
   // changed badge state falls through and fails the gate.
-  if (!isRepositoryPolicyLocation(physicalLocation)) {
+  if (!hasCanonicalRepositoryPolicyLocation(result)) {
     return false;
   }
   if (result?.ruleId === "BranchProtectionID") {
