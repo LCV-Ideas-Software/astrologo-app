@@ -64,6 +64,7 @@ import {
   restoreMonolithicPromptPayloads,
   sha256Text,
 } from './_shared/longAnalysisPlanner';
+import { estimateTokensWithModelFallback } from './_shared/modelAvailability';
 import { loadConfiguredAstrologerModel } from './_shared/modelConfig';
 import {
   type D1DatabaseLike,
@@ -721,24 +722,6 @@ const analysisSourceEvidenceIds = (options: {
   ...(options.locality ? ['advanced.locality'] : []),
 ];
 
-/**
- * Conta tokens da requisição usando o cliente Vertex
- * Permite validação pré-envio e otimização de custos
- */
-const estimateTokenCount = async (ai: VertexGenAI, prompt: string, model: string): Promise<number> => {
-  try {
-    const resp = await ai.models.countTokens({
-      model,
-      contents: prompt,
-      config: { httpOptions: { timeout: 20_000 } },
-    });
-    return resp.totalTokens ?? -1;
-  } catch (err) {
-    structuredLog('WARN', 'Erro ao contar tokens', { error: String(err) });
-    return -1;
-  }
-};
-
 // Every tokenizer token consumes at least one UTF-8 byte. Treating the byte
 // length as a token count is deliberately conservative and keeps planning
 // local, deterministic and bounded to the current HTTP request.
@@ -981,13 +964,23 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
     });
 
     // ==== DYNAMIC MODEL CONFIGURATION VIA BIGDATA_DB ====
-    const selectedModelProfile = resolveVertexAnalysisModel(
+    // Seletor sempre respeitado: o ID configurado é usado como está; a queda
+    // para o padrão validado só acontece se o Vertex responder 404 para ele
+    // (estimateTokensWithModelFallback), antes de qualquer plano persistir.
+    const configuredModelProfile = resolveVertexAnalysisModel(
       await loadConfiguredAstrologerModel(env.BIGDATA_DB, DEFAULT_VERTEX_ANALYSIS_MODEL),
     );
-    const selectedModel = selectedModelProfile.model;
 
     // Inicializa o cliente Vertex (service account OAuth, ver _shared/vertex.ts)
     const ai = await createGeminiClient(env);
+
+    const { profile: selectedModelProfile, tokenCount } = await estimateTokensWithModelFallback(
+      ai,
+      prompt,
+      configuredModelProfile,
+      structuredLog,
+    );
+    const selectedModel = selectedModelProfile.model;
 
     // ==== PASSO 1: limites reais do modelo e planejamento por volume ====
     structuredLog('INFO', 'Iniciando análise astrológica via Vertex AI REST', {
@@ -996,7 +989,6 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
     });
 
     const modelLimits = selectedModelProfile;
-    const tokenCount = await estimateTokenCount(ai, prompt, selectedModel);
     const directTokenCeiling = Math.min(
       LONG_ANALYSIS_DIRECT_TOKEN_CEILING,
       Math.floor(modelLimits.inputTokenLimit * 0.75),
@@ -1650,13 +1642,20 @@ const planReentrantAnalysis = async (env: EnvBindings, job: AnalysisJobRecord, l
     locality: canonicalLocality,
   });
 
-  const selectedModelProfile = resolveVertexAnalysisModel(
+  // Seletor sempre respeitado: ID configurado usado como está; fallback para o
+  // padrão validado só em 404 do publisher model, antes de persistir o plano.
+  const configuredModelProfile = resolveVertexAnalysisModel(
     await loadConfiguredAstrologerModel(env.BIGDATA_DB, DEFAULT_VERTEX_ANALYSIS_MODEL),
   );
-  const model = selectedModelProfile.model;
   const ai = await createGeminiClient(env);
+  const { profile: selectedModelProfile, tokenCount } = await estimateTokensWithModelFallback(
+    ai,
+    prompt,
+    configuredModelProfile,
+    structuredLog,
+  );
+  const model = selectedModelProfile.model;
   const modelLimits = selectedModelProfile;
-  const tokenCount = await estimateTokenCount(ai, prompt, model);
   const directTokenCeiling = Math.min(
     LONG_ANALYSIS_DIRECT_TOKEN_CEILING,
     Math.floor(modelLimits.inputTokenLimit * 0.75),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { VertexGenAI, VertexHttpError } from './vertex';
+import { isVertexModelUnavailableError, VertexGenAI, VertexHttpError } from './vertex';
 
 const te = new TextEncoder();
 
@@ -397,5 +397,66 @@ describe('regressão workerd e erros diagnósticos', () => {
       fetchImpl: mock.fetchImpl,
     });
     await expect(partial.models.countTokens({ model: 'm', contents: 'x' })).rejects.toThrow(/private_key/u);
+  });
+});
+
+describe('proveniência de operação nos erros (fallback de seletor)', () => {
+  it('VertexHttpError carrega a operação de origem — generateContent, countTokens e oauth-token são distinguíveis', async () => {
+    const saGen = await makeTestSa('kid-op-gen');
+    const gen404 = makeFetchMock({
+      apiStatus: 404,
+      apiPayload: { error: { code: 404, message: 'Publisher Model not found' } },
+    });
+    const genFailure = await client(saGen, gen404)
+      .models.generateContent({ model: 'm', contents: 'x' })
+      .then(
+        () => null,
+        (err: unknown) => err,
+      );
+    expect((genFailure as VertexHttpError).operation).toBe('generateContent');
+    expect(isVertexModelUnavailableError(genFailure)).toBe(true);
+
+    const saCount = await makeTestSa('kid-op-count');
+    const count404 = makeFetchMock({
+      apiStatus: 404,
+      apiPayload: { error: { code: 404, message: 'Publisher Model not found' } },
+    });
+    const countFailure = await client(saCount, count404)
+      .models.countTokens({ model: 'm', contents: 'x' })
+      .then(
+        () => null,
+        (err: unknown) => err,
+      );
+    expect((countFailure as VertexHttpError).operation).toBe('countTokens');
+    expect(isVertexModelUnavailableError(countFailure)).toBe(true);
+  });
+
+  it('falha da mint OAuth carrega oauth-token e NUNCA conta como modelo indisponível', async () => {
+    const sa = await makeTestSa('kid-op-oauth');
+    const mock = makeFetchMock({
+      tokenStatus: 404,
+      tokenPayload: { error: 'not_found' },
+    });
+    const failure = await client(sa, mock)
+      .models.countTokens({ model: 'm', contents: 'x' })
+      .then(
+        () => null,
+        (err: unknown) => err,
+      );
+    expect(failure).toBeInstanceOf(VertexHttpError);
+    expect((failure as VertexHttpError).operation).toBe('oauth-token');
+    expect(isVertexModelUnavailableError(failure)).toBe(false);
+  });
+
+  it('404 é indisponibilidade só com status 404: outros status não disparam o predicado', async () => {
+    const sa = await makeTestSa('kid-op-429');
+    const mock = makeFetchMock({ apiStatus: 429, apiPayload: { error: { code: 429, message: 'rate' } } });
+    const failure = await client(sa, mock)
+      .models.generateContent({ model: 'm', contents: 'x' })
+      .then(
+        () => null,
+        (err: unknown) => err,
+      );
+    expect(isVertexModelUnavailableError(failure)).toBe(false);
   });
 });

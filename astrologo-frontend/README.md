@@ -19,12 +19,13 @@ Currently, two official plugins are available:
 
 ## Change History
 
-**Status.** Stable. Current release: **v02.24.00**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.25.00**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release     | Notes                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v02.25.00` | O seletor de modelos passa a ser sempre respeitado: sem gate de allowlist na seleção; fallback ao padrão só em indisponibilidade real (404 do publisher model); `gemini-3.6-flash` validado na tabela de capacidades. |
 | `v02.24.00` | Migra a autenticação para service account com OAuth2 e substitui o SDK pelo transporte REST do Vertex AI, preservando a orquestração e os contratos de saída. |
 | `v02.23.05` | Atualiza o `protobufjs` transitivo para 7.6.5 e corrige GHSA-j3f2-48v5-ccww / CVE-2026-59877 sem alterar APIs ou prompts. |
 | `v02.23.04` | Restaura fragmentos interpretativos completos, extensão sem teto artificial e iconografia obrigatória, mantendo apenas a exclusão de metodologia e o fix do 422.     |
