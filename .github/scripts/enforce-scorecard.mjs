@@ -13,13 +13,18 @@ function location(result) {
   return result?.locations?.[0]?.physicalLocation ?? {};
 }
 
-function tokenPermissionsMessage(workflowFile) {
-  return `score is 5: topLevel permissions set to 'write-all'
-Remediation tip: Visit [https://app.stepsecurity.io/secureworkflow](https://app.stepsecurity.io/secureworkflow/github.com/LCV-Ideas-Software/astrologo-app/${workflowFile}/main?enable=permissions).
+function tokenPermissionsMessages(workflowFile) {
+  const prefix = `score is 5: topLevel permissions set to 'write-all'
+Remediation tip: Visit [https://app.stepsecurity.io/secureworkflow](`;
+  const suffix = `).
 Tick the 'Restrict permissions for GITHUB_TOKEN'
 Untick other options
 NOTE: If you want to resolve multiple issues at once, you can visit [https://app.stepsecurity.io/securerepo](https://app.stepsecurity.io/securerepo) instead.
 Click Remediation section below for further remediation help`;
+  return new Set([
+    `${prefix}https://app.stepsecurity.io/secureworkflow/github.com/LCV-Ideas-Software/astrologo-app/${workflowFile}/main?enable=permissions${suffix}`,
+    `${prefix}https://app.stepsecurity.io/secureworkflow/file://./${workflowFile}/unknown?enable=permissions${suffix}`,
+  ]);
 }
 
 export function isApprovedFinding(result) {
@@ -33,7 +38,7 @@ export function isApprovedFinding(result) {
     return (
       match !== null &&
       snippet === "write-all" &&
-      message === tokenPermissionsMessage(match[1])
+      tokenPermissionsMessages(match[1]).has(message)
     );
   }
 

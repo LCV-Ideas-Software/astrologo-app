@@ -9,6 +9,12 @@ Tick the 'Restrict permissions for GITHUB_TOKEN'
 Untick other options
 NOTE: If you want to resolve multiple issues at once, you can visit [https://app.stepsecurity.io/securerepo](https://app.stepsecurity.io/securerepo) instead.
 Click Remediation section below for further remediation help`;
+const TOKEN_PULL_REQUEST_MESSAGE = `score is 5: topLevel permissions set to 'write-all'
+Remediation tip: Visit [https://app.stepsecurity.io/secureworkflow](https://app.stepsecurity.io/secureworkflow/file://./codeql.yml/unknown?enable=permissions).
+Tick the 'Restrict permissions for GITHUB_TOKEN'
+Untick other options
+NOTE: If you want to resolve multiple issues at once, you can visit [https://app.stepsecurity.io/securerepo](https://app.stepsecurity.io/securerepo) instead.
+Click Remediation section below for further remediation help`;
 const PINNED_MESSAGE =
   "score is 8: npmCommand not pinned by hash\nClick Remediation section below to solve this issue";
 
@@ -38,6 +44,11 @@ const exactTokenFinding = finding("TokenPermissionsID", {
   snippet: "write-all",
   message: TOKEN_MESSAGE,
 });
+const exactPullRequestTokenFinding = finding("TokenPermissionsID", {
+  path: ".github/workflows/codeql.yml",
+  snippet: "write-all",
+  message: TOKEN_PULL_REQUEST_MESSAGE,
+});
 const exactWranglerFinding = finding("PinnedDependenciesID", {
   path: ".github/workflows/deploy.yml",
   snippet:
@@ -60,6 +71,7 @@ test("accepts only the exact write-all and Wrangler policy signatures", () => {
     unapprovedFindings(
       sarif([
         exactTokenFinding,
+        exactPullRequestTokenFinding,
         exactWranglerFinding,
         exactWranglerReconcileFinding,
       ]),
