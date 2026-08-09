@@ -14,7 +14,7 @@ Warn: 'stale review dismissal' is disabled on branch 'main'
 Warn: branch 'main' does not require approvers
 Warn: codeowners review is not required on branch 'main'
 Warn: 'last push approval' is disabled on branch 'main'
-Warn: no status checks found to merge onto branch 'main'
+Warn: 'up-to-date branches' is disabled on branch 'main'
 Click Remediation section below to solve this issue`;
 const CODE_REVIEW_MESSAGE =
   /^score is 0: Found 0\/[1-9]\d* approved changesets -- score normalized to 0\nClick Remediation section below to solve this issue$/;
