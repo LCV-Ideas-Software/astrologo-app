@@ -423,7 +423,7 @@ describe('/api/analisar — protocolo reentrante', () => {
     expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
       model: 'gemini-pro-latest',
       modelInputTokenLimit: 128_000,
-      modelOutputTokenLimit: 65_535,
+      modelOutputTokenLimit: 8_192,
     });
   });
 
@@ -466,7 +466,7 @@ describe('/api/analisar — protocolo reentrante', () => {
     expect(completed.status).toBe(200);
     expect(runtime.generateRequests[0]).toMatchObject({
       model: 'gemini-pro-latest',
-      config: { maxOutputTokens: 65_535 },
+      config: { maxOutputTokens: 8_192 },
     });
   });
 
@@ -478,7 +478,7 @@ describe('/api/analisar — protocolo reentrante', () => {
 
     expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
       model: 'gemini-3.1-flash-lite-image',
-      modelOutputTokenLimit: 65_535,
+      modelOutputTokenLimit: 8_192,
     });
   });
 

@@ -29,12 +29,13 @@ const VERTEX_ANALYSIS_MODEL_CAPABILITIES = Object.freeze({
 } satisfies Record<string, Omit<VertexAnalysisModelProfile, 'model'>>);
 
 // Limites conservadores para IDs fora da tabela: entrada limitada pelo teto de
-// orquestração (vale para todos os publisher models conhecidos) e saída no
-// menor teto observado entre os modelos validados — nunca provoca 400 por
-// maxOutputTokens acima do suportado.
+// orquestração (vale para todos os publisher models conhecidos) e saída
+// travada no tamanho do request inicial da orquestração (8.192) — assim a
+// escalada de MAX_TOKENS nunca dobra além do que o modelo desconhecido
+// comprovadamente aceitou, e nenhum 400 por maxOutputTokens é possível.
 const CONSERVATIVE_UNKNOWN_MODEL_CAPABILITIES = Object.freeze({
   inputTokenLimit: 1_048_576,
-  outputTokenLimit: 65_535,
+  outputTokenLimit: 8_192,
 });
 
 // O ID compõe o path da URL do Vertex (…/publishers/google/models/<id>:verbo);

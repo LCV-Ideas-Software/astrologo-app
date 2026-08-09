@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [v02.25.01] - 2026-08-09
+
+**Correções dos achados dos bots do PR da v02.25.00.**
+
+### Alterado
+
+- Teto conservador de saída para IDs fora da tabela validada reduzido de 65.535 para 8.192 (o request inicial da orquestração): a escalada de `MAX_TOKENS` nunca dobra além do que um modelo desconhecido comprovadamente aceitou, eliminando 400 por `maxOutputTokens` acima do suportado (achado codex P2).
+- `package-lock.json` realinhado à versão do manifesto (achado codex P2 + Copilot).
+- O changelog paralelo do frontend passa a acompanhar as entradas do canônico (achado Copilot).
+
 ## [v02.25.00] - 2026-08-09
 
 **Seletor de modelos sempre respeitado (diretiva fleet-wide do operador).**
