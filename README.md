@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.23.05**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.24.00**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.24.00`**                      | **Transporte Vertex AI.** Migra a autenticação da análise para service account com OAuth2 e usa o cliente REST do Vertex AI, preservando prompts, orquestração, saída estruturada, retries e telemetria.                                                                                                                                            |
 | **`v02.23.05`**                      | **Dependency security patch.** Updates the transitive `protobufjs` override used by `@google/genai` to 7.6.5, resolving GHSA-j3f2-48v5-ccww / CVE-2026-59877 without changing application APIs or prompts. |
 | **`v02.23.04`**                      | **Profundidade e iconografia restauradas.** Volta a preservar todos os fragmentos interpretativos e acrescentar a síntese sem teto artificial de extensão; remove somente metodologia e detalhes internos, mantém o fix do 422 e recupera os símbolos pictóricos obrigatórios.                                                                                   |
 | **`v02.23.03`**                      | **Síntese final restaurada.** Remove a barreira semântica que convertia decisões editoriais da IA em erro 422 e transfere a melhoria de cobertura para um checklist explícito no prompt, preservando intactas as validações técnicas do mecanismo reentrante.                                                                                                     |
@@ -93,7 +94,7 @@ You will need:
 - A Cloudflare account with Pages + D1 enabled.
 - The Cloudflare CLI [`wrangler`](https://developers.cloudflare.com/workers/wrangler/).
 - Node.js 22+.
-- A Google AI Studio API key for Gemini integration.
+- A Google Cloud project with Vertex AI enabled and a service account authorized to invoke models.
 
 ### 1. Clone + install
 
@@ -136,7 +137,7 @@ Apply the versioned migrations before serving requests. Pages Functions delibera
 The analysis API authenticates to Vertex AI with a Google Cloud service account (JWT RS256 → OAuth2). Create a service account with the `roles/aiplatform.user` role in your project, download its JSON key, and store the whole JSON as the `VERTEX_SA_KEY` secret:
 
 ```bash
-npx wrangler secret put VERTEX_SA_KEY --env production
+npx wrangler pages secret put VERTEX_SA_KEY --project-name astrologo-frontend
 # paste the full service-account JSON when prompted
 ```
 

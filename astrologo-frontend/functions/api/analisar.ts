@@ -1007,7 +1007,7 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
     const ai = await createGeminiClient(env);
 
     // ==== PASSO 1: limites reais do modelo e planejamento por volume ====
-    structuredLog('INFO', 'Iniciando análise astrológica com Gemini SDK', {
+    structuredLog('INFO', 'Iniciando análise astrológica via Vertex AI REST', {
       prompt_length: prompt.length,
       model: selectedModel,
     });
