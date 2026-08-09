@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { D1DatabaseLike, D1Statement } from './_shared/requestSecurity';
+import { VertexHttpError } from './_shared/vertex';
 
 const runtime = vi.hoisted(() => ({
   generateCalls: 0,
@@ -423,7 +424,7 @@ describe('/api/analisar — protocolo reentrante', () => {
     expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
       model: 'gemini-pro-latest',
       modelInputTokenLimit: 128_000,
-      modelOutputTokenLimit: 8_192,
+      modelOutputTokenLimit: 65_535,
     });
   });
 
@@ -466,7 +467,7 @@ describe('/api/analisar — protocolo reentrante', () => {
     expect(completed.status).toBe(200);
     expect(runtime.generateRequests[0]).toMatchObject({
       model: 'gemini-pro-latest',
-      config: { maxOutputTokens: 8_192 },
+      config: { maxOutputTokens: 65_535 },
     });
   });
 
@@ -478,7 +479,7 @@ describe('/api/analisar — protocolo reentrante', () => {
 
     expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
       model: 'gemini-3.1-flash-lite-image',
-      modelOutputTokenLimit: 8_192,
+      modelOutputTokenLimit: 65_535,
     });
   });
 
@@ -493,6 +494,29 @@ describe('/api/analisar — protocolo reentrante', () => {
       modelInputTokenLimit: 128_000,
       modelOutputTokenLimit: 65_535,
     });
+  });
+
+  it('reduz maxOutputTokens pela metade e continua quando o modelo rejeita o teto com 400 (auto-adaptação descendente)', async () => {
+    runtime.model = 'gemini-9.9-ultra';
+    runtime.generateErrors = [
+      new VertexHttpError(
+        'Vertex generateContent falhou (HTTP 400): GenerateContentRequest.generation_config.max_output_tokens must be in range',
+        400,
+        'generateContent',
+      ) as Error & { status?: number },
+    ];
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    const firstAttempt = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    expect(firstAttempt.status).toBe(202);
+
+    const secondAttempt = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    expect(secondAttempt.status).toBe(200);
+    expect((runtime.generateRequests[1] as { config?: { maxOutputTokens?: number } }).config?.maxOutputTokens).toBe(
+      4_096,
+    );
   });
 
   it('transforma cada tentativa em uma nova requisição e nunca repete dentro do mesmo avanço', async () => {

@@ -1,5 +1,8 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.25.02] - 2026-08-09
+
+- Headroom de saída restaurado para modelos fora da tabela (65.535) e auto-recuperação descendente no 400 de `maxOutputTokens` (metade, piso 1.024) no retry da etapa; substitui a garantia absoluta da v02.25.01 por recuperação documentada.
 ## [v02.25.01] - 2026-08-09
 
 - Teto conservador de saída para IDs fora da tabela validada: 65.535 → 8.192 (request inicial da orquestração), impedindo escalada de `MAX_TOKENS` acima do comprovadamente aceito (achado codex P2). Lockfile realinhado ao manifesto.

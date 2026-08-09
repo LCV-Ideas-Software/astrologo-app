@@ -19,12 +19,13 @@ Currently, two official plugins are available:
 
 ## Change History
 
-**Status.** Stable. Current release: **v02.25.01**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.25.02**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release     | Notes                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v02.25.02` | Headroom de saída restaurado para modelos fora da tabela (65.535) com auto-recuperação descendente no 400 de `maxOutputTokens` (metade, piso 1.024) no retry da etapa. |
 | `v02.25.01` | Teto conservador de saída para modelos fora da tabela: 8.192 (request inicial); lockfile e changelog paralelo realinhados. |
 | `v02.25.00` | O seletor de modelos passa a ser sempre respeitado: sem gate de allowlist na seleção; fallback ao padrão só em indisponibilidade real (404 do publisher model); `gemini-3.6-flash` validado na tabela de capacidades. |
 | `v02.24.00` | Migra a autenticação para service account com OAuth2 e substitui o SDK pelo transporte REST do Vertex AI, preservando a orquestração e os contratos de saída. |

@@ -28,14 +28,15 @@ const VERTEX_ANALYSIS_MODEL_CAPABILITIES = Object.freeze({
   'gemini-2.5-flash-lite': { inputTokenLimit: 1_048_576, outputTokenLimit: 65_535 },
 } satisfies Record<string, Omit<VertexAnalysisModelProfile, 'model'>>);
 
-// Limites conservadores para IDs fora da tabela: entrada limitada pelo teto de
-// orquestração (vale para todos os publisher models conhecidos) e saída
-// travada no tamanho do request inicial da orquestração (8.192) — assim a
-// escalada de MAX_TOKENS nunca dobra além do que o modelo desconhecido
-// comprovadamente aceitou, e nenhum 400 por maxOutputTokens é possível.
+// Limites para IDs fora da tabela: entrada limitada pelo teto de orquestração
+// e saída com headroom no menor teto observado entre os modelos validados —
+// preserva espaço para a escalada de MAX_TOKENS em respostas longas. Se o teto
+// real do modelo for menor, o 400 de maxOutputTokens é auto-recuperado pela
+// adaptação descendente do retry de etapa (analisar.ts), que reduz o valor
+// pela metade e segue; não há garantia de ausência de 400, e sim recuperação.
 const CONSERVATIVE_UNKNOWN_MODEL_CAPABILITIES = Object.freeze({
   inputTokenLimit: 1_048_576,
-  outputTokenLimit: 8_192,
+  outputTokenLimit: 65_535,
 });
 
 // O ID compõe o path da URL do Vertex (…/publishers/google/models/<id>:verbo);
