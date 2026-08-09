@@ -19,10 +19,9 @@ const runtime = vi.hoisted(() => ({
   completedAnalysisHtml: null as string | null,
 }));
 
-vi.mock('@google/genai', () => ({
-  GoogleGenAI: class {
+vi.mock('./_shared/vertex', () => ({
+  VertexGenAI: class {
     readonly models = {
-      get: async () => ({ inputTokenLimit: 1_000_000, outputTokenLimit: 65_536 }),
       countTokens: async () => ({ totalTokens: runtime.totalTokens }),
       generateContent: async (request: Record<string, unknown>) => {
         runtime.generateCalls += 1;
@@ -65,15 +64,6 @@ vi.mock('@google/genai', () => ({
       },
     };
   },
-  HarmBlockThreshold: { BLOCK_ONLY_HIGH: 'BLOCK_ONLY_HIGH' },
-  HarmCategory: {
-    HARM_CATEGORY_DANGEROUS_CONTENT: 'DANGEROUS_CONTENT',
-    HARM_CATEGORY_HARASSMENT: 'HARASSMENT',
-    HARM_CATEGORY_HATE_SPEECH: 'HATE_SPEECH',
-    HARM_CATEGORY_SEXUALLY_EXPLICIT: 'SEXUALLY_EXPLICIT',
-    HARM_CATEGORY_CIVIC_INTEGRITY: 'CIVIC_INTEGRITY',
-  },
-  ThinkingLevel: { LOW: 'LOW', MEDIUM: 'MEDIUM' },
 }));
 
 vi.mock('./_shared/advancedAnalysisPrompt', async (importOriginal) => {
@@ -355,7 +345,7 @@ const request = (body: Record<string, unknown>) =>
 
 const context = (body: Record<string, unknown>) => ({
   request: request(body),
-  env: { GEMINI_API_KEY: 'test', BIGDATA_DB: createDb() },
+  env: { VERTEX_SA_KEY: 'test', BIGDATA_DB: createDb() },
 });
 
 beforeEach(() => {

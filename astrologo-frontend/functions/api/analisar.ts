@@ -1,8 +1,7 @@
 // Módulo: astrologo-frontend/functions/api/analisar.ts
-// Versão: v02.23.05
-// Descrição: API Gemini reentrante, com uma única etapa de geração por requisição HTTP.
+// Versão: v02.24.00
+// Descrição: API Gemini reentrante (transporte Vertex AI), com uma única etapa de geração por requisição HTTP.
 
-import { GoogleGenAI, HarmBlockThreshold, HarmCategory, ThinkingLevel } from '@google/genai';
 import sanitizeHtml from 'sanitize-html';
 import { hasInternalAnalysisMarkerResidue, stripInternalAnalysisMarkers } from '../../src/analysisOutput';
 import {
@@ -66,6 +65,7 @@ import {
   sha256Text,
 } from './_shared/longAnalysisPlanner';
 import { loadConfiguredAstrologerModel } from './_shared/modelConfig';
+import { VertexGenAI } from './_shared/vertex';
 import {
   type D1DatabaseLike,
   enforceRateLimit,
@@ -77,7 +77,9 @@ import {
 import { buildAnalysisGlobalsWithCanonicalTatwa, loadCanonicalTatwa } from './_shared/tatwaPrompt';
 
 interface EnvBindings {
-  GEMINI_API_KEY: string;
+  VERTEX_SA_KEY: string;
+  VERTEX_PROJECT?: string;
+  VERTEX_LOCATION?: string;
   BIGDATA_DB: D1DatabaseLike;
 }
 interface Context {
@@ -153,12 +155,15 @@ const D1_MAX_ROW_BYTES = 2_000_000;
 const D1_ROW_SAFETY_MARGIN_BYTES = 131_072;
 const D1_ABSOLUTE_ANALYSIS_CEILING_BYTES = 1_500_000;
 
+// Literais aceitos pela API REST do Vertex (mesmos valores de wire dos enums do SDK).
+const HARM_BLOCK_ONLY_HIGH = 'BLOCK_ONLY_HIGH';
+
 const SAFETY_SETTINGS = [
-  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-  { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: HARM_BLOCK_ONLY_HIGH },
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: HARM_BLOCK_ONLY_HIGH },
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: HARM_BLOCK_ONLY_HIGH },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: HARM_BLOCK_ONLY_HIGH },
+  { category: 'HARM_CATEGORY_CIVIC_INTEGRITY', threshold: HARM_BLOCK_ONLY_HIGH },
 ] as const;
 
 const LONG_ANALYSIS_OPERATIONAL_INSTRUCTION = `
@@ -327,12 +332,11 @@ const isRetryableTransportError = (error: unknown): boolean => {
 const geminiThinkingConfig = (
   model: string,
   level: 'low' | 'medium',
-): { readonly thinkingConfig: { readonly thinkingLevel: ThinkingLevel } } | Record<string, never> =>
+): { readonly thinkingConfig: { readonly thinkingLevel: 'LOW' | 'MEDIUM' } } | Record<string, never> =>
   /^gemini-3(?:[.-]|$)/iu.test(model)
     ? {
         thinkingConfig: {
-          thinkingLevel:
-            level === 'medium' && /^gemini-3\.\d+/iu.test(model) ? ThinkingLevel.MEDIUM : ThinkingLevel.LOW,
+          thinkingLevel: level === 'medium' && /^gemini-3\.\d+/iu.test(model) ? 'MEDIUM' : 'LOW',
         },
       }
     : {};
@@ -373,29 +377,22 @@ const loadSafeAnalysisPersistenceBudget = async (db: D1DatabaseLike, calculation
 const pause = async (milliseconds: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-const loadGeminiModelLimits = async (ai: GoogleGenAI, model: string): Promise<GeminiModelLimits> => {
-  try {
-    const metadata = await ai.models.get({ model, config: { httpOptions: { timeout: 20_000 } } });
-    const inputTokenLimit = metadata.inputTokenLimit;
-    const outputTokenLimit = metadata.outputTokenLimit;
-    if (
-      Number.isSafeInteger(inputTokenLimit) &&
-      Number(inputTokenLimit) > 0 &&
-      Number.isSafeInteger(outputTokenLimit) &&
-      Number(outputTokenLimit) > 0
-    ) {
-      return { inputTokenLimit: Number(inputTokenLimit), outputTokenLimit: Number(outputTokenLimit) };
-    }
-  } catch (error) {
-    structuredLog('WARN', 'Não foi possível consultar os limites do modelo; usando limites conservadores', {
-      model,
-      error: String(error),
-    });
-  }
-  return { inputTokenLimit: 128_000, outputTokenLimit: GEMINI_CONFIG_DEFAULTS.maxOutputTokens };
-};
+// O Vertex AI não expõe limites de token do modelo por API (o recurso
+// PublisherModel retorna apenas name/versionId/launchStage — verificado
+// empiricamente no REST v1). Estes valores são CONSTANTES DE ORQUESTRAÇÃO,
+// não fatos do modelo: o input conservador de 128k não altera nenhum budget
+// derivado (todos capados em 6k/48k) e o output de 65_536 preserva o teto da
+// escalada de MAX_TOKENS que o probe antigo fornecia para a família Gemini em
+// uso. A API do Vertex permanece a autoridade em request-time.
+const VERTEX_ORCHESTRATION_INPUT_TOKEN_LIMIT = 128_000;
+const VERTEX_OUTPUT_ESCALATION_CEILING = 65_536;
 
-const countTokensStrict = async (ai: GoogleGenAI, prompt: string, model: string): Promise<number> => {
+const loadGeminiModelLimits = (): GeminiModelLimits => ({
+  inputTokenLimit: VERTEX_ORCHESTRATION_INPUT_TOKEN_LIMIT,
+  outputTokenLimit: VERTEX_OUTPUT_ESCALATION_CEILING,
+});
+
+const countTokensStrict = async (ai: VertexGenAI, prompt: string, model: string): Promise<number> => {
   let lastError: unknown = new Error('Contagem de tokens indisponível.');
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
@@ -438,7 +435,7 @@ const addUsage = (
 };
 
 const generateValidated = async <T>(options: {
-  readonly ai: GoogleGenAI;
+  readonly ai: VertexGenAI;
   readonly model: string;
   readonly contents: string;
   readonly systemInstruction?: string;
@@ -745,10 +742,10 @@ const analysisSourceEvidenceIds = (options: {
 ];
 
 /**
- * Conta tokens da requisição usando @google/genai SDK
+ * Conta tokens da requisição usando o cliente Vertex
  * Permite validação pré-envio e otimização de custos
  */
-const estimateTokenCount = async (ai: GoogleGenAI, prompt: string, model: string): Promise<number> => {
+const estimateTokenCount = async (ai: VertexGenAI, prompt: string, model: string): Promise<number> => {
   try {
     const resp = await ai.models.countTokens({
       model,
@@ -1006,16 +1003,8 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
     // ==== DYNAMIC MODEL CONFIGURATION VIA BIGDATA_DB ====
     const selectedModel = await loadConfiguredAstrologerModel(env.BIGDATA_DB, GEMINI_CONFIG_DEFAULTS.model);
 
-    // Inicializa a instância do SDK de vanguarda
-    const envRec = env as unknown as Record<string, unknown>;
-    const apiKeyRaw =
-      env.GEMINI_API_KEY || envRec.GEMINI_APP_KEY || envRec['gemini-api-key'] || envRec['gemini-app-key'];
-    const ai = new GoogleGenAI({
-      apiKey:
-        apiKeyRaw && typeof apiKeyRaw === 'object' && 'get' in apiKeyRaw
-          ? await (apiKeyRaw as { get(): Promise<string> }).get()
-          : String(apiKeyRaw || ''),
-    });
+    // Inicializa o cliente Vertex (service account OAuth, ver _shared/vertex.ts)
+    const ai = await createGeminiClient(env);
 
     // ==== PASSO 1: limites reais do modelo e planejamento por volume ====
     structuredLog('INFO', 'Iniciando análise astrológica com Gemini SDK', {
@@ -1023,7 +1012,7 @@ export async function legacySynchronousAnalysisRequest(context: Context) {
       model: selectedModel,
     });
 
-    const modelLimits = await loadGeminiModelLimits(ai, selectedModel);
+    const modelLimits = loadGeminiModelLimits();
     const tokenCount = await estimateTokenCount(ai, prompt, selectedModel);
     const directTokenCeiling = Math.min(
       LONG_ANALYSIS_DIRECT_TOKEN_CEILING,
@@ -1481,15 +1470,21 @@ const parseStoredAnalysisMap = async (db: D1DatabaseLike, mapaId: string): Promi
   return row;
 };
 
-const createGeminiClient = async (env: EnvBindings): Promise<GoogleGenAI> => {
-  const envRec = env as unknown as Record<string, unknown>;
-  const apiKeyRaw = env.GEMINI_API_KEY || envRec.GEMINI_APP_KEY || envRec['gemini-api-key'] || envRec['gemini-app-key'];
-  const apiKey =
-    apiKeyRaw && typeof apiKeyRaw === 'object' && 'get' in apiKeyRaw
-      ? await (apiKeyRaw as { get(): Promise<string> }).get()
-      : String(apiKeyRaw || '');
-  if (!apiKey) throw new Error('Credencial da IA indisponível.');
-  return new GoogleGenAI({ apiKey });
+const DEFAULT_VERTEX_PROJECT = 'lcv-ideas-and-software';
+const DEFAULT_VERTEX_LOCATION = 'global';
+
+const createGeminiClient = async (env: EnvBindings): Promise<VertexGenAI> => {
+  const saKeyRaw: unknown = env.VERTEX_SA_KEY;
+  const saKeyJson =
+    saKeyRaw && typeof saKeyRaw === 'object' && 'get' in saKeyRaw
+      ? await (saKeyRaw as { get(): Promise<string> }).get()
+      : String(saKeyRaw || '');
+  if (!saKeyJson) throw new Error('Credencial da IA indisponível.');
+  return new VertexGenAI({
+    saKeyJson,
+    project: env.VERTEX_PROJECT || DEFAULT_VERTEX_PROJECT,
+    location: env.VERTEX_LOCATION || DEFAULT_VERTEX_LOCATION,
+  });
 };
 
 const toPersistedPackedPlan = (plan: PackedAnalysisPlan): PersistedPackedPlan => ({
@@ -1657,7 +1652,7 @@ const planReentrantAnalysis = async (env: EnvBindings, job: AnalysisJobRecord, l
 
   const model = await loadConfiguredAstrologerModel(env.BIGDATA_DB, GEMINI_CONFIG_DEFAULTS.model);
   const ai = await createGeminiClient(env);
-  const modelLimits = await loadGeminiModelLimits(ai, model);
+  const modelLimits = loadGeminiModelLimits();
   const tokenCount = await estimateTokenCount(ai, prompt, model);
   const directTokenCeiling = Math.min(
     LONG_ANALYSIS_DIRECT_TOKEN_CEILING,

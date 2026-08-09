@@ -29,7 +29,7 @@ import { calculateWesternTatwaAtBirth } from './_shared/tatwaBirth';
 import { validateWesternTatwaBirthResult } from './_shared/tatwaSchema';
 
 interface EnvBindings {
-  GEMINI_API_KEY: string;
+  VERTEX_SA_KEY: string;
   BIGDATA_DB: D1DatabaseLike;
 }
 interface Context {
