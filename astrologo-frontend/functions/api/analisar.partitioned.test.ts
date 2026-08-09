@@ -440,13 +440,13 @@ describe('/api/analisar — protocolo reentrante', () => {
   });
 
   it('limita a escalada de saída à capacidade oficial do publisher model selecionado', async () => {
-    runtime.model = 'gemini-3.5-flash';
+    runtime.model = 'gemini-2.5-flash-lite';
 
     await onRequestPost(context({ action: 'start', id: MAP_ID }));
     await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
 
     expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-2.5-flash-lite',
       modelInputTokenLimit: 128_000,
       modelOutputTokenLimit: 65_535,
     });

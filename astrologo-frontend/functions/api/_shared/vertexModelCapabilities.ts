@@ -12,7 +12,7 @@ const ORCHESTRATION_INPUT_TOKEN_LIMIT = 128_000;
 // com Count Tokens e Structured Output. Uma nova opção do Admin só entra aqui
 // depois que seus limites e esses dois contratos forem verificados no Vertex.
 const VERTEX_ANALYSIS_MODEL_CAPABILITIES = Object.freeze({
-  'gemini-3.5-flash': { inputTokenLimit: 1_048_576, outputTokenLimit: 65_535 },
+  'gemini-3.5-flash': { inputTokenLimit: 1_048_576, outputTokenLimit: 65_536 },
   'gemini-3.5-flash-lite': { inputTokenLimit: 1_048_576, outputTokenLimit: 65_536 },
   'gemini-3.1-pro-preview': { inputTokenLimit: 1_048_576, outputTokenLimit: 65_536 },
   'gemini-3.1-flash-lite': { inputTokenLimit: 1_048_576, outputTokenLimit: 65_536 },
