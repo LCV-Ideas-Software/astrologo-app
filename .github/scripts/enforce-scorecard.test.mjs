@@ -44,9 +44,10 @@ function finding(ruleId, { path, snippet, message } = {}) {
   };
 }
 
-function repositoryPolicyFinding(ruleId, message) {
+function repositoryPolicyFinding(ruleId, message, ruleIndex = 0) {
   return {
     ruleId,
+    ruleIndex,
     message: { text: message },
     locations: [
       {
@@ -171,6 +172,20 @@ test("fails closed when a repository-policy signature drifts", () => {
   extraArtifactField.locations[0].physicalLocation.artifactLocation.index = 0;
   const extraRegionField = structuredClone(exactCiiBestPracticesFinding);
   extraRegionField.locations[0].physicalLocation.region.endLine = 1;
+  const extraResultField = structuredClone(exactBranchProtectionFinding);
+  extraResultField.level = "warning";
+  const extraResultSuppressions = structuredClone(exactCodeReviewFinding);
+  extraResultSuppressions.suppressions = [{ kind: "inSource" }];
+  const extraMessageField = structuredClone(exactCiiBestPracticesFinding);
+  extraMessageField.message.markdown = "unexpected";
+  const missingRuleIndex = structuredClone(exactBranchProtectionFinding);
+  delete missingRuleIndex.ruleIndex;
+  const negativeRuleIndex = structuredClone(exactCodeReviewFinding);
+  negativeRuleIndex.ruleIndex = -1;
+  const nonIntegerRuleIndex = structuredClone(exactCiiBestPracticesFinding);
+  nonIntegerRuleIndex.ruleIndex = 0.5;
+  const unsafeRuleIndex = structuredClone(exactBranchProtectionFinding);
+  unsafeRuleIndex.ruleIndex = Number.MAX_SAFE_INTEGER + 1;
 
   for (const changed of [
     repositoryPolicyFinding(
@@ -207,6 +222,13 @@ test("fails closed when a repository-policy signature drifts", () => {
     extraLocationField,
     extraArtifactField,
     extraRegionField,
+    extraResultField,
+    extraResultSuppressions,
+    extraMessageField,
+    missingRuleIndex,
+    negativeRuleIndex,
+    nonIntegerRuleIndex,
+    unsafeRuleIndex,
   ]) {
     assert.equal(isApprovedFinding(changed), false);
   }

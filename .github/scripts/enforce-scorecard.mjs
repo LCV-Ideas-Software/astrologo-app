@@ -25,11 +25,14 @@ function location(result) {
   return result?.locations?.[0]?.physicalLocation ?? {};
 }
 
-function hasOnlyKeys(object, keys) {
+function hasExactKeys(object, keys) {
   if (object === null || typeof object !== "object" || Array.isArray(object)) {
     return false;
   }
-  return Object.keys(object).every((key) => keys.has(key));
+  const objectKeys = Object.keys(object);
+  return (
+    objectKeys.length === keys.size && objectKeys.every((key) => keys.has(key))
+  );
 }
 
 function isRepositoryPolicyLocation(physicalLocation) {
@@ -46,27 +49,47 @@ function hasCanonicalRepositoryPolicyLocation(result) {
     return false;
   }
   const [entry] = result.locations;
-  if (!hasOnlyKeys(entry, new Set(["physicalLocation"]))) {
+  if (!hasExactKeys(entry, new Set(["physicalLocation"]))) {
     return false;
   }
 
   const physicalLocation = entry.physicalLocation;
-  if (!hasOnlyKeys(physicalLocation, new Set(["artifactLocation", "region"]))) {
+  if (
+    !hasExactKeys(physicalLocation, new Set(["artifactLocation", "region"]))
+  ) {
     return false;
   }
   if (
-    !hasOnlyKeys(
+    !hasExactKeys(
       physicalLocation.artifactLocation,
       new Set(["uri", "uriBaseId"]),
     )
   ) {
     return false;
   }
-  if (!hasOnlyKeys(physicalLocation.region, new Set(["startLine"]))) {
+  if (!hasExactKeys(physicalLocation.region, new Set(["startLine"]))) {
     return false;
   }
 
   return isRepositoryPolicyLocation(physicalLocation);
+}
+
+function hasCanonicalRepositoryPolicyResult(result) {
+  if (
+    !hasExactKeys(
+      result,
+      new Set(["ruleId", "ruleIndex", "message", "locations"]),
+    )
+  ) {
+    return false;
+  }
+  if (!Number.isSafeInteger(result.ruleIndex) || result.ruleIndex < 0) {
+    return false;
+  }
+  if (!hasExactKeys(result.message, new Set(["text"]))) {
+    return false;
+  }
+  return hasCanonicalRepositoryPolicyLocation(result);
 }
 
 function tokenPermissionsMessages(workflowFile) {
@@ -106,20 +129,22 @@ export function isApprovedFinding(result) {
     );
   }
 
-  // These are repository-level observations of the intentionally reviewless
-  // automation policy, not file-backed defects. Keep their live signatures
-  // narrow: any new warning, location drift, non-zero review numerator, or
-  // changed badge state falls through and fails the gate.
-  if (!hasCanonicalRepositoryPolicyLocation(result)) {
-    return false;
-  }
   if (result?.ruleId === "BranchProtectionID") {
+    if (!hasCanonicalRepositoryPolicyResult(result)) {
+      return false;
+    }
     return message === BRANCH_PROTECTION_MESSAGE;
   }
   if (result?.ruleId === "CodeReviewID") {
+    if (!hasCanonicalRepositoryPolicyResult(result)) {
+      return false;
+    }
     return CODE_REVIEW_MESSAGE.test(message);
   }
   if (result?.ruleId === "CIIBestPracticesID") {
+    if (!hasCanonicalRepositoryPolicyResult(result)) {
+      return false;
+    }
     return message === CII_BEST_PRACTICES_MESSAGE;
   }
 
