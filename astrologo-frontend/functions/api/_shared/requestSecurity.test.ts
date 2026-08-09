@@ -1,3 +1,4 @@
+import fc from 'fast-check';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { D1DatabaseLike, D1Statement } from './requestSecurity';
 import {
@@ -14,6 +15,11 @@ const createRequest = (origin?: string, extraHeaders: Record<string, string> = {
   return new Request('https://mapa-astral.lcv.app.br/api/teste', { headers });
 };
 
+const dnsLabelArbitrary = fc.stringMatching(/^[a-z0-9](?:[a-z0-9-]{0,18}[a-z0-9])?$/);
+const trustedOriginArbitrary = fc
+  .array(dnsLabelArbitrary, { minLength: 0, maxLength: 4 })
+  .map((labels) => `https://${[...labels, 'lcv', 'app', 'br'].join('.')}`);
+
 describe('requestSecurity', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -24,6 +30,22 @@ describe('requestSecurity', () => {
     expect(isAllowedLcvOrigin('https://admin-astrologo.lcv.app.br')).toBe(true);
     expect(isAllowedLcvOrigin('http://mapa-astral.lcv.app.br')).toBe(false);
     expect(isAllowedLcvOrigin('https://evil.com')).toBe(false);
+  });
+
+  it('mantém a fronteira de origem sob subdomínios e confusões de autoridade gerados', () => {
+    fc.assert(
+      fc.property(trustedOriginArbitrary, dnsLabelArbitrary, (trustedOrigin, attackerLabel) => {
+        const trustedHost = trustedOrigin.slice('https://'.length);
+
+        expect(isAllowedLcvOrigin(trustedOrigin)).toBe(true);
+        expect(isAllowedLcvOrigin(`http://${trustedHost}`)).toBe(false);
+        expect(isAllowedLcvOrigin(`https://${trustedHost}.${attackerLabel}.invalid`)).toBe(false);
+        expect(isAllowedLcvOrigin(`https://${trustedHost}@${attackerLabel}.invalid`)).toBe(false);
+        expect(isAllowedLcvOrigin(`${trustedOrigin}:8443`)).toBe(false);
+        expect(isAllowedLcvOrigin(`${trustedOrigin}/caminho`)).toBe(false);
+      }),
+      { numRuns: 1_000 },
+    );
   });
 
   it('gera cabeçalhos CORS com fallback controlado', () => {
