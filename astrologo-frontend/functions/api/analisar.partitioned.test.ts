@@ -7,6 +7,7 @@ const runtime = vi.hoisted(() => ({
   generateErrors: [] as Array<Error & { status?: number }>,
   finishReasons: ['STOP'] as string[],
   totalTokens: 100,
+  count404Models: [] as string[],
   model: 'gemini-3.1-pro-preview',
   fragmentHtml: '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>',
   synthesisHtml: '',
@@ -19,52 +20,76 @@ const runtime = vi.hoisted(() => ({
   completedAnalysisHtml: null as string | null,
 }));
 
-vi.mock('./_shared/vertex', () => ({
-  VertexGenAI: class {
-    readonly models = {
-      countTokens: async () => ({ totalTokens: runtime.totalTokens }),
-      generateContent: async (request: Record<string, unknown>) => {
-        runtime.generateCalls += 1;
-        runtime.generateRequests.push(request);
-        const generateError = runtime.generateErrors.shift();
-        if (generateError) throw generateError;
-        const config = request.config as
-          | {
-              responseJsonSchema?: {
-                properties?: {
-                  html?: unknown;
-                  synthesisNotes?: {
-                    items?: { properties?: { evidenceIds?: { items?: { enum?: string[] } } } };
+vi.mock('./_shared/vertex', () => {
+  class MockVertexHttpError extends Error {
+    constructor(
+      message: string,
+      readonly status: number,
+      readonly operation: string,
+    ) {
+      super(message);
+      this.name = 'VertexHttpError';
+    }
+  }
+  return {
+    VertexHttpError: MockVertexHttpError,
+    isVertexModelUnavailableError: (error: unknown): boolean =>
+      error instanceof MockVertexHttpError && error.status === 404 && error.operation !== 'oauth-token',
+    VertexGenAI: class {
+      readonly models = {
+        countTokens: async (request: Record<string, unknown>) => {
+          if (runtime.count404Models.includes(request.model as string)) {
+            throw new MockVertexHttpError(
+              `Vertex countTokens falhou (HTTP 404): Publisher Model \`${request.model}\` not found.`,
+              404,
+              'countTokens',
+            );
+          }
+          return { totalTokens: runtime.totalTokens };
+        },
+        generateContent: async (request: Record<string, unknown>) => {
+          runtime.generateCalls += 1;
+          runtime.generateRequests.push(request);
+          const generateError = runtime.generateErrors.shift();
+          if (generateError) throw generateError;
+          const config = request.config as
+            | {
+                responseJsonSchema?: {
+                  properties?: {
+                    html?: unknown;
+                    synthesisNotes?: {
+                      items?: { properties?: { evidenceIds?: { items?: { enum?: string[] } } } };
+                    };
                   };
                 };
-              };
-            }
-          | undefined;
-        const responseSchema = config?.responseJsonSchema;
-        const evidenceIds = responseSchema?.properties?.synthesisNotes?.items?.properties?.evidenceIds?.items?.enum;
-        const structuredText = responseSchema
-          ? responseSchema.properties?.synthesisNotes
-            ? JSON.stringify({
-                ...(responseSchema.properties.html ? { html: runtime.fragmentHtml } : {}),
-                synthesisNotes: [
-                  {
-                    textPtBr: 'Síntese factual da parte validada.',
-                    evidenceIds,
-                  },
-                ],
-                warnings: [],
-              })
-            : JSON.stringify({ html: runtime.synthesisHtml, warnings: [] })
-          : runtime.directHtml;
-        return {
-          text: structuredText,
-          candidates: [{ finishReason: runtime.finishReasons.shift() ?? 'STOP' }],
-          usageMetadata: { promptTokenCount: 1_000, candidatesTokenCount: 100, thoughtsTokenCount: 50 },
-        };
-      },
-    };
-  },
-}));
+              }
+            | undefined;
+          const responseSchema = config?.responseJsonSchema;
+          const evidenceIds = responseSchema?.properties?.synthesisNotes?.items?.properties?.evidenceIds?.items?.enum;
+          const structuredText = responseSchema
+            ? responseSchema.properties?.synthesisNotes
+              ? JSON.stringify({
+                  ...(responseSchema.properties.html ? { html: runtime.fragmentHtml } : {}),
+                  synthesisNotes: [
+                    {
+                      textPtBr: 'Síntese factual da parte validada.',
+                      evidenceIds,
+                    },
+                  ],
+                  warnings: [],
+                })
+              : JSON.stringify({ html: runtime.synthesisHtml, warnings: [] })
+            : runtime.directHtml;
+          return {
+            text: structuredText,
+            candidates: [{ finishReason: runtime.finishReasons.shift() ?? 'STOP' }],
+            usageMetadata: { promptTokenCount: 1_000, candidatesTokenCount: 100, thoughtsTokenCount: 50 },
+          };
+        },
+      };
+    },
+  };
+});
 
 vi.mock('./_shared/advancedAnalysisPrompt', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./_shared/advancedAnalysisPrompt')>();
@@ -354,6 +379,7 @@ beforeEach(() => {
   runtime.generateErrors = [];
   runtime.finishReasons = ['STOP'];
   runtime.totalTokens = 100;
+  runtime.count404Models = [];
   runtime.model = 'gemini-3.1-pro-preview';
   runtime.fragmentHtml = '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>';
   runtime.directHtml =
@@ -388,8 +414,22 @@ describe('/api/analisar — protocolo reentrante', () => {
     });
   });
 
-  it('substitui o alias legado por um publisher model Vertex compatível', async () => {
+  it('respeita o seletor mesmo para IDs fora da tabela validada, com limites conservadores (nunca rebaixa na seleção)', async () => {
     runtime.model = 'gemini-pro-latest';
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
+      model: 'gemini-pro-latest',
+      modelInputTokenLimit: 128_000,
+      modelOutputTokenLimit: 65_535,
+    });
+  });
+
+  it('cai para o padrão validado ANTES de persistir o plano quando o Vertex responde 404 para o modelo do seletor', async () => {
+    runtime.model = 'gemini-9.9-ultra';
+    runtime.count404Models = ['gemini-9.9-ultra'];
 
     await onRequestPost(context({ action: 'start', id: MAP_ID }));
     await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
@@ -401,7 +441,7 @@ describe('/api/analisar — protocolo reentrante', () => {
     });
   });
 
-  it('normaliza modelo e teto de saída ao retomar um plano persistido pela versão anterior', async () => {
+  it('clampa limites herdados ao retomar plano persistido, preservando o modelo do seletor', async () => {
     await onRequestPost(context({ action: 'start', id: MAP_ID }));
     await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
     if (!runtime.job || !runtime.steps[0]) throw new Error('plano de teste ausente');
@@ -425,18 +465,21 @@ describe('/api/analisar — protocolo reentrante', () => {
 
     expect(completed.status).toBe(200);
     expect(runtime.generateRequests[0]).toMatchObject({
-      model: 'gemini-3.1-pro-preview',
-      config: { maxOutputTokens: 65_536 },
+      model: 'gemini-pro-latest',
+      config: { maxOutputTokens: 65_535 },
     });
   });
 
-  it('recusa variantes Vertex sem os contratos de texto estruturado da análise', async () => {
+  it('respeita variantes desconhecidas na seleção (indisponibilidade real é tratada pelo fallback 404, não por lista)', async () => {
     runtime.model = 'gemini-3.1-flash-lite-image';
 
     await onRequestPost(context({ action: 'start', id: MAP_ID }));
     await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
 
-    expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({ model: 'gemini-3.1-pro-preview' });
+    expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
+      model: 'gemini-3.1-flash-lite-image',
+      modelOutputTokenLimit: 65_535,
+    });
   });
 
   it('limita a escalada de saída à capacidade oficial do publisher model selecionado', async () => {

@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [v02.25.00] - 2026-08-09
+
+**Seletor de modelos sempre respeitado (diretiva fleet-wide do operador).**
+
+### Alterado
+
+- A tabela `vertexModelCapabilities` deixa de gatear a seleção do modelo: o ID configurado no seletor do admin é usado exatamente como está (validação apenas sintática, pois compõe o path da URL do publisher model). IDs fora da tabela validada recebem limites conservadores (entrada 128 mil tokens pela orquestração; saída 65.535, o menor teto observado entre os modelos validados) — modelos novos nunca são rebaixados silenciosamente na seleção.
+- Fallback para `gemini-3.1-pro-preview` passa a ocorrer apenas em runtime, quando o Vertex responde 404 de publisher model para o modelo selecionado, ANTES de qualquer plano de análise ser persistido (novo módulo `functions/api/_shared/modelAvailability.ts`); um 404 da mint OAuth nunca dispara a troca (`VertexHttpError` agora carrega a operação de origem).
+- `gemini-3.6-flash` entra na tabela de capacidades validadas (teto de saída 65.536, validado empiricamente no endpoint global em 2026-08-09).
+- Planos persistidos por versões anteriores continuam sendo clampados aos limites atuais na retomada, agora preservando o modelo do seletor em vez de reescrevê-lo.
+
 ## [v02.24.00] - 2026-08-08
 
 ### Alterado

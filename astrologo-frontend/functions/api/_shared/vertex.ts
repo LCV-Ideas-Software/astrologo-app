@@ -72,17 +72,27 @@ export interface VertexGenerateContentResponse {
   text: string;
 }
 
-/** Erro HTTP com status numérico preservado para o classificador de retry do caller. */
+/** Operação de origem de um VertexHttpError — permite ao caller distinguir um
+ * 404 de publisher model (fallback de seletor) de falhas da mint OAuth. */
+export type VertexOperation = 'oauth-token' | 'generateContent' | 'countTokens';
+
+/** Erro HTTP com status numérico e operação de origem preservados para o classificador de retry/fallback do caller. */
 export class VertexHttpError extends Error {
   override readonly name = 'VertexHttpError';
 
   constructor(
     message: string,
     readonly status: number,
+    readonly operation: VertexOperation,
   ) {
     super(message);
   }
 }
+
+/** Um 404 de publisher model (countTokens/generateContent) significa modelo
+ * indisponível; um 404 da mint OAuth ou de qualquer outra origem não. */
+export const isVertexModelUnavailableError = (error: unknown): boolean =>
+  error instanceof VertexHttpError && error.status === 404 && error.operation !== 'oauth-token';
 
 const OAUTH_SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
 const OAUTH_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:jwt-bearer';
@@ -221,6 +231,7 @@ const mintAccessToken = async (
     throw new VertexHttpError(
       `Falha ao obter access token OAuth para ${sa.client_email} (HTTP ${res.status}): ${detail}`,
       res.status,
+      'oauth-token',
     );
   }
   const data = (await res.json()) as { access_token?: string; expires_in?: number };
@@ -327,7 +338,7 @@ export class VertexGenAI {
 
   private async request(
     model: string,
-    verb: string,
+    verb: 'generateContent' | 'countTokens',
     body: Record<string, unknown>,
     timeoutMs?: number,
   ): Promise<unknown> {
@@ -345,7 +356,7 @@ export class VertexGenAI {
     });
     if (!res.ok) {
       const detail = (await res.text()).slice(0, ERROR_BODY_EXCERPT);
-      throw new VertexHttpError(`Vertex ${verb} falhou (HTTP ${res.status}): ${detail}`, res.status);
+      throw new VertexHttpError(`Vertex ${verb} falhou (HTTP ${res.status}): ${detail}`, res.status, verb);
     }
     return res.json();
   }
