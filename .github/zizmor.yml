@@ -11,5 +11,5 @@ rules:
     disable: true
   dangerous-triggers:
     ignore:
-      # API-only controller: no checkout, cache, artifact, or PR code execution.
-      - dependabot-automerge.yml
+      # Trusted default-branch wrapper: no checkout, artifact, or PR code execution.
+      - native-auto-merge.yml
