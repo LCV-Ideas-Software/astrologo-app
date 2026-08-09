@@ -388,6 +388,41 @@ describe('/api/analisar — protocolo reentrante', () => {
     });
   });
 
+  it('substitui o alias legado por um publisher model Vertex compatível', async () => {
+    runtime.model = 'gemini-pro-latest';
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
+      model: 'gemini-3.1-pro-preview',
+      modelInputTokenLimit: 128_000,
+      modelOutputTokenLimit: 65_536,
+    });
+  });
+
+  it('recusa variantes Vertex sem os contratos de texto estruturado da análise', async () => {
+    runtime.model = 'gemini-3.1-flash-lite-image';
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({ model: 'gemini-3.1-pro-preview' });
+  });
+
+  it('limita a escalada de saída à capacidade oficial do publisher model selecionado', async () => {
+    runtime.model = 'gemini-3.5-flash';
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(JSON.parse(String(runtime.job?.plan_json))).toMatchObject({
+      model: 'gemini-3.5-flash',
+      modelInputTokenLimit: 128_000,
+      modelOutputTokenLimit: 65_535,
+    });
+  });
+
   it('transforma cada tentativa em uma nova requisição e nunca repete dentro do mesmo avanço', async () => {
     runtime.finishReasons = ['MAX_TOKENS', 'STOP'];
     await onRequestPost(context({ action: 'start', id: MAP_ID }));

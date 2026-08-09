@@ -7,7 +7,7 @@
 ### Alterado
 
 - **Transporte de IA migrado para o Vertex AI** — a análise astrológica deixa a API key do AI Studio e passa a autenticar com service account (`VERTEX_SA_KEY`, secret do projeto Pages) via JWT RS256 → OAuth2, faturando no pós-pago padrão do Cloud Billing. Comportamento preservado integralmente: prompts, seletor de modelo do admin, orquestração reentrante, saída estruturada, `thinkingLevel`, retries e telemetria.
-- Limites de planejamento viram constantes de orquestração (o Vertex não expõe limites de modelo por API); nenhum budget derivado muda e o teto de escalada de `MAX_TOKENS` (65.536) é preservado.
+- O modelo configurado passa por uma tabela fail-closed de publisher models Vertex compatíveis com `Count Tokens` e `Structured Output`: aliases legados, variantes incompatíveis e IDs desconhecidos usam `gemini-3.1-pro-preview`; a entrada continua limitada a 128 mil tokens pela orquestração e cada escalada de `MAX_TOKENS` respeita o teto oficial do modelo selecionado.
 
 ### Removido
 

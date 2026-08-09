@@ -5,7 +5,7 @@
 ### Alterado
 
 - Migra o transporte de IA do endpoint AI Studio (API key `GEMINI_API_KEY`) para o **Vertex AI** (Gemini Enterprise Agent Platform), autenticando com service account (`VERTEX_SA_KEY`) via JWT RS256 (WebCrypto) trocado por access token OAuth2. O consumo passa a faturar no pós-pago padrão do Cloud Billing. Prompts, seletor de modelo do admin (D1 `admin_module_configs`/`astrologo-config`, com fallback legado), orquestração reentrante (jobs, fragmentos, reduções, síntese), saída estruturada (`responseJsonSchema`), `thinkingLevel` por família de modelo, retries e telemetria permanecem com o mesmo comportamento.
-- Os limites de planejamento do orquestrador tornam-se constantes locais (entrada 128k, teto de escalada de saída 65.536): o Vertex AI não expõe limites de token do modelo por API (o probe `models.get` do AI Studio deixa de existir). Nenhum budget derivado muda; a escalada de `MAX_TOKENS` preserva o teto anterior.
+- A seleção dinâmica passa por uma tabela fail-closed de publisher models Vertex compatíveis com `Count Tokens` e `Structured Output`: aliases legados, variantes incompatíveis e IDs desconhecidos usam `gemini-3.1-pro-preview`; a orquestração conserva o teto de entrada de 128 mil tokens e limita cada escalada de `MAX_TOKENS` à capacidade oficial do modelo selecionado.
 
 ### Adicionado
 
