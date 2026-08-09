@@ -1,5 +1,12 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.25.01] - 2026-08-09
+
+- Teto conservador de saída para IDs fora da tabela validada: 65.535 → 8.192 (request inicial da orquestração), impedindo escalada de `MAX_TOKENS` acima do comprovadamente aceito (achado codex P2). Lockfile realinhado ao manifesto.
+## [v02.25.00] - 2026-08-09
+
+- **Seletor de modelos sempre respeitado (diretiva fleet-wide)**: a tabela de capacidades deixa de gatear a seleção — o ID configurado no seletor do admin é usado exatamente como está (validação apenas sintática); IDs fora da tabela validada recebem limites conservadores (entrada 128 mil tokens pela orquestração; saída 65.535). `gemini-3.6-flash` entra na tabela validada (saída 65.536).
+- Fallback para `gemini-3.1-pro-preview` apenas em runtime, quando o Vertex responde 404 de publisher model para o modelo selecionado, antes de persistir o plano (`modelAvailability.ts`); 404 da mint OAuth nunca troca o modelo (`VertexHttpError` com operação de origem).
 ## [v02.24.00] - 2026-08-08
 
 ### Alterado

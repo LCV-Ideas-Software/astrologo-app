@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.25.00**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.25.01**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.25.01`**                      | **Hardening pós-review.** Teto conservador de saída para modelos fora da tabela cai para 8.192 (request inicial), lockfile realinhado e changelog paralelo sincronizado.                                                                                                                                                                              |
 | **`v02.25.00`**                      | **Seletor de modelos sempre respeitado.** A tabela de capacidades deixa de gatear a seleção: o ID do seletor do admin é usado como configurado e o fallback para o padrão ocorre apenas quando o Vertex responde 404 para o modelo selecionado; `gemini-3.6-flash` entra na tabela validada.                                                          |
 | **`v02.24.00`**                      | **Transporte Vertex AI.** Migra a autenticação da análise para service account com OAuth2 e usa o cliente REST do Vertex AI, preservando prompts, orquestração, saída estruturada, retries e telemetria.                                                                                                                                            |
 | **`v02.23.05`**                      | **Dependency security patch.** Updates the transitive `protobufjs` override used by `@google/genai` to 7.6.5, resolving GHSA-j3f2-48v5-ccww / CVE-2026-59877 without changing application APIs or prompts. |
