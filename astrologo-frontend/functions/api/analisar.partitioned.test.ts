@@ -10,6 +10,7 @@ const runtime = vi.hoisted(() => ({
   totalTokens: 100,
   count404Models: [] as string[],
   outputCapLimit: null as number | null,
+  minimumOutputTokensToStop: null as number | null,
   model: 'gemini-3.1-pro-preview',
   fragmentHtml: '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>',
   synthesisHtml: '',
@@ -90,9 +91,15 @@ vi.mock('./_shared/vertex', () => {
                 })
               : JSON.stringify({ html: runtime.synthesisHtml, warnings: [] })
             : runtime.directHtml;
+          const finishReason =
+            runtime.minimumOutputTokensToStop === null
+              ? (runtime.finishReasons.shift() ?? 'STOP')
+              : requestedMax >= runtime.minimumOutputTokensToStop
+                ? 'STOP'
+                : 'MAX_TOKENS';
           return {
             text: structuredText,
-            candidates: [{ finishReason: runtime.finishReasons.shift() ?? 'STOP' }],
+            candidates: [{ finishReason }],
             usageMetadata: { promptTokenCount: 1_000, candidatesTokenCount: 100, thoughtsTokenCount: 50 },
           };
         },
@@ -396,6 +403,7 @@ beforeEach(() => {
   runtime.totalTokens = 100;
   runtime.count404Models = [];
   runtime.outputCapLimit = null;
+  runtime.minimumOutputTokensToStop = null;
   runtime.model = 'gemini-3.1-pro-preview';
   runtime.fragmentHtml = '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>';
   runtime.directHtml =
@@ -572,7 +580,52 @@ describe('/api/analisar — protocolo reentrante', () => {
     expect(final?.status).toBe(200);
     expect(
       runtime.generateRequests.map((r) => (r.config as { maxOutputTokens?: number } | undefined)?.maxOutputTokens),
-    ).toEqual([8_192, 16_384, 8_192, 16_383]);
+    ).toEqual([8_192, 16_384, 12_288, 14_336]);
+  });
+
+  it('negocia por busca binária um teto não adjacente de 8.000 sem consumir as tentativas funcionais', async () => {
+    runtime.model = 'gemini-9.9-ultra';
+    runtime.outputCapLimit = 8_000;
+    runtime.minimumOutputTokensToStop = 8_000;
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    let final: Response | null = null;
+    for (let i = 0; i < 10; i += 1) {
+      final = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+      if (final.status === 200) break;
+      expect(final.status).toBe(202);
+    }
+
+    expect(final?.status).toBe(200);
+    expect(
+      runtime.generateRequests.map((r) => (r.config as { maxOutputTokens?: number } | undefined)?.maxOutputTokens),
+    ).toEqual([8_192, 4_096, 6_144, 7_168, 7_680, 7_936, 8_064, 8_000]);
+    expect(runtime.step).toMatchObject({ status: 'completed', attempts: 1 });
+  });
+
+  it('volta ao orçamento limitado quando o intervalo fecha sem uma resposta completa', async () => {
+    runtime.model = 'gemini-9.9-ultra';
+    runtime.outputCapLimit = 1_024;
+    runtime.minimumOutputTokensToStop = 2_000;
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    let final: Response | null = null;
+    for (let i = 0; i < 24; i += 1) {
+      final = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+      if (final.status !== 202) break;
+    }
+
+    expect(final?.status).toBe(422);
+    expect(runtime.step).toMatchObject({ status: 'failed', attempts: 3 });
+    expect(
+      runtime.generateRequests
+        .slice(-3)
+        .map((request) => (request.config as { maxOutputTokens?: number } | undefined)?.maxOutputTokens),
+    ).toEqual([1_024, 1_024, 1_024]);
   });
 
   it('transforma cada tentativa em uma nova requisição e nunca repete dentro do mesmo avanço', async () => {

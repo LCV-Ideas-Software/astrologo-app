@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [v02.25.04] - 10/08/2026
+
+**Busca binária do teto real de saída (achado Copilot no PR da v02.25.03).**
+
+### Alterado
+
+- A negociação de `maxOutputTokens` agora persiste tanto o último valor aceito (`outputTokenFloor`) quanto o limite superior derivado dos valores rejeitados (`outputTokenCeiling`) e converge por busca binária. Isso elimina a sequência patológica que voltava a dobrar o valor aceito e reduzia o teto apenas de um em um, consumindo o orçamento de tentativas em modelos com limites não adjacentes, como 8.000 tokens.
+- A regressão cobre a negociação completa de 8.192 até 8.000 e comprova que somente probes que estreitam o intervalo são reembolsados; retries funcionais sem progresso continuam sujeitos ao orçamento normal.
+
 ## [v02.25.03] - 2026-08-09
 
 **Negociação de teto fora do orçamento de tentativas (achados codex P1 + Copilot no PR da v02.25.02).**

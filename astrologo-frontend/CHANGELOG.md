@@ -1,5 +1,9 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.25.04] - 10/08/2026
+
+- A negociação de `maxOutputTokens` persiste o último valor aceito e o limite superior derivado das rejeições e converge por busca binária, evitando oscilação e esgotamento de tentativas em tetos não adjacentes, como 8.000 tokens (achado Copilot do PR anterior).
+
 ## [v02.25.03] - 2026-08-09
 
 - Negociação de teto fora do orçamento: `outputTokenCeiling` persistido no payload clampa a escalada (sem oscilação) e o refund devolve a tentativa da negociação — piso 1.024 sempre alcançável (achados codex P1 + Copilot do PR anterior).
