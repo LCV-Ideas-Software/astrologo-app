@@ -227,6 +227,7 @@ vi.mock('./_shared/analysisJobRepository', () => {
     },
     completeAnalysisStep: async (options: {
       stepKey: string;
+      plan: unknown;
       result: unknown;
       inputTokens: number;
       outputTokens: number;
@@ -245,6 +246,7 @@ vi.mock('./_shared/analysisJobRepository', () => {
       runtime.step = completed;
       runtime.job = {
         ...runtime.job,
+        plan_json: JSON.stringify(options.plan),
         completed_steps: Number(runtime.job.completed_steps) + 1,
         input_tokens: Number(runtime.job.input_tokens) + options.inputTokens,
         output_tokens: Number(runtime.job.output_tokens) + options.outputTokens,
@@ -252,6 +254,7 @@ vi.mock('./_shared/analysisJobRepository', () => {
     },
     retryOrFailAnalysisStep: async (options: {
       step: { attempts: number; step_key: string };
+      plan: unknown;
       payload: unknown;
       retryable?: boolean;
       refundAttempt?: boolean;
@@ -260,6 +263,7 @@ vi.mock('./_shared/analysisJobRepository', () => {
     }) => {
       if (!runtime.job) throw new Error('estado ausente');
       runtime.lastRetryOptions = options;
+      runtime.job = { ...runtime.job, plan_json: JSON.stringify(options.plan) };
       const retry = options.refundAttempt === true || (options.retryable !== false && options.step.attempts < 3);
       const index = runtime.steps.findIndex((step) => step.step_key === options.step.step_key);
       if (index < 0) throw new Error('etapa ausente');
@@ -603,6 +607,103 @@ describe('/api/analisar — protocolo reentrante', () => {
       runtime.generateRequests.map((r) => (r.config as { maxOutputTokens?: number } | undefined)?.maxOutputTokens),
     ).toEqual([8_192, 4_096, 6_144, 7_168, 7_680, 7_936, 8_064, 8_000]);
     expect(runtime.step).toMatchObject({ status: 'completed', attempts: 1 });
+  });
+
+  it('descarta o piso da etapa quando uma nova rejeição prova que ele ficou acima do teto', async () => {
+    runtime.model = 'gemini-9.9-ultra';
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    if (!runtime.steps[0]) throw new Error('etapa de teste ausente');
+    runtime.steps[0] = {
+      ...runtime.steps[0],
+      payload_json: JSON.stringify({
+        ...JSON.parse(String(runtime.steps[0].payload_json)),
+        maxOutputTokens: 8_192,
+        outputTokenCeiling: 8_192,
+        outputTokenFloor: 8_192,
+      }),
+    };
+    runtime.outputCapLimit = 4_096;
+
+    const rejected = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    const retryPayload = JSON.parse(String(runtime.steps[0].payload_json)) as Record<string, unknown>;
+
+    expect(rejected.status).toBe(202);
+    expect(retryPayload).toMatchObject({ outputTokenCeiling: 8_191, maxOutputTokens: 4_096 });
+    expect(retryPayload).not.toHaveProperty('outputTokenFloor');
+  });
+
+  it('reutiliza no fragmento seguinte o limite aceito descoberto para o mesmo job e modelo', async () => {
+    runtime.model = 'gemini-9.9-ultra';
+    runtime.totalTokens = 6_001;
+    runtime.outputCapLimit = 8_000;
+    runtime.minimumOutputTokensToStop = 8_000;
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    if (!runtime.job || !runtime.steps[0]) throw new Error('plano particionado de teste ausente');
+    runtime.steps.push({
+      ...runtime.steps[0],
+      step_key: 'fragment:0002',
+      ordinal: 2,
+    });
+    runtime.job = { ...runtime.job, total_steps: Number(runtime.job.total_steps) + 1 };
+
+    for (let i = 0; i < 10 && runtime.steps[0]?.status !== 'completed'; i += 1) {
+      await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    }
+
+    expect(runtime.steps[0]).toMatchObject({ status: 'completed' });
+    expect(runtime.generateCalls).toBe(8);
+    expect(JSON.parse(String(runtime.job.plan_json))).toMatchObject({
+      providerOutputTokenCeiling: 8_063,
+      providerAcceptedOutputTokenLimit: 8_000,
+    });
+
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    expect(runtime.steps[1]).toMatchObject({ status: 'completed' });
+    expect(runtime.generateCalls).toBe(9);
+    expect((runtime.generateRequests.at(-1)?.config as { maxOutputTokens?: number } | undefined)?.maxOutputTokens).toBe(
+      8_000,
+    );
+  });
+
+  it('invalida o limite aceito compartilhado quando o provedor reduz o teto numa etapa posterior', async () => {
+    runtime.model = 'gemini-9.9-ultra';
+    runtime.totalTokens = 6_001;
+    runtime.outputCapLimit = 8_000;
+    runtime.minimumOutputTokensToStop = 8_000;
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    if (!runtime.job || !runtime.steps[0]) throw new Error('plano particionado de teste ausente');
+    runtime.steps.push({
+      ...runtime.steps[0],
+      step_key: 'fragment:0002',
+      ordinal: 2,
+    });
+    runtime.job = { ...runtime.job, total_steps: Number(runtime.job.total_steps) + 1 };
+
+    for (let i = 0; i < 10 && runtime.steps[0]?.status !== 'completed'; i += 1) {
+      await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    }
+    expect(JSON.parse(String(runtime.job.plan_json))).toMatchObject({
+      providerOutputTokenCeiling: 8_063,
+      providerAcceptedOutputTokenLimit: 8_000,
+    });
+
+    runtime.outputCapLimit = 4_096;
+    const rejected = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    const persistedPlan = JSON.parse(String(runtime.job.plan_json)) as Record<string, unknown>;
+
+    expect(rejected.status).toBe(202);
+    expect((runtime.generateRequests.at(-1)?.config as { maxOutputTokens?: number } | undefined)?.maxOutputTokens).toBe(
+      8_000,
+    );
+    expect(persistedPlan).toMatchObject({ providerOutputTokenCeiling: 7_999 });
+    expect(persistedPlan).not.toHaveProperty('providerAcceptedOutputTokenLimit');
   });
 
   it('volta ao orçamento limitado quando o intervalo fecha sem uma resposta completa', async () => {

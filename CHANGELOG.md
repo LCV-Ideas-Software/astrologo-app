@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [v02.25.05] - 10/08/2026
+
+**Limites de saída reaproveitados com segurança entre etapas (achados Copilot e Codex no PR da v02.25.04).**
+
+### Alterado
+
+- O plano persistido do job agora compartilha, somente para o mesmo modelo imutável, o menor teto rejeitado e o maior limite de saída aceito. Fragmentos, reduções e síntese reutilizam essa descoberta, evitando repetir a negociação e reduzindo chamadas e pressão de rate limit.
+- Uma rejeição posterior do provedor invalida automaticamente qualquer limite aceito que tenha ficado acima do novo teto. O piso local obsoleto da etapa também é descartado, permitindo retomar a busca binária sem intervalo contraditório.
+- As atualizações do plano, da etapa e da contabilidade de tokens são gravadas no mesmo lote D1 sob o lease exclusivo do job; planos anteriores permanecem compatíveis porque os novos campos são opcionais.
+
 ## [v02.25.04] - 10/08/2026
 
 **Busca binária do teto real de saída (achado Copilot no PR da v02.25.03).**

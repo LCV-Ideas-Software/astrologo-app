@@ -1378,6 +1378,10 @@ interface PersistedAnalysisJobPlan {
   readonly model: string;
   readonly modelInputTokenLimit: number;
   readonly modelOutputTokenLimit: number;
+  /** Menor limite superior conhecido após uma rejeição do provider. */
+  readonly providerOutputTokenCeiling?: number;
+  /** Maior configuração de saída que o provider já aceitou neste job/model. */
+  readonly providerAcceptedOutputTokenLimit?: number;
   readonly fragmentOutputBudget: number;
   readonly synthesisInputBudget: number;
   readonly inputHash: string;
@@ -1503,6 +1507,14 @@ const loadPersistedJobPlan = (job: AnalysisJobRecord): PersistedAnalysisJobPlan 
     typeof value.model !== 'string' ||
     !Number.isSafeInteger(value.modelInputTokenLimit) ||
     !Number.isSafeInteger(value.modelOutputTokenLimit) ||
+    (value.providerOutputTokenCeiling !== undefined &&
+      (!Number.isSafeInteger(value.providerOutputTokenCeiling) || Number(value.providerOutputTokenCeiling) < 1_024)) ||
+    (value.providerAcceptedOutputTokenLimit !== undefined &&
+      (!Number.isSafeInteger(value.providerAcceptedOutputTokenLimit) ||
+        Number(value.providerAcceptedOutputTokenLimit) < 1_024)) ||
+    (Number.isSafeInteger(value.providerOutputTokenCeiling) &&
+      Number.isSafeInteger(value.providerAcceptedOutputTokenLimit) &&
+      Number(value.providerAcceptedOutputTokenLimit) > Number(value.providerOutputTokenCeiling)) ||
     !Number.isSafeInteger(value.fragmentOutputBudget) ||
     !Number.isSafeInteger(value.synthesisInputBudget) ||
     typeof value.inputHash !== 'string' ||
@@ -1520,6 +1532,12 @@ const loadPersistedJobPlan = (job: AnalysisJobRecord): PersistedAnalysisJobPlan 
   const currentModelProfile = resolveVertexAnalysisModel(persisted.model);
   const modelInputTokenLimit = Math.min(persisted.modelInputTokenLimit, currentModelProfile.inputTokenLimit);
   const modelOutputTokenLimit = Math.min(persisted.modelOutputTokenLimit, currentModelProfile.outputTokenLimit);
+  const providerOutputTokenCeiling = Number.isSafeInteger(persisted.providerOutputTokenCeiling)
+    ? Math.min(Number(persisted.providerOutputTokenCeiling), modelOutputTokenLimit)
+    : undefined;
+  const providerAcceptedOutputTokenLimit = Number.isSafeInteger(persisted.providerAcceptedOutputTokenLimit)
+    ? Math.min(Number(persisted.providerAcceptedOutputTokenLimit), providerOutputTokenCeiling ?? modelOutputTokenLimit)
+    : undefined;
   const fragmentOutputBudget = Math.min(persisted.fragmentOutputBudget, modelOutputTokenLimit);
   const synthesisInputBudget = Math.min(
     persisted.synthesisInputBudget,
@@ -1531,8 +1549,45 @@ const loadPersistedJobPlan = (job: AnalysisJobRecord): PersistedAnalysisJobPlan 
     model: currentModelProfile.model,
     modelInputTokenLimit,
     modelOutputTokenLimit,
+    ...(providerOutputTokenCeiling !== undefined ? { providerOutputTokenCeiling } : {}),
+    ...(providerAcceptedOutputTokenLimit !== undefined ? { providerAcceptedOutputTokenLimit } : {}),
     fragmentOutputBudget,
     synthesisInputBudget,
+  };
+};
+
+const withProviderOutputBounds = (
+  plan: PersistedAnalysisJobPlan,
+  update: {
+    readonly rejectedCeiling?: number;
+    readonly acceptedLimit?: number;
+  },
+): PersistedAnalysisJobPlan => {
+  const nextCeiling = Math.min(
+    plan.providerOutputTokenCeiling ?? plan.modelOutputTokenLimit,
+    update.rejectedCeiling ?? plan.modelOutputTokenLimit,
+  );
+  const currentAccepted =
+    plan.providerAcceptedOutputTokenLimit !== undefined && plan.providerAcceptedOutputTokenLimit <= nextCeiling
+      ? plan.providerAcceptedOutputTokenLimit
+      : undefined;
+  const candidateAccepted =
+    update.acceptedLimit !== undefined && update.acceptedLimit <= nextCeiling ? update.acceptedLimit : undefined;
+  const nextAccepted =
+    currentAccepted === undefined
+      ? candidateAccepted
+      : candidateAccepted === undefined
+        ? currentAccepted
+        : Math.max(currentAccepted, candidateAccepted);
+  const base = { ...plan };
+  delete base.providerOutputTokenCeiling;
+  delete base.providerAcceptedOutputTokenLimit;
+  return {
+    ...base,
+    ...(plan.providerOutputTokenCeiling !== undefined || update.rejectedCeiling !== undefined
+      ? { providerOutputTokenCeiling: nextCeiling }
+      : {}),
+    ...(nextAccepted !== undefined ? { providerAcceptedOutputTokenLimit: nextAccepted } : {}),
   };
 };
 
@@ -1845,6 +1900,15 @@ const executeOneAnalysisStep = async (options: {
   const plan = loadPersistedJobPlan(options.job);
   const packedPlan = plan.packedPlan ? hydratePackedPlan(plan.packedPlan) : undefined;
   const payload = loadStepPayload(options.step);
+  const stepHasOutputBounds =
+    Number.isSafeInteger(payload.outputTokenCeiling) || Number.isSafeInteger(payload.outputTokenFloor);
+  const attemptedMaxOutputTokens = Math.min(
+    payload.maxOutputTokens,
+    plan.providerOutputTokenCeiling ?? plan.modelOutputTokenLimit,
+    !stepHasOutputBounds && Number.isSafeInteger(plan.providerAcceptedOutputTokenLimit)
+      ? Number(plan.providerAcceptedOutputTokenLimit)
+      : plan.modelOutputTokenLimit,
+  );
   const ai = await createGeminiClient(options.env);
   const usageTotals: AiUsageTotals = { inputTokens: 0, outputTokens: 0, thinkingTokens: 0, calls: 0 };
   const startedAt = Date.now();
@@ -1857,7 +1921,7 @@ const executeOneAnalysisStep = async (options: {
         model: plan.model,
         contents: payload.contents,
         ...(payload.systemInstruction ? { systemInstruction: payload.systemInstruction } : {}),
-        initialMaxOutputTokens: payload.maxOutputTokens,
+        initialMaxOutputTokens: attemptedMaxOutputTokens,
         modelOutputTokenLimit: plan.modelOutputTokenLimit,
         usageTotals,
         stage: 'análise integral direta',
@@ -1880,7 +1944,7 @@ const executeOneAnalysisStep = async (options: {
         model: plan.model,
         contents: buildFragmentGenerationInput(fragment),
         systemInstruction: LONG_ANALYSIS_SYSTEM_INSTRUCTION,
-        initialMaxOutputTokens: payload.maxOutputTokens,
+        initialMaxOutputTokens: attemptedMaxOutputTokens,
         modelOutputTokenLimit: plan.modelOutputTokenLimit,
         responseJsonSchema: fragmentResponseSchema(fragment),
         usageTotals,
@@ -1915,7 +1979,7 @@ const executeOneAnalysisStep = async (options: {
           payload.expected,
         ),
         systemInstruction: LONG_ANALYSIS_SYSTEM_INSTRUCTION,
-        initialMaxOutputTokens: payload.maxOutputTokens,
+        initialMaxOutputTokens: attemptedMaxOutputTokens,
         modelOutputTokenLimit: plan.modelOutputTokenLimit,
         responseJsonSchema: reductionResponseSchema(payload.expected),
         usageTotals,
@@ -1947,7 +2011,7 @@ const executeOneAnalysisStep = async (options: {
         model: plan.model,
         contents: buildSynthesisGenerationInput(options.job.fixed_prompt_prefix, packedPlan, payload.sources),
         systemInstruction: LONG_ANALYSIS_SYSTEM_INSTRUCTION,
-        initialMaxOutputTokens: payload.maxOutputTokens,
+        initialMaxOutputTokens: attemptedMaxOutputTokens,
         modelOutputTokenLimit: plan.modelOutputTokenLimit,
         responseJsonSchema: synthesisResponseSchema(),
         usageTotals,
@@ -1970,6 +2034,7 @@ const executeOneAnalysisStep = async (options: {
       jobId: options.job.id,
       leaseOwner: options.leaseOwner,
       stepKey: options.step.step_key,
+      plan: withProviderOutputBounds(plan, { acceptedLimit: attemptedMaxOutputTokens }),
       result,
       inputTokens: usageTotals.inputTokens,
       outputTokens: usageTotals.outputTokens,
@@ -1998,29 +2063,37 @@ const executeOneAnalysisStep = async (options: {
       attemptCause instanceof VertexHttpError &&
       attemptCause.status === 400 &&
       /max_?output_?tokens/iu.test(attemptCause.message) &&
-      payload.maxOutputTokens > 1_024;
-    const hasKnownOutputCeiling = Number.isSafeInteger(payload.outputTokenCeiling);
-    const knownOutputCeiling = hasKnownOutputCeiling
-      ? Math.min(Number(payload.outputTokenCeiling), plan.modelOutputTokenLimit)
-      : plan.modelOutputTokenLimit;
+      attemptedMaxOutputTokens > 1_024;
+    const hasKnownOutputCeiling =
+      Number.isSafeInteger(payload.outputTokenCeiling) || Number.isSafeInteger(plan.providerOutputTokenCeiling);
+    const knownOutputCeiling = Math.min(
+      Number.isSafeInteger(payload.outputTokenCeiling)
+        ? Number(payload.outputTokenCeiling)
+        : plan.modelOutputTokenLimit,
+      plan.providerOutputTokenCeiling ?? plan.modelOutputTokenLimit,
+      plan.modelOutputTokenLimit,
+    );
     const persistedOutputFloor = Number.isSafeInteger(payload.outputTokenFloor)
       ? Number(payload.outputTokenFloor)
       : undefined;
     let retryPayload: PersistedStepPayload = payload;
+    let retryPlan = plan;
     let refundNegotiationProbe = false;
-    if (maxOutputExhausted && payload.maxOutputTokens < knownOutputCeiling) {
-      const acceptedOutputFloor = Math.max(persistedOutputFloor ?? 1_024, payload.maxOutputTokens);
+    if (maxOutputExhausted && attemptedMaxOutputTokens < knownOutputCeiling) {
+      const acceptedOutputFloor = Math.max(persistedOutputFloor ?? 1_024, attemptedMaxOutputTokens);
       const nextMaxOutputTokens = hasKnownOutputCeiling
         ? acceptedOutputFloor + Math.ceil((knownOutputCeiling - acceptedOutputFloor) / 2)
-        : Math.min(knownOutputCeiling, payload.maxOutputTokens * 2);
+        : Math.min(knownOutputCeiling, attemptedMaxOutputTokens * 2);
       retryPayload = {
         ...payload,
+        ...(hasKnownOutputCeiling ? { outputTokenCeiling: knownOutputCeiling } : {}),
         outputTokenFloor: acceptedOutputFloor,
         maxOutputTokens: nextMaxOutputTokens,
       };
-      refundNegotiationProbe = hasKnownOutputCeiling && nextMaxOutputTokens > payload.maxOutputTokens;
+      retryPlan = withProviderOutputBounds(plan, { acceptedLimit: attemptedMaxOutputTokens });
+      refundNegotiationProbe = hasKnownOutputCeiling && nextMaxOutputTokens > attemptedMaxOutputTokens;
     } else if (outputCapRejected) {
-      const rejectedOutputCeiling = Math.min(knownOutputCeiling, payload.maxOutputTokens - 1);
+      const rejectedOutputCeiling = Math.min(knownOutputCeiling, attemptedMaxOutputTokens - 1);
       const acceptedOutputFloor =
         persistedOutputFloor !== undefined &&
         persistedOutputFloor >= 1_024 &&
@@ -2030,11 +2103,13 @@ const executeOneAnalysisStep = async (options: {
       const nextMaxOutputTokens =
         acceptedOutputFloor !== undefined
           ? acceptedOutputFloor + Math.ceil((rejectedOutputCeiling - acceptedOutputFloor) / 2)
-          : Math.min(rejectedOutputCeiling, Math.max(1_024, Math.floor(payload.maxOutputTokens / 2)));
+          : Math.min(rejectedOutputCeiling, Math.max(1_024, Math.floor(attemptedMaxOutputTokens / 2)));
+      const payloadWithoutOutputFloor = { ...payload };
+      delete payloadWithoutOutputFloor.outputTokenFloor;
       retryPayload =
         acceptedOutputFloor === undefined
           ? {
-              ...payload,
+              ...payloadWithoutOutputFloor,
               outputTokenCeiling: rejectedOutputCeiling,
               maxOutputTokens: nextMaxOutputTokens,
             }
@@ -2044,12 +2119,14 @@ const executeOneAnalysisStep = async (options: {
               outputTokenFloor: acceptedOutputFloor,
               maxOutputTokens: nextMaxOutputTokens,
             };
+      retryPlan = withProviderOutputBounds(plan, { rejectedCeiling: rejectedOutputCeiling });
     }
     const retryState = await retryOrFailAnalysisStep({
       db: options.env.BIGDATA_DB,
       jobId: options.job.id,
       leaseOwner: options.leaseOwner,
       step: options.step,
+      plan: retryPlan,
       payload: retryPayload,
       errorCode:
         error instanceof GeminiStepAttemptError
