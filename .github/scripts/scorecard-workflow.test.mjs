@@ -10,7 +10,7 @@ const ZIZMOR_WORKFLOW_URL = new URL("../workflows/zizmor.yml", import.meta.url);
 const SCORECARD_MERGE_GROUP_IMAGE =
   "ghcr.io/ossf/scorecard-action:v2.4.4@sha256:ae5104dd3cc28466ebeb11144354be4cac4b7ff829654f9fab89021d71c46670";
 const CENTRAL_ZIZMOR_V2 =
-  "LCV-Ideas-Software/.github/.github/workflows/zizmor.yml@4058fad11eca7c2eb4e9296108667ef6199a6356 # v2.0.0";
+  "LCV-Ideas-Software/.github/.github/workflows/zizmor.yml@4058fad11eca7c2eb4e9296108667ef6199a6356 # zizmor/v2.0.0";
 
 function namedStep(workflow, name) {
   const lines = workflow.split(/\r?\n/);
@@ -80,7 +80,7 @@ test("Zizmor delegates to the immutable central v2 workflow", async () => {
   const workflow = await readFile(ZIZMOR_WORKFLOW_URL, "utf8");
   assert.equal(
     workflow.match(
-      /LCV-Ideas-Software\/\.github\/\.github\/workflows\/zizmor\.yml@[0-9a-f]{40} # v\d+\.\d+\.\d+/g,
+      /LCV-Ideas-Software\/\.github\/\.github\/workflows\/zizmor\.yml@[0-9a-f]{40} # zizmor\/v\d+\.\d+\.\d+/g,
     )?.[0],
     CENTRAL_ZIZMOR_V2,
   );
