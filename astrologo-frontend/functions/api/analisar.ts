@@ -1392,6 +1392,7 @@ interface DirectStepPayload {
   readonly contents: string;
   readonly systemInstruction?: string;
   readonly maxOutputTokens: number;
+  readonly outputTokenCeiling?: number;
   readonly sourceEvidenceIds: readonly string[];
 }
 
@@ -1399,6 +1400,7 @@ interface FragmentStepPayload {
   readonly kind: 'fragment';
   readonly fragment: Omit<PackedAnalysisFragment, 'units'>;
   readonly maxOutputTokens: number;
+  readonly outputTokenCeiling?: number;
 }
 
 interface ReductionStepPayload {
@@ -1407,12 +1409,14 @@ interface ReductionStepPayload {
   readonly sources: readonly AnalysisSynthesisSource[];
   readonly expected: AnalysisReductionExpectation;
   readonly maxOutputTokens: number;
+  readonly outputTokenCeiling?: number;
 }
 
 interface SynthesisStepPayload {
   readonly kind: 'synthesis';
   readonly sources: readonly AnalysisSynthesisSource[];
   readonly maxOutputTokens: number;
+  readonly outputTokenCeiling?: number;
 }
 
 type PersistedStepPayload = DirectStepPayload | FragmentStepPayload | ReductionStepPayload | SynthesisStepPayload;
@@ -1977,24 +1981,32 @@ const executeOneAnalysisStep = async (options: {
     return { kind: payload.kind, completed: true };
   } catch (error) {
     const detail = describeErrorChain(error, error instanceof GeminiStepAttemptError ? error.finishReason : undefined);
-    // Adaptação descendente: se o modelo (tipicamente fora da tabela validada)
-    // rejeitar o teto atual com 400 de maxOutputTokens, reduz pela metade
-    // (piso 1.024) e mantém a etapa retryable — o teto real é descoberto em
-    // runtime em vez de assumido, e a escalada ascendente de MAX_TOKENS
-    // continua disponível para respostas longas.
+    // Descoberta de teto em runtime: um 400 de maxOutputTokens registra o teto
+    // rejeitado no payload persistido (outputTokenCeiling) e reduz o valor pela
+    // metade (piso 1.024); a escalada ascendente de MAX_TOKENS clampa no teto
+    // lembrado — sem oscilação nem re-tentativa de valor já rejeitado. A
+    // negociação de teto devolve a tentativa consumida (refundAttempt): como o
+    // halving é estritamente decrescente até o piso, o reembolso é finito.
     const attemptCause = error instanceof GeminiStepAttemptError ? error.cause : undefined;
     const outputCapRejected =
       attemptCause instanceof VertexHttpError &&
       attemptCause.status === 400 &&
       /max_?output_?tokens/iu.test(attemptCause.message) &&
       payload.maxOutputTokens > 1_024;
+    const knownOutputCeiling = Number.isSafeInteger(payload.outputTokenCeiling)
+      ? Math.min(Number(payload.outputTokenCeiling), plan.modelOutputTokenLimit)
+      : plan.modelOutputTokenLimit;
     const retryPayload =
       error instanceof GeminiStepAttemptError &&
       error.finishReason === 'MAX_TOKENS' &&
-      payload.maxOutputTokens < plan.modelOutputTokenLimit
-        ? { ...payload, maxOutputTokens: Math.min(plan.modelOutputTokenLimit, payload.maxOutputTokens * 2) }
+      payload.maxOutputTokens < knownOutputCeiling
+        ? { ...payload, maxOutputTokens: Math.min(knownOutputCeiling, payload.maxOutputTokens * 2) }
         : outputCapRejected
-          ? { ...payload, maxOutputTokens: Math.max(1_024, Math.floor(payload.maxOutputTokens / 2)) }
+          ? {
+              ...payload,
+              outputTokenCeiling: Math.min(knownOutputCeiling, payload.maxOutputTokens - 1),
+              maxOutputTokens: Math.max(1_024, Math.floor(payload.maxOutputTokens / 2)),
+            }
           : payload;
     const retryState = await retryOrFailAnalysisStep({
       db: options.env.BIGDATA_DB,
@@ -2009,6 +2021,7 @@ const executeOneAnalysisStep = async (options: {
             : 'AI_PROVIDER_REQUEST_FAILED'
           : 'AI_STEP_INVALID',
       errorDetail: detail,
+      refundAttempt: outputCapRejected,
       retryable:
         !(error instanceof GeminiStepAttemptError) ||
         error.category === 'validation' ||

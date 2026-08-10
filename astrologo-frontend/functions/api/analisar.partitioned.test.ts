@@ -9,6 +9,7 @@ const runtime = vi.hoisted(() => ({
   finishReasons: ['STOP'] as string[],
   totalTokens: 100,
   count404Models: [] as string[],
+  outputCapLimit: null as number | null,
   model: 'gemini-3.1-pro-preview',
   fragmentHtml: '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>',
   synthesisHtml: '',
@@ -51,6 +52,14 @@ vi.mock('./_shared/vertex', () => {
         generateContent: async (request: Record<string, unknown>) => {
           runtime.generateCalls += 1;
           runtime.generateRequests.push(request);
+          const requestedMax = (request.config as { maxOutputTokens?: number } | undefined)?.maxOutputTokens ?? 0;
+          if (runtime.outputCapLimit !== null && requestedMax > runtime.outputCapLimit) {
+            throw new MockVertexHttpError(
+              `Vertex generateContent falhou (HTTP 400): GenerateContentRequest.generation_config.max_output_tokens must be within limits`,
+              400,
+              'generateContent',
+            );
+          }
           const generateError = runtime.generateErrors.shift();
           if (generateError) throw generateError;
           const config = request.config as
@@ -238,16 +247,21 @@ vi.mock('./_shared/analysisJobRepository', () => {
       step: { attempts: number; step_key: string };
       payload: unknown;
       retryable?: boolean;
+      refundAttempt?: boolean;
       errorCode: string;
       errorDetail: string;
     }) => {
       if (!runtime.job) throw new Error('estado ausente');
       runtime.lastRetryOptions = options;
-      const retry = options.retryable !== false && options.step.attempts < 3;
+      const retry = options.refundAttempt === true || (options.retryable !== false && options.step.attempts < 3);
       const index = runtime.steps.findIndex((step) => step.step_key === options.step.step_key);
       if (index < 0) throw new Error('etapa ausente');
       const retried = {
         ...runtime.steps[index],
+        attempts:
+          options.refundAttempt === true
+            ? Math.max(0, Number(runtime.steps[index]?.attempts) - 1)
+            : Number(runtime.steps[index]?.attempts),
         status: retry ? 'pending' : 'failed',
         payload_json: JSON.stringify(options.payload),
         error_code: options.errorCode,
@@ -381,6 +395,7 @@ beforeEach(() => {
   runtime.finishReasons = ['STOP'];
   runtime.totalTokens = 100;
   runtime.count404Models = [];
+  runtime.outputCapLimit = null;
   runtime.model = 'gemini-3.1-pro-preview';
   runtime.fragmentHtml = '<h2>Parte validada</h2><p>Análise fragmentada em português do Brasil.</p>';
   runtime.directHtml =
@@ -517,6 +532,47 @@ describe('/api/analisar — protocolo reentrante', () => {
     expect((runtime.generateRequests[1] as { config?: { maxOutputTokens?: number } }).config?.maxOutputTokens).toBe(
       4_096,
     );
+  });
+
+  it('a negociação de teto não consome o orçamento de tentativas: alcança o piso de 1.024 e completa', async () => {
+    runtime.model = 'gemini-9.9-ultra';
+    runtime.outputCapLimit = 1_024;
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    let final: Response | null = null;
+    for (let i = 0; i < 4; i += 1) {
+      final = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+      if (final.status === 200) break;
+      expect(final.status).toBe(202);
+    }
+
+    expect(final?.status).toBe(200);
+    expect(
+      runtime.generateRequests.map((r) => (r.config as { maxOutputTokens?: number } | undefined)?.maxOutputTokens),
+    ).toEqual([8_192, 4_096, 2_048, 1_024]);
+  });
+
+  it('lembra o teto rejeitado: a escalada seguinte clampa abaixo dele em vez de oscilar', async () => {
+    runtime.model = 'gemini-9.9-ultra';
+    runtime.outputCapLimit = 16_383;
+    runtime.finishReasons = ['MAX_TOKENS', 'MAX_TOKENS', 'STOP'];
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+
+    let final: Response | null = null;
+    for (let i = 0; i < 4; i += 1) {
+      final = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+      if (final.status === 200) break;
+      expect(final.status).toBe(202);
+    }
+
+    expect(final?.status).toBe(200);
+    expect(
+      runtime.generateRequests.map((r) => (r.config as { maxOutputTokens?: number } | undefined)?.maxOutputTokens),
+    ).toEqual([8_192, 16_384, 8_192, 16_383]);
   });
 
   it('transforma cada tentativa em uma nova requisição e nunca repete dentro do mesmo avanço', async () => {

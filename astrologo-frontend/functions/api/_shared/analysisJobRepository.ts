@@ -356,10 +356,14 @@ export const retryOrFailAnalysisStep = async (options: {
   readonly errorCode: string;
   readonly errorDetail: string;
   readonly retryable?: boolean;
+  /** Negociação de teto de saída: devolve a tentativa consumida pelo claim —
+   * a repetição não conta no orçamento de 3 tentativas. Finita por construção
+   * (o caller só a usa com valores estritamente decrescentes até o piso). */
+  readonly refundAttempt?: boolean;
   readonly inputTokens: number;
   readonly outputTokens: number;
 }): Promise<'retry' | 'failed'> => {
-  const retry = options.retryable !== false && options.step.attempts < 3;
+  const retry = options.refundAttempt === true || (options.retryable !== false && options.step.attempts < 3);
   const batch = requireBatch(options.db);
   const statements = [
     assertJobLeaseStatement(options.db, options.jobId, options.leaseOwner),
@@ -368,6 +372,7 @@ export const retryOrFailAnalysisStep = async (options: {
       .prepare(
         `UPDATE astrologo_ai_analysis_steps
          SET status = ?, payload_json = ?, lease_owner = NULL, lease_expires_at = NULL,
+             attempts = MAX(attempts - ?, 0),
              input_tokens = input_tokens + ?, output_tokens = output_tokens + ?,
              error_code = ?, error_detail = ?, updated_at = datetime('now')
          WHERE job_id = ? AND step_key = ? AND status = 'running' AND lease_owner = ?`,
@@ -375,6 +380,7 @@ export const retryOrFailAnalysisStep = async (options: {
       .bind(
         retry ? 'pending' : 'failed',
         serializeJson(options.payload, `Payload de repetição ${options.step.step_key}`),
+        options.refundAttempt === true ? 1 : 0,
         options.inputTokens,
         options.outputTokens,
         options.errorCode,

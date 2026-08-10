@@ -1,5 +1,8 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.25.03] - 2026-08-09
+
+- Negociação de teto fora do orçamento: `outputTokenCeiling` persistido no payload clampa a escalada (sem oscilação) e o refund devolve a tentativa da negociação — piso 1.024 sempre alcançável (achados codex P1 + Copilot do PR anterior).
 ## [v02.25.02] - 2026-08-09
 
 - Headroom de saída restaurado para modelos fora da tabela (65.535) e auto-recuperação descendente no 400 de `maxOutputTokens` (metade, piso 1.024) no retry da etapa; substitui a garantia absoluta da v02.25.01 por recuperação documentada.
