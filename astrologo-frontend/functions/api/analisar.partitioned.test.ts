@@ -670,6 +670,56 @@ describe('/api/analisar — protocolo reentrante', () => {
     );
   });
 
+  it('promove o teto legado da etapa para o plano antes de reutilizá-lo no fragmento seguinte', async () => {
+    runtime.model = 'gemini-9.9-ultra';
+    runtime.totalTokens = 6_001;
+    runtime.outputCapLimit = 8_063;
+    runtime.minimumOutputTokensToStop = 8_032;
+
+    await onRequestPost(context({ action: 'start', id: MAP_ID }));
+    await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    if (!runtime.job || !runtime.steps[0]) throw new Error('plano particionado de teste ausente');
+    runtime.steps.push({
+      ...runtime.steps[0],
+      step_key: 'fragment:0002',
+      ordinal: 2,
+    });
+    runtime.steps[0] = {
+      ...runtime.steps[0],
+      payload_json: JSON.stringify({
+        ...JSON.parse(String(runtime.steps[0].payload_json)),
+        maxOutputTokens: 8_000,
+        outputTokenCeiling: 8_063,
+        outputTokenFloor: 8_000,
+      }),
+    };
+    runtime.job = { ...runtime.job, total_steps: Number(runtime.job.total_steps) + 1 };
+
+    for (let i = 0; i < 4 && runtime.steps[0]?.status !== 'completed'; i += 1) {
+      await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    }
+
+    expect(runtime.steps[0]).toMatchObject({ status: 'completed' });
+    expect(JSON.parse(String(runtime.job.plan_json))).toMatchObject({
+      providerOutputTokenCeiling: 8_063,
+      providerAcceptedOutputTokenLimit: 8_032,
+    });
+
+    runtime.minimumOutputTokensToStop = 8_063;
+    const retried = await onRequestPost(context({ action: 'advance', jobId: JOB_ID, capability: CAPABILITY }));
+    const retryPayload = JSON.parse(String(runtime.steps[1]?.payload_json)) as Record<string, unknown>;
+
+    expect(retried.status).toBe(202);
+    expect((runtime.generateRequests.at(-1)?.config as { maxOutputTokens?: number } | undefined)?.maxOutputTokens).toBe(
+      8_032,
+    );
+    expect(retryPayload).toMatchObject({
+      outputTokenCeiling: 8_063,
+      outputTokenFloor: 8_032,
+      maxOutputTokens: 8_048,
+    });
+  });
+
   it('invalida o limite aceito compartilhado quando o provedor reduz o teto numa etapa posterior', async () => {
     runtime.model = 'gemini-9.9-ultra';
     runtime.totalTokens = 6_001;

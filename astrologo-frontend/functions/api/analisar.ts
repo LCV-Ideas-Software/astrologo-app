@@ -1900,6 +1900,9 @@ const executeOneAnalysisStep = async (options: {
   const plan = loadPersistedJobPlan(options.job);
   const packedPlan = plan.packedPlan ? hydratePackedPlan(plan.packedPlan) : undefined;
   const payload = loadStepPayload(options.step);
+  const persistedOutputCeiling = Number.isSafeInteger(payload.outputTokenCeiling)
+    ? Math.min(Number(payload.outputTokenCeiling), plan.modelOutputTokenLimit)
+    : undefined;
   const stepHasOutputBounds =
     Number.isSafeInteger(payload.outputTokenCeiling) || Number.isSafeInteger(payload.outputTokenFloor);
   const attemptedMaxOutputTokens = Math.min(
@@ -2034,7 +2037,10 @@ const executeOneAnalysisStep = async (options: {
       jobId: options.job.id,
       leaseOwner: options.leaseOwner,
       stepKey: options.step.step_key,
-      plan: withProviderOutputBounds(plan, { acceptedLimit: attemptedMaxOutputTokens }),
+      plan: withProviderOutputBounds(plan, {
+        ...(persistedOutputCeiling !== undefined ? { rejectedCeiling: persistedOutputCeiling } : {}),
+        acceptedLimit: attemptedMaxOutputTokens,
+      }),
       result,
       inputTokens: usageTotals.inputTokens,
       outputTokens: usageTotals.outputTokens,
@@ -2090,7 +2096,10 @@ const executeOneAnalysisStep = async (options: {
         outputTokenFloor: acceptedOutputFloor,
         maxOutputTokens: nextMaxOutputTokens,
       };
-      retryPlan = withProviderOutputBounds(plan, { acceptedLimit: attemptedMaxOutputTokens });
+      retryPlan = withProviderOutputBounds(plan, {
+        ...(persistedOutputCeiling !== undefined ? { rejectedCeiling: persistedOutputCeiling } : {}),
+        acceptedLimit: attemptedMaxOutputTokens,
+      });
       refundNegotiationProbe = hasKnownOutputCeiling && nextMaxOutputTokens > attemptedMaxOutputTokens;
     } else if (outputCapRejected) {
       const rejectedOutputCeiling = Math.min(knownOutputCeiling, attemptedMaxOutputTokens - 1);
