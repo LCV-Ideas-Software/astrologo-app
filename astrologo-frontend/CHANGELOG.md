@@ -1,5 +1,9 @@
 # Changelog — Astrólogo Frontend
 
+## [v02.25.05] - 10/08/2026
+
+- O teto rejeitado e o limite aceito pelo provedor passam a ser persistidos por job/modelo e reutilizados entre fragmentos, reduções e síntese; uma rejeição posterior invalida limites e pisos obsoletos, evitando chamadas repetidas sem tornar o teto permanente (achados Copilot e Codex do PR anterior).
+
 ## [v02.25.04] - 10/08/2026
 
 - A negociação de `maxOutputTokens` persiste o último valor aceito e o limite superior derivado das rejeições e converge por busca binária, evitando oscilação e esgotamento de tentativas em tetos não adjacentes, como 8.000 tokens (achado Copilot do PR anterior).

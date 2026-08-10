@@ -19,12 +19,13 @@ Currently, two official plugins are available:
 
 ## Change History
 
-**Status.** Stable. Current release: **v02.25.04**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.25.05**. See [CHANGELOG.md](../CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release     | Notes                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v02.25.05` | Persiste e reutiliza os limites de saída aceitos pelo provedor entre etapas do mesmo job/modelo e invalida limites ou pisos que uma rejeição posterior torne obsoletos. |
 | `v02.25.04` | Busca binária do teto real de saída: o último valor aceito e o limite superior derivado das rejeições delimitam a negociação de `maxOutputTokens`, sem oscilação nem consumo indevido das tentativas funcionais. |
 | `v02.25.03` | Negociação de teto fora do orçamento de tentativas: teto rejeitado lembrado no payload (escalada clampa nele) e tentativa devolvida no refund — piso 1.024 sempre alcançável. |
 | `v02.25.02` | Headroom de saída restaurado para modelos fora da tabela (65.535) com auto-recuperação descendente no 400 de `maxOutputTokens` (metade, piso 1.024) no retry da etapa. |

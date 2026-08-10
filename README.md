@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.25.04**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.25.05**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.25.05`**                      | **Limites reaproveitados entre etapas.** O job persiste o teto rejeitado e o maior limite aceito pelo provedor para o mesmo modelo, reutiliza a descoberta nos fragmentos seguintes e invalida automaticamente limites ou pisos que uma rejeição posterior torne obsoletos.                                                                                       |
 | **`v02.25.04`**                      | **Busca binária do teto real de saída.** O último valor aceito e o limite superior derivado das rejeições delimitam a negociação de `maxOutputTokens`, que converge sem oscilar nem consumir o orçamento funcional em modelos com limites não adjacentes, como 8.000 tokens.                                                                                            |
 | **`v02.25.03`**                      | **Negociação de teto fora do orçamento.** O 400 de `maxOutputTokens` registra o teto rejeitado no payload (a escalada clampa nele, sem oscilar) e devolve a tentativa consumida — o piso de 1.024 é sempre alcançável.                                                                                                                               |
 | **`v02.25.02`**                      | **Adaptação de teto em runtime.** Modelos fora da tabela voltam a ter headroom de saída (65.535) e o 400 de `maxOutputTokens` passa a ser auto-recuperado por redução pela metade (piso 1.024) no retry da etapa — o teto real é descoberto, não assumido.                                                                                            |

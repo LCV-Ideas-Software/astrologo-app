@@ -310,6 +310,7 @@ export const completeAnalysisStep = async (options: {
   readonly jobId: string;
   readonly leaseOwner: string;
   readonly stepKey: string;
+  readonly plan: unknown;
   readonly result: unknown;
   readonly inputTokens: number;
   readonly outputTokens: number;
@@ -338,12 +339,18 @@ export const completeAnalysisStep = async (options: {
     options.db
       .prepare(
         `UPDATE astrologo_ai_analysis_jobs
-         SET completed_steps = completed_steps + 1,
+         SET plan_json = ?, completed_steps = completed_steps + 1,
              input_tokens = input_tokens + ?, output_tokens = output_tokens + ?,
              updated_at = datetime('now')
          WHERE id = ? AND lease_owner = ?`,
       )
-      .bind(options.inputTokens, options.outputTokens, options.jobId, options.leaseOwner),
+      .bind(
+        serializeJson(options.plan, 'Plano após conclusão da etapa'),
+        options.inputTokens,
+        options.outputTokens,
+        options.jobId,
+        options.leaseOwner,
+      ),
   ]);
 };
 
@@ -352,6 +359,7 @@ export const retryOrFailAnalysisStep = async (options: {
   readonly jobId: string;
   readonly leaseOwner: string;
   readonly step: AnalysisStepRecord;
+  readonly plan: unknown;
   readonly payload: unknown;
   readonly errorCode: string;
   readonly errorDetail: string;
@@ -394,10 +402,17 @@ export const retryOrFailAnalysisStep = async (options: {
     options.db
       .prepare(
         `UPDATE astrologo_ai_analysis_jobs
-         SET input_tokens = input_tokens + ?, output_tokens = output_tokens + ?, updated_at = datetime('now')
+         SET plan_json = ?, input_tokens = input_tokens + ?, output_tokens = output_tokens + ?,
+             updated_at = datetime('now')
          WHERE id = ? AND lease_owner = ?`,
       )
-      .bind(options.inputTokens, options.outputTokens, options.jobId, options.leaseOwner),
+      .bind(
+        serializeJson(options.plan, 'Plano após tentativa da etapa'),
+        options.inputTokens,
+        options.outputTokens,
+        options.jobId,
+        options.leaseOwner,
+      ),
   );
   if (!retry) {
     statements.push(
