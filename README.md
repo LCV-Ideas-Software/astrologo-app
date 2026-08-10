@@ -15,12 +15,13 @@
 
 **Astrólogo** — gerador de mapas astrais e análises esotéricas via integração Gemini AI. React 19 + Vite 8 sobre Cloudflare Pages com D1 backing store.
 
-**Status.** Stable. Current release: **v02.25.02**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+**Status.** Stable. Current release: **v02.25.03**. See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
 
 The version history at a glance:
 
 | Release                              | Scope                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`v02.25.03`**                      | **Negociação de teto fora do orçamento.** O 400 de `maxOutputTokens` registra o teto rejeitado no payload (a escalada clampa nele, sem oscilar) e devolve a tentativa consumida — o piso de 1.024 é sempre alcançável.                                                                                                                               |
 | **`v02.25.02`**                      | **Adaptação de teto em runtime.** Modelos fora da tabela voltam a ter headroom de saída (65.535) e o 400 de `maxOutputTokens` passa a ser auto-recuperado por redução pela metade (piso 1.024) no retry da etapa — o teto real é descoberto, não assumido.                                                                                            |
 | **`v02.25.01`**                      | **Hardening pós-review.** Teto conservador de saída para modelos fora da tabela cai para 8.192 (request inicial), lockfile realinhado e changelog paralelo sincronizado.                                                                                                                                                                              |
 | **`v02.25.00`**                      | **Seletor de modelos sempre respeitado.** A tabela de capacidades deixa de gatear a seleção: o ID do seletor do admin é usado como configurado e o fallback para o padrão ocorre apenas quando o Vertex responde 404 para o modelo selecionado; `gemini-3.6-flash` entra na tabela validada.                                                          |

@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [v02.25.03] - 2026-08-09
+
+**Negociação de teto fora do orçamento de tentativas (achados codex P1 + Copilot no PR da v02.25.02).**
+
+### Alterado
+
+- O 400 de `maxOutputTokens` agora registra o teto rejeitado no payload persistido (`outputTokenCeiling`) e a escalada de `MAX_TOKENS` clampa nele — sem oscilação nem re-tentativa de valor já rejeitado (achado Copilot: 8.192↔16.384).
+- A negociação de teto devolve a tentativa consumida (`refundAttempt` no repositório de etapas): a redução até o piso de 1.024 não consome o orçamento de 3 tentativas, que fica reservado para falhas reais (achado codex P1: modelos com teto 1.024 esgotavam o orçamento em 8.192→4.096→2.048 e falhavam antes do piso). O reembolso é finito por construção — o halving é estritamente decrescente.
+
 ## [v02.25.02] - 2026-08-09
 
 **Adaptação de teto em runtime (achados codex P1 + Copilot no PR da v02.25.01).**
