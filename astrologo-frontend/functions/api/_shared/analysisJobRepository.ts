@@ -358,7 +358,7 @@ export const retryOrFailAnalysisStep = async (options: {
   readonly retryable?: boolean;
   /** Negociação de teto de saída: devolve a tentativa consumida pelo claim —
    * a repetição não conta no orçamento de 3 tentativas. Finita por construção
-   * (o caller só a usa com valores estritamente decrescentes até o piso). */
+   * (o caller só a usa quando o intervalo conhecido diminui estritamente). */
   readonly refundAttempt?: boolean;
   readonly inputTokens: number;
   readonly outputTokens: number;

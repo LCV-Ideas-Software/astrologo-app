@@ -1393,6 +1393,7 @@ interface DirectStepPayload {
   readonly systemInstruction?: string;
   readonly maxOutputTokens: number;
   readonly outputTokenCeiling?: number;
+  readonly outputTokenFloor?: number;
   readonly sourceEvidenceIds: readonly string[];
 }
 
@@ -1401,6 +1402,7 @@ interface FragmentStepPayload {
   readonly fragment: Omit<PackedAnalysisFragment, 'units'>;
   readonly maxOutputTokens: number;
   readonly outputTokenCeiling?: number;
+  readonly outputTokenFloor?: number;
 }
 
 interface ReductionStepPayload {
@@ -1410,6 +1412,7 @@ interface ReductionStepPayload {
   readonly expected: AnalysisReductionExpectation;
   readonly maxOutputTokens: number;
   readonly outputTokenCeiling?: number;
+  readonly outputTokenFloor?: number;
 }
 
 interface SynthesisStepPayload {
@@ -1417,6 +1420,7 @@ interface SynthesisStepPayload {
   readonly sources: readonly AnalysisSynthesisSource[];
   readonly maxOutputTokens: number;
   readonly outputTokenCeiling?: number;
+  readonly outputTokenFloor?: number;
 }
 
 type PersistedStepPayload = DirectStepPayload | FragmentStepPayload | ReductionStepPayload | SynthesisStepPayload;
@@ -1982,32 +1986,65 @@ const executeOneAnalysisStep = async (options: {
   } catch (error) {
     const detail = describeErrorChain(error, error instanceof GeminiStepAttemptError ? error.finishReason : undefined);
     // Descoberta de teto em runtime: um 400 de maxOutputTokens registra o teto
-    // rejeitado no payload persistido (outputTokenCeiling) e reduz o valor pela
-    // metade (piso 1.024); a escalada ascendente de MAX_TOKENS clampa no teto
-    // lembrado — sem oscilação nem re-tentativa de valor já rejeitado. A
-    // negociação de teto devolve a tentativa consumida (refundAttempt): como o
-    // halving é estritamente decrescente até o piso, o reembolso é finito.
+    // rejeitado no payload persistido (outputTokenCeiling). Um MAX_TOKENS prova
+    // que o valor atual foi aceito pelo provider e o guarda como limite inferior
+    // (outputTokenFloor). Depois da primeira rejeição, os próximos probes usam
+    // busca binária nesse intervalo, sem repetir valores. Probes que estreitam o
+    // intervalo devolvem a tentativa consumida; quando não há mais avanço
+    // possível, o retry funcional volta a ser limitado pelo orçamento normal.
     const attemptCause = error instanceof GeminiStepAttemptError ? error.cause : undefined;
+    const maxOutputExhausted = error instanceof GeminiStepAttemptError && error.finishReason === 'MAX_TOKENS';
     const outputCapRejected =
       attemptCause instanceof VertexHttpError &&
       attemptCause.status === 400 &&
       /max_?output_?tokens/iu.test(attemptCause.message) &&
       payload.maxOutputTokens > 1_024;
-    const knownOutputCeiling = Number.isSafeInteger(payload.outputTokenCeiling)
+    const hasKnownOutputCeiling = Number.isSafeInteger(payload.outputTokenCeiling);
+    const knownOutputCeiling = hasKnownOutputCeiling
       ? Math.min(Number(payload.outputTokenCeiling), plan.modelOutputTokenLimit)
       : plan.modelOutputTokenLimit;
-    const retryPayload =
-      error instanceof GeminiStepAttemptError &&
-      error.finishReason === 'MAX_TOKENS' &&
-      payload.maxOutputTokens < knownOutputCeiling
-        ? { ...payload, maxOutputTokens: Math.min(knownOutputCeiling, payload.maxOutputTokens * 2) }
-        : outputCapRejected
+    const persistedOutputFloor = Number.isSafeInteger(payload.outputTokenFloor)
+      ? Number(payload.outputTokenFloor)
+      : undefined;
+    let retryPayload: PersistedStepPayload = payload;
+    let refundNegotiationProbe = false;
+    if (maxOutputExhausted && payload.maxOutputTokens < knownOutputCeiling) {
+      const acceptedOutputFloor = Math.max(persistedOutputFloor ?? 1_024, payload.maxOutputTokens);
+      const nextMaxOutputTokens = hasKnownOutputCeiling
+        ? acceptedOutputFloor + Math.ceil((knownOutputCeiling - acceptedOutputFloor) / 2)
+        : Math.min(knownOutputCeiling, payload.maxOutputTokens * 2);
+      retryPayload = {
+        ...payload,
+        outputTokenFloor: acceptedOutputFloor,
+        maxOutputTokens: nextMaxOutputTokens,
+      };
+      refundNegotiationProbe = hasKnownOutputCeiling && nextMaxOutputTokens > payload.maxOutputTokens;
+    } else if (outputCapRejected) {
+      const rejectedOutputCeiling = Math.min(knownOutputCeiling, payload.maxOutputTokens - 1);
+      const acceptedOutputFloor =
+        persistedOutputFloor !== undefined &&
+        persistedOutputFloor >= 1_024 &&
+        persistedOutputFloor <= rejectedOutputCeiling
+          ? persistedOutputFloor
+          : undefined;
+      const nextMaxOutputTokens =
+        acceptedOutputFloor !== undefined
+          ? acceptedOutputFloor + Math.ceil((rejectedOutputCeiling - acceptedOutputFloor) / 2)
+          : Math.min(rejectedOutputCeiling, Math.max(1_024, Math.floor(payload.maxOutputTokens / 2)));
+      retryPayload =
+        acceptedOutputFloor === undefined
           ? {
               ...payload,
-              outputTokenCeiling: Math.min(knownOutputCeiling, payload.maxOutputTokens - 1),
-              maxOutputTokens: Math.max(1_024, Math.floor(payload.maxOutputTokens / 2)),
+              outputTokenCeiling: rejectedOutputCeiling,
+              maxOutputTokens: nextMaxOutputTokens,
             }
-          : payload;
+          : {
+              ...payload,
+              outputTokenCeiling: rejectedOutputCeiling,
+              outputTokenFloor: acceptedOutputFloor,
+              maxOutputTokens: nextMaxOutputTokens,
+            };
+    }
     const retryState = await retryOrFailAnalysisStep({
       db: options.env.BIGDATA_DB,
       jobId: options.job.id,
@@ -2021,7 +2058,7 @@ const executeOneAnalysisStep = async (options: {
             : 'AI_PROVIDER_REQUEST_FAILED'
           : 'AI_STEP_INVALID',
       errorDetail: detail,
-      refundAttempt: outputCapRejected,
+      refundAttempt: outputCapRejected || refundNegotiationProbe,
       retryable:
         !(error instanceof GeminiStepAttemptError) ||
         error.category === 'validation' ||
