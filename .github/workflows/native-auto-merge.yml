@@ -1,67 +1,66 @@
-name: Native Auto-merge
+name: Trusted Dependency Review
 
 on:
-  workflow_run:
-    workflows:
-      - CodeQL
-    types:
-      - completed
   pull_request_target:
+    branches:
+      - main
     types:
-      - review_requested
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - edited
 
 permissions: write-all
 
 concurrency:
-  group: native-auto-merge-${{ github.repository }}-${{ github.event.workflow_run.id || github.run_id }}
-  cancel-in-progress: false
+  group: trusted-dependency-review-${{ github.repository }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
-  enable:
-    name: Enable native auto-merge
-    if: >-
-      ${{
-        (
-          github.event_name == 'workflow_run' &&
-          github.event.workflow_run.event == 'pull_request'
-        ) ||
-        (
-          github.event_name == 'pull_request_target' &&
-          github.event.action == 'review_requested' &&
-          github.event.requested_reviewer.id == 175728472 &&
-          github.event.pull_request.base.ref == 'main' &&
-          github.event.pull_request.head.repo.full_name == github.repository
-        )
-      }}
+  dependency_review:
+    name: Dependency Review
     runs-on: ubuntu-latest
-    permissions: write-all
-    environment: dependabot-automation
-    timeout-minutes: 30
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read # Re-read the bound pull request before and after Git tree inspection.
     steps:
-      - name: Enable GitHub native auto-merge
-        if: ${{ github.event_name == 'workflow_run' }}
-        uses: LCV-Ideas-Software/.github/native-auto-merge@231cd33f27c260a6b01fec26aa1d0eb606e1ee2d # native-auto-merge/v2.1.4
+      - name: Check out the trusted base revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          automation_token: ${{ secrets.LCV_AUTOMATION_TOKEN }}
-          event_repository: ${{ github.event.repository.full_name }}
-          workflow_name: ${{ github.event.workflow_run.name }}
-          workflow_path: ${{ github.event.workflow_run.path }}
-          workflow_display_title: ${{ github.event.workflow_run.display_title }}
-          workflow_status: ${{ github.event.workflow_run.status }}
-          workflow_event: ${{ github.event.workflow_run.event }}
-          workflow_head_sha: ${{ github.event.workflow_run.head_sha }}
-          workflow_actor_id: ${{ github.event.workflow_run.actor.id }}
-          workflow_pull_requests: ${{ toJSON(github.event.workflow_run.pull_requests) }}
-      - name: Reconcile requested Copilot review
-        if: ${{ github.event_name == 'pull_request_target' }}
-        uses: LCV-Ideas-Software/.github/native-auto-merge@231cd33f27c260a6b01fec26aa1d0eb606e1ee2d # native-auto-merge/v2.1.4
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Inspect the candidate as immutable Git data
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TARGET_REPOSITORY: ${{ github.repository }}
+          PULL_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node .github/scripts/trusted-dependency-review.mjs
+
+      - name: Review pull request dependencies
+        id: dependency-review
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
-          automation_token: ${{ secrets.LCV_AUTOMATION_TOKEN }}
-          event_repository: ${{ github.event.repository.full_name }}
-          event_action: ${{ github.event.action }}
-          pull_number: ${{ github.event.pull_request.number }}
-          pull_head_sha: ${{ github.event.pull_request.head.sha }}
-          pull_head_repository: ${{ github.event.pull_request.head.repo.full_name }}
-          pull_base_ref: ${{ github.event.pull_request.base.ref }}
-          requested_reviewer_id: ${{ github.event.requested_reviewer.id }}
-          trigger_run_id: ${{ github.run_id }}
+          base-ref: ${{ github.event.pull_request.base.sha }}
+          head-ref: ${{ github.event.pull_request.head.sha }}
+          fail-on-severity: low
+          fail-on-scopes: runtime, development, unknown
+          retry-on-snapshot-warnings: true
+          retry-on-snapshot-warnings-timeout: 3600
+
+      - name: Require a complete stable dependency comparison
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TARGET_REPOSITORY: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DEPENDENCY_CHANGES: ${{ steps.dependency-review.outputs.dependency-changes }}
+        run: >-
+          node .github/scripts/trusted-dependency-review.mjs
+          --dependency-review-output

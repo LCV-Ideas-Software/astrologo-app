@@ -22,8 +22,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Test native auto-merge workflow boundaries
-        run: node --test .github/scripts/native-auto-merge-workflows.regression.mjs
+      - name: Test trusted dependency review bootstrap
+        run: node --test .github/scripts/trusted-dependency-review.test.mjs
 
   candidate_review:
     permissions: write-all

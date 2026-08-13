@@ -26,6 +26,13 @@ Warn: 'up-to-date branches' is disabled on branch 'main'
 Click Remediation section below to solve this issue`;
 const CII_BEST_PRACTICES_MESSAGE =
   "score is 0: no effort to earn an OpenSSF best practices badge detected\nClick Remediation section below to solve this issue";
+const TRUSTED_BASE_CHECKOUT_MESSAGE = `score is 0: untrusted code checkout '\${{ github.event.pull_request.base.sha }}'
+Remediation tip: Avoid the dangerous workflow patterns.
+See [this post](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) for information on avoiding untrusted code checkouts.
+Click Remediation section below for further remediation help`;
+const TRUSTED_BASE_CHECKOUT_LOCATION_MESSAGE = `untrusted code checkout '\${{ github.event.pull_request.base.sha }}'
+Remediation tip: Avoid the dangerous workflow patterns.
+See [this post](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) for information on avoiding untrusted code checkouts.`;
 
 function finding(ruleId, { path, snippet, message } = {}) {
   return {
@@ -58,6 +65,30 @@ function repositoryPolicyFinding(ruleId, message, ruleIndex = 0) {
           },
           region: { startLine: 1 },
         },
+      },
+    ],
+  };
+}
+
+function trustedBaseCheckoutFinding() {
+  return {
+    ruleId: "DangerousWorkflowID",
+    ruleIndex: 3,
+    message: { text: TRUSTED_BASE_CHECKOUT_MESSAGE },
+    locations: [
+      {
+        physicalLocation: {
+          region: {
+            startLine: 29,
+            endLine: 29,
+            snippet: { text: "${{ github.event.pull_request.base.sha }}" },
+          },
+          artifactLocation: {
+            uri: ".github/workflows/native-auto-merge.yml",
+            uriBaseId: "%SRCROOT%",
+          },
+        },
+        message: { text: TRUSTED_BASE_CHECKOUT_LOCATION_MESSAGE },
       },
     ],
   };
@@ -142,6 +173,43 @@ test("accepts only the intentional repository-policy signatures", () => {
       ),
       true,
     );
+  }
+});
+
+test("accepts only the exact trusted-base checkout false positive", () => {
+  const exact = trustedBaseCheckoutFinding();
+  assert.equal(isApprovedFinding(exact), true);
+  const reorderedRules = structuredClone(exact);
+  reorderedRules.ruleIndex = 4;
+  assert.equal(isApprovedFinding(reorderedRules), true);
+
+  const mutations = [
+    (result) => (result.ruleIndex = -1),
+    (result) => (result.ruleIndex = 0.5),
+    (result) => (result.ruleIndex = Number.MAX_SAFE_INTEGER + 1),
+    (result) => delete result.ruleIndex,
+    (result) =>
+      (result.message.text = result.message.text.replace(
+        "base.sha",
+        "head.sha",
+      )),
+    (result) =>
+      (result.locations[0].physicalLocation.artifactLocation.uri =
+        ".github/workflows/dependency-review.yml"),
+    (result) => (result.locations[0].physicalLocation.region.startLine = 30),
+    (result) => (result.locations[0].physicalLocation.region.endLine = 30),
+    (result) =>
+      (result.locations[0].physicalLocation.region.snippet.text =
+        "${{ github.event.pull_request.head.sha }}"),
+    (result) =>
+      (result.locations[0].message.text = `${result.locations[0].message.text} altered`),
+    (result) => (result.locations[0].physicalLocation.region.extra = true),
+    (result) => result.locations.push(structuredClone(result.locations[0])),
+  ];
+  for (const mutate of mutations) {
+    const changed = structuredClone(exact);
+    mutate(changed);
+    assert.equal(isApprovedFinding(changed), false);
   }
 });
 
