@@ -20,6 +20,13 @@ const CODE_REVIEW_MESSAGE =
   /^score is 0: Found 0\/[1-9]\d* approved changesets -- score normalized to 0\nClick Remediation section below to solve this issue$/;
 const CII_BEST_PRACTICES_MESSAGE =
   "score is 0: no effort to earn an OpenSSF best practices badge detected\nClick Remediation section below to solve this issue";
+const TRUSTED_BASE_CHECKOUT_MESSAGE = `score is 0: untrusted code checkout '\${{ github.event.pull_request.base.sha }}'
+Remediation tip: Avoid the dangerous workflow patterns.
+See [this post](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) for information on avoiding untrusted code checkouts.
+Click Remediation section below for further remediation help`;
+const TRUSTED_BASE_CHECKOUT_LOCATION_MESSAGE = `untrusted code checkout '\${{ github.event.pull_request.base.sha }}'
+Remediation tip: Avoid the dangerous workflow patterns.
+See [this post](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) for information on avoiding untrusted code checkouts.`;
 
 function location(result) {
   return result?.locations?.[0]?.physicalLocation ?? {};
@@ -92,6 +99,58 @@ function hasCanonicalRepositoryPolicyResult(result) {
   return hasCanonicalRepositoryPolicyLocation(result);
 }
 
+function hasCanonicalTrustedBaseCheckoutFinding(result) {
+  if (
+    !hasExactKeys(
+      result,
+      new Set(["ruleId", "ruleIndex", "message", "locations"]),
+    ) ||
+    result.ruleId !== "DangerousWorkflowID" ||
+    !Number.isSafeInteger(result.ruleIndex) ||
+    result.ruleIndex < 0 ||
+    !hasExactKeys(result.message, new Set(["text"])) ||
+    result.message.text !== TRUSTED_BASE_CHECKOUT_MESSAGE ||
+    !Array.isArray(result.locations) ||
+    result.locations.length !== 1
+  ) {
+    return false;
+  }
+
+  const [locationEntry] = result.locations;
+  if (
+    !hasExactKeys(locationEntry, new Set(["physicalLocation", "message"])) ||
+    !hasExactKeys(locationEntry.message, new Set(["text"])) ||
+    locationEntry.message.text !== TRUSTED_BASE_CHECKOUT_LOCATION_MESSAGE
+  ) {
+    return false;
+  }
+
+  const physicalLocation = locationEntry.physicalLocation;
+  if (
+    !hasExactKeys(physicalLocation, new Set(["region", "artifactLocation"])) ||
+    !hasExactKeys(
+      physicalLocation.artifactLocation,
+      new Set(["uri", "uriBaseId"]),
+    ) ||
+    physicalLocation.artifactLocation.uri !==
+      ".github/workflows/native-auto-merge.yml" ||
+    physicalLocation.artifactLocation.uriBaseId !== "%SRCROOT%" ||
+    !hasExactKeys(
+      physicalLocation.region,
+      new Set(["startLine", "endLine", "snippet"]),
+    ) ||
+    physicalLocation.region.startLine !== 29 ||
+    physicalLocation.region.endLine !== 29 ||
+    !hasExactKeys(physicalLocation.region.snippet, new Set(["text"])) ||
+    physicalLocation.region.snippet.text !==
+      "${{ github.event.pull_request.base.sha }}"
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 function tokenPermissionsMessages(workflowFile) {
   const prefix = `score is 5: topLevel permissions set to 'write-all'
 Remediation tip: Visit [https://app.stepsecurity.io/secureworkflow](`;
@@ -111,6 +170,10 @@ export function isApprovedFinding(result) {
   const path = physicalLocation.artifactLocation?.uri ?? "";
   const snippet = physicalLocation.region?.snippet?.text ?? "";
   const message = result?.message?.text ?? "";
+
+  if (result?.ruleId === "DangerousWorkflowID") {
+    return hasCanonicalTrustedBaseCheckoutFinding(result);
+  }
 
   if (result?.ruleId === "TokenPermissionsID") {
     const match = WORKFLOW_PATH.exec(path);
