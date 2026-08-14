@@ -13,7 +13,8 @@ jobs:
     name: Deploy application
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    permissions: write-all
+    permissions:
+      contents: read
     environment: cloudflare-production
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -26,38 +27,41 @@ jobs:
           cache: npm
           cache-dependency-path: |
             ./astrologo-frontend/package-lock.json
-      - name: Install and verify latest Wrangler
+      - name: Install frontend dependencies
+        working-directory: ./astrologo-frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify exact Wrangler dependency
         id: wrangler
+        working-directory: ./astrologo-frontend
         shell: bash
-        run: | # zizmor: ignore[adhoc-packages] Wrangler latest is an explicit organization policy; signatures are verified below.
+        run: |
           set -euo pipefail
-          wrangler_prefix="$RUNNER_TEMP/wrangler-latest"
-          effective_registry="$(npm config get registry --prefix "$wrangler_prefix")"
+          effective_registry="$(npm config get registry)"
           if [ "$effective_registry" != "https://registry.npmjs.org/" ]; then
-            echo "::error::Unexpected npm registry for the isolated Wrangler prefix: $effective_registry" >&2
+            echo "::error::Unexpected npm registry: $effective_registry" >&2
             exit 1
           fi
-          npm install --prefix "$wrangler_prefix" --save-exact --ignore-scripts --no-audit --no-fund wrangler@latest
-
-          undici_package="$wrangler_prefix/node_modules/undici/package.json"
-          if [ -f "$undici_package" ]; then
-            installed_undici="$(node -p "require(process.argv[1]).version" "$undici_package")"
-            if [ "$installed_undici" = "7.28.0" ]; then
-              npm pkg set --prefix "$wrangler_prefix" overrides.undici=7.29.0
-              npm install --prefix "$wrangler_prefix" --ignore-scripts --no-audit --no-fund
-            fi
+          expected_version="$(node -p "require('./package.json').devDependencies.wrangler")"
+          if ! [[ "$expected_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Wrangler must be declared with an exact SemVer: $expected_version" >&2
+            exit 1
           fi
-          npm audit signatures --prefix "$wrangler_prefix"
-          npm audit --prefix "$wrangler_prefix" --audit-level=low
+          installed_version="$(node -p "require('./node_modules/wrangler/package.json').version")"
+          if [ "$installed_version" != "$expected_version" ]; then
+            echo "::error::Installed Wrangler $installed_version differs from manifest $expected_version" >&2
+            exit 1
+          fi
+          npm audit signatures
+          npm audit --audit-level=low
 
-          WRANGLER_BIN="$wrangler_prefix/node_modules/.bin/wrangler"
+          WRANGLER_BIN="$PWD/node_modules/.bin/wrangler"
           if [ ! -x "$WRANGLER_BIN" ]; then
-            echo "::error::The isolated Wrangler executable was not created." >&2
+            echo "::error::The lockfile-installed Wrangler executable was not created." >&2
             exit 1
           fi
           WRANGLER_VERSION="$("$WRANGLER_BIN" --version)"
-          if ! [[ "$WRANGLER_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Unexpected Wrangler version: $WRANGLER_VERSION" >&2
+          if [ "$WRANGLER_VERSION" != "$expected_version" ]; then
+            echo "::error::Wrangler executable reported $WRANGLER_VERSION, expected $expected_version" >&2
             exit 1
           fi
 
@@ -69,7 +73,6 @@ jobs:
       - name: Install + Build Frontend
         working-directory: ./astrologo-frontend
         run: |
-          npm ci --ignore-scripts --no-audit --no-fund
           npm run lint
           npm run biome
           npm test
@@ -103,4 +106,4 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     timeout-minutes: 30
-permissions: write-all
+permissions: {}

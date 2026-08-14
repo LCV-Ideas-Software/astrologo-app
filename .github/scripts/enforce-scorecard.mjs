@@ -1,13 +1,6 @@
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-const WORKFLOW_PATH = /^\.github\/workflows\/([^/]+\.ya?ml)$/;
-const PINNED_DEPENDENCY_MESSAGE =
-  "score is 8: npmCommand not pinned by hash\nClick Remediation section below to solve this issue";
-const APPROVED_WRANGLER_SNIPPETS = new Set([
-  'npm install --prefix "$wrangler_prefix" --save-exact --ignore-scripts --no-audit --no-fund wrangler@latest',
-  'npm install --prefix "$wrangler_prefix" --ignore-scripts --no-audit --no-fund',
-]);
 const REPOSITORY_POLICY_PATH = "no file associated with this alert";
 const BRANCH_PROTECTION_MESSAGE = `score is 3: branch protection is not maximal on development and all release branches:
 Warn: 'stale review dismissal' is disabled on branch 'main'
@@ -20,13 +13,6 @@ const CODE_REVIEW_MESSAGE =
   /^score is 0: Found 0\/[1-9]\d* approved changesets -- score normalized to 0\nClick Remediation section below to solve this issue$/;
 const CII_BEST_PRACTICES_MESSAGE =
   "score is 0: no effort to earn an OpenSSF best practices badge detected\nClick Remediation section below to solve this issue";
-const TRUSTED_BASE_CHECKOUT_MESSAGE = `score is 0: untrusted code checkout '\${{ github.event.pull_request.base.sha }}'
-Remediation tip: Avoid the dangerous workflow patterns.
-See [this post](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) for information on avoiding untrusted code checkouts.
-Click Remediation section below for further remediation help`;
-const TRUSTED_BASE_CHECKOUT_LOCATION_MESSAGE = `untrusted code checkout '\${{ github.event.pull_request.base.sha }}'
-Remediation tip: Avoid the dangerous workflow patterns.
-See [this post](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) for information on avoiding untrusted code checkouts.`;
 
 function location(result) {
   return result?.locations?.[0]?.physicalLocation ?? {};
@@ -99,98 +85,8 @@ function hasCanonicalRepositoryPolicyResult(result) {
   return hasCanonicalRepositoryPolicyLocation(result);
 }
 
-function hasCanonicalTrustedBaseCheckoutFinding(result) {
-  if (
-    !hasExactKeys(
-      result,
-      new Set(["ruleId", "ruleIndex", "message", "locations"]),
-    ) ||
-    result.ruleId !== "DangerousWorkflowID" ||
-    !Number.isSafeInteger(result.ruleIndex) ||
-    result.ruleIndex < 0 ||
-    !hasExactKeys(result.message, new Set(["text"])) ||
-    result.message.text !== TRUSTED_BASE_CHECKOUT_MESSAGE ||
-    !Array.isArray(result.locations) ||
-    result.locations.length !== 1
-  ) {
-    return false;
-  }
-
-  const [locationEntry] = result.locations;
-  if (
-    !hasExactKeys(locationEntry, new Set(["physicalLocation", "message"])) ||
-    !hasExactKeys(locationEntry.message, new Set(["text"])) ||
-    locationEntry.message.text !== TRUSTED_BASE_CHECKOUT_LOCATION_MESSAGE
-  ) {
-    return false;
-  }
-
-  const physicalLocation = locationEntry.physicalLocation;
-  if (
-    !hasExactKeys(physicalLocation, new Set(["region", "artifactLocation"])) ||
-    !hasExactKeys(
-      physicalLocation.artifactLocation,
-      new Set(["uri", "uriBaseId"]),
-    ) ||
-    physicalLocation.artifactLocation.uri !==
-      ".github/workflows/native-auto-merge.yml" ||
-    physicalLocation.artifactLocation.uriBaseId !== "%SRCROOT%" ||
-    !hasExactKeys(
-      physicalLocation.region,
-      new Set(["startLine", "endLine", "snippet"]),
-    ) ||
-    physicalLocation.region.startLine !== 29 ||
-    physicalLocation.region.endLine !== 29 ||
-    !hasExactKeys(physicalLocation.region.snippet, new Set(["text"])) ||
-    physicalLocation.region.snippet.text !==
-      "${{ github.event.pull_request.base.sha }}"
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
-function tokenPermissionsMessages(workflowFile) {
-  const prefix = `score is 5: topLevel permissions set to 'write-all'
-Remediation tip: Visit [https://app.stepsecurity.io/secureworkflow](`;
-  const suffix = `).
-Tick the 'Restrict permissions for GITHUB_TOKEN'
-Untick other options
-NOTE: If you want to resolve multiple issues at once, you can visit [https://app.stepsecurity.io/securerepo](https://app.stepsecurity.io/securerepo) instead.
-Click Remediation section below for further remediation help`;
-  return new Set([
-    `${prefix}https://app.stepsecurity.io/secureworkflow/github.com/LCV-Ideas-Software/astrologo-app/${workflowFile}/main?enable=permissions${suffix}`,
-    `${prefix}https://app.stepsecurity.io/secureworkflow/file://./${workflowFile}/unknown?enable=permissions${suffix}`,
-  ]);
-}
-
 export function isApprovedFinding(result) {
-  const physicalLocation = location(result);
-  const path = physicalLocation.artifactLocation?.uri ?? "";
-  const snippet = physicalLocation.region?.snippet?.text ?? "";
   const message = result?.message?.text ?? "";
-
-  if (result?.ruleId === "DangerousWorkflowID") {
-    return hasCanonicalTrustedBaseCheckoutFinding(result);
-  }
-
-  if (result?.ruleId === "TokenPermissionsID") {
-    const match = WORKFLOW_PATH.exec(path);
-    return (
-      match !== null &&
-      snippet === "write-all" &&
-      tokenPermissionsMessages(match[1]).has(message)
-    );
-  }
-
-  if (result?.ruleId === "PinnedDependenciesID") {
-    return (
-      path === ".github/workflows/deploy.yml" &&
-      message === PINNED_DEPENDENCY_MESSAGE &&
-      APPROVED_WRANGLER_SNIPPETS.has(snippet)
-    );
-  }
 
   if (result?.ruleId === "BranchProtectionID") {
     if (!hasCanonicalRepositoryPolicyResult(result)) {
@@ -214,33 +110,109 @@ export function isApprovedFinding(result) {
   return false;
 }
 
-export function unapprovedFindings(sarif) {
-  if (!sarif || typeof sarif !== "object" || !Array.isArray(sarif.runs)) {
+export function scorecardResults(sarif) {
+  if (
+    !sarif ||
+    typeof sarif !== "object" ||
+    Array.isArray(sarif) ||
+    sarif.version !== "2.1.0" ||
+    !Array.isArray(sarif.runs)
+  ) {
     throw new TypeError("Scorecard SARIF must contain a runs array");
   }
   if (sarif.runs.length === 0) {
     throw new TypeError("Scorecard SARIF must contain at least one run");
   }
+  if (sarif.inlineExternalProperties !== undefined) {
+    throw new TypeError(
+      "Scorecard SARIF must not externalize inline properties",
+    );
+  }
 
-  const findings = [];
+  const results = [];
   for (const run of sarif.runs) {
     if (run === null || typeof run !== "object" || Array.isArray(run)) {
       throw new TypeError("Every Scorecard SARIF run must be an object");
     }
-    if (run.results !== undefined && !Array.isArray(run.results)) {
+    if (run.externalPropertyFileReferences !== undefined) {
+      throw new TypeError(
+        "Scorecard SARIF must not externalize run properties",
+      );
+    }
+    if (!hasExactKeys(run, new Set(["automationDetails", "tool", "results"]))) {
+      throw new TypeError(
+        "Every Scorecard SARIF run must keep its canonical inline shape",
+      );
+    }
+    if (
+      run.automationDetails === null ||
+      typeof run.automationDetails !== "object" ||
+      Array.isArray(run.automationDetails) ||
+      typeof run.automationDetails.id !== "string" ||
+      run.automationDetails.id.trim() === ""
+    ) {
+      throw new TypeError(
+        "Every Scorecard SARIF run must identify its automation details",
+      );
+    }
+    if (
+      run.tool === null ||
+      typeof run.tool !== "object" ||
+      Array.isArray(run.tool) ||
+      run.tool.driver === null ||
+      typeof run.tool.driver !== "object" ||
+      Array.isArray(run.tool.driver) ||
+      run.tool.driver.name !== "Scorecard" ||
+      typeof run.tool.driver.semanticVersion !== "string" ||
+      run.tool.driver.semanticVersion.trim() === "" ||
+      !Array.isArray(run.tool.driver.rules)
+    ) {
+      throw new TypeError(
+        "Every Scorecard SARIF run must use the canonical Scorecard driver",
+      );
+    }
+    const ruleIds = run.tool.driver.rules.map((rule) => rule?.id);
+    if (
+      ruleIds.some((ruleId) => typeof ruleId !== "string" || ruleId === "") ||
+      new Set(ruleIds).size !== ruleIds.length
+    ) {
+      throw new TypeError(
+        "Every Scorecard SARIF rule descriptor must have a unique identifier",
+      );
+    }
+    if (!Array.isArray(run.results)) {
       throw new TypeError(
         "Every Scorecard SARIF results value must be an array",
       );
     }
-    for (const result of run.results ?? []) {
-      if (!isApprovedFinding(result)) {
-        const physicalLocation = location(result);
-        findings.push({
-          ruleId: result?.ruleId ?? "unknown",
-          path: physicalLocation.artifactLocation?.uri ?? "unknown",
-          line: physicalLocation.region?.startLine ?? null,
-        });
+    for (const result of run.results) {
+      if (
+        typeof result?.ruleId !== "string" ||
+        result.ruleId === "" ||
+        !Number.isSafeInteger(result.ruleIndex) ||
+        result.ruleIndex < 0 ||
+        run.tool.driver.rules[result.ruleIndex]?.id !== result.ruleId
+      ) {
+        throw new TypeError(
+          "Every Scorecard SARIF result must bind to its exact rule descriptor",
+        );
       }
+      results.push(result);
+    }
+  }
+  return results;
+}
+
+export function unapprovedFindings(sarif) {
+  const findings = [];
+  for (const result of scorecardResults(sarif)) {
+    if (!isApprovedFinding(result)) {
+      const physicalLocation = location(result);
+      findings.push({
+        ruleId: result?.ruleId ?? "unknown",
+        path: physicalLocation.artifactLocation?.uri ?? "unknown",
+        line: physicalLocation.region?.startLine ?? null,
+      });
     }
   }
   return findings;

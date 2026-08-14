@@ -19,10 +19,9 @@ on:
   schedule:
     - cron: "41 * * * *"
   workflow_dispatch:
-permissions: write-all
+permissions: {}
 concurrency:
   group: auto-release-${{ github.ref }}
-  queue: max
   cancel-in-progress: false
 env:
   # Path of the file containing `const APP_VERSION = 'APP vXX.YY.ZZ';`.
@@ -32,7 +31,10 @@ jobs:
     name: Create universal-format tag + GitHub Release if APP_VERSION was bumped
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    permissions: write-all
+    permissions:
+      actions: read # Inspect the required workflow runs before releasing.
+      contents: write # Create the exact tag and GitHub Release.
+      security-events: read # Verify zero-result CodeQL analyses for the release target.
     steps:
       - name: Checkout main with full history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -258,7 +260,7 @@ jobs:
         if: steps.check.outputs.complete != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REQUIRED_PUSH_WORKFLOWS: deploy.yml format-public.yml codeql.yml scorecard.yml zizmor.yml
+          REQUIRED_PUSH_WORKFLOWS: deploy.yml pages.yml codeql.yml scorecard.yml zizmor.yml
           TARGET_SHA: ${{ steps.check.outputs.target_sha }}
         run: |
           set -euo pipefail
