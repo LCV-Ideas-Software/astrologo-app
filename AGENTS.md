@@ -18,7 +18,7 @@ Aplicacao servida por Cloudflare. Deploy exclusivamente via GitHub Actions.
 ```bash
 npm run lint
 npm run format:public:check
-npm run projects:boundaries
+node --test .github/scripts/add-to-project-workflow.regression.mjs
 # no pacote do monorepo, com npm ci antes:
 #   astrologo-frontend/ -> npm run lint && npm run biome && npm test && npm run build && npm run build:functions && node scripts/check-tracked-executables.mjs
 ```
