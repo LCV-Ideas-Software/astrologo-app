@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { isApprovedFinding, unapprovedFindings } from "./enforce-scorecard.mjs";
+import {
+  isApprovedFinding,
+  scorecardResults,
+  unapprovedFindings,
+} from "./enforce-scorecard.mjs";
 
 const TOKEN_MESSAGE = `score is 5: topLevel permissions set to 'write-all'
 Remediation tip: Visit [https://app.stepsecurity.io/secureworkflow](https://app.stepsecurity.io/secureworkflow/github.com/LCV-Ideas-Software/astrologo-app/codeql.yml/main?enable=permissions).
@@ -17,6 +21,13 @@ NOTE: If you want to resolve multiple issues at once, you can visit [https://app
 Click Remediation section below for further remediation help`;
 const PINNED_MESSAGE =
   "score is 8: npmCommand not pinned by hash\nClick Remediation section below to solve this issue";
+const TRUSTED_BASE_CHECKOUT_MESSAGE = `score is 0: untrusted code checkout '\${{ github.event.pull_request.base.sha }}'
+Remediation tip: Avoid the dangerous workflow patterns.
+See [this post](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) for information on avoiding untrusted code checkouts.
+Click Remediation section below for further remediation help`;
+const TRUSTED_BASE_CHECKOUT_LOCATION_MESSAGE = `untrusted code checkout '\${{ github.event.pull_request.base.sha }}'
+Remediation tip: Avoid the dangerous workflow patterns.
+See [this post](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) for information on avoiding untrusted code checkouts.`;
 const BRANCH_PROTECTION_MESSAGE = `score is 3: branch protection is not maximal on development and all release branches:
 Warn: 'stale review dismissal' is disabled on branch 'main'
 Warn: branch 'main' does not require approvers
@@ -26,13 +37,6 @@ Warn: 'up-to-date branches' is disabled on branch 'main'
 Click Remediation section below to solve this issue`;
 const CII_BEST_PRACTICES_MESSAGE =
   "score is 0: no effort to earn an OpenSSF best practices badge detected\nClick Remediation section below to solve this issue";
-const TRUSTED_BASE_CHECKOUT_MESSAGE = `score is 0: untrusted code checkout '\${{ github.event.pull_request.base.sha }}'
-Remediation tip: Avoid the dangerous workflow patterns.
-See [this post](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) for information on avoiding untrusted code checkouts.
-Click Remediation section below for further remediation help`;
-const TRUSTED_BASE_CHECKOUT_LOCATION_MESSAGE = `untrusted code checkout '\${{ github.event.pull_request.base.sha }}'
-Remediation tip: Avoid the dangerous workflow patterns.
-See [this post](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/) for information on avoiding untrusted code checkouts.`;
 
 function finding(ruleId, { path, snippet, message } = {}) {
   return {
@@ -95,31 +99,29 @@ function trustedBaseCheckoutFinding() {
 }
 
 function sarif(results) {
-  return { version: "2.1.0", runs: [{ results }] };
+  const ruleIds = [...new Set(results.map(({ ruleId }) => ruleId))];
+  const rules = ruleIds.map((id) => ({ id }));
+  return {
+    version: "2.1.0",
+    runs: [
+      {
+        automationDetails: { id: "supply-chain/local/test" },
+        tool: {
+          driver: {
+            name: "Scorecard",
+            semanticVersion: "v5.5.0",
+            rules,
+          },
+        },
+        results: results.map((result) => ({
+          ...result,
+          ruleIndex: rules.findIndex(({ id }) => id === result.ruleId),
+        })),
+      },
+    ],
+  };
 }
 
-const exactTokenFinding = finding("TokenPermissionsID", {
-  path: ".github/workflows/codeql.yml",
-  snippet: "write-all",
-  message: TOKEN_MESSAGE,
-});
-const exactPullRequestTokenFinding = finding("TokenPermissionsID", {
-  path: ".github/workflows/codeql.yml",
-  snippet: "write-all",
-  message: TOKEN_PULL_REQUEST_MESSAGE,
-});
-const exactWranglerFinding = finding("PinnedDependenciesID", {
-  path: ".github/workflows/deploy.yml",
-  snippet:
-    'npm install --prefix "$wrangler_prefix" --save-exact --ignore-scripts --no-audit --no-fund wrangler@latest',
-  message: PINNED_MESSAGE,
-});
-const exactWranglerReconcileFinding = finding("PinnedDependenciesID", {
-  path: ".github/workflows/deploy.yml",
-  snippet:
-    'npm install --prefix "$wrangler_prefix" --ignore-scripts --no-audit --no-fund',
-  message: PINNED_MESSAGE,
-});
 const exactBranchProtectionFinding = repositoryPolicyFinding(
   "BranchProtectionID",
   BRANCH_PROTECTION_MESSAGE,
@@ -137,18 +139,44 @@ test("accepts an empty result set", () => {
   assert.deepEqual(unapprovedFindings(sarif([])), []);
 });
 
-test("accepts only the exact write-all and Wrangler policy signatures", () => {
+test("rejects every revoked workflow-policy exception", () => {
+  const revoked = [
+    finding("TokenPermissionsID", {
+      path: ".github/workflows/codeql.yml",
+      snippet: "write-all",
+      message: TOKEN_MESSAGE,
+    }),
+    finding("TokenPermissionsID", {
+      path: ".github/workflows/codeql.yml",
+      snippet: "write-all",
+      message: TOKEN_PULL_REQUEST_MESSAGE,
+    }),
+    trustedBaseCheckoutFinding(),
+    finding("PinnedDependenciesID", {
+      path: ".github/workflows/deploy.yml",
+      snippet:
+        'npm install --prefix "$wrangler_prefix" --save-exact --ignore-scripts --no-audit --no-fund wrangler@latest',
+      message: PINNED_MESSAGE,
+    }),
+    finding("PinnedDependenciesID", {
+      path: ".github/workflows/deploy.yml",
+      snippet:
+        'npm install --prefix "$wrangler_prefix" --ignore-scripts --no-audit --no-fund',
+      message: PINNED_MESSAGE,
+    }),
+  ];
+
   assert.deepEqual(
-    unapprovedFindings(
-      sarif([
-        exactTokenFinding,
-        exactPullRequestTokenFinding,
-        exactWranglerFinding,
-        exactWranglerReconcileFinding,
-      ]),
-    ),
-    [],
+    unapprovedFindings(sarif(revoked)).map(({ ruleId }) => ruleId),
+    [
+      "TokenPermissionsID",
+      "TokenPermissionsID",
+      "DangerousWorkflowID",
+      "PinnedDependenciesID",
+      "PinnedDependenciesID",
+    ],
   );
+  for (const result of revoked) assert.equal(isApprovedFinding(result), false);
 });
 
 test("accepts only the intentional repository-policy signatures", () => {
@@ -173,43 +201,6 @@ test("accepts only the intentional repository-policy signatures", () => {
       ),
       true,
     );
-  }
-});
-
-test("accepts only the exact trusted-base checkout false positive", () => {
-  const exact = trustedBaseCheckoutFinding();
-  assert.equal(isApprovedFinding(exact), true);
-  const reorderedRules = structuredClone(exact);
-  reorderedRules.ruleIndex = 4;
-  assert.equal(isApprovedFinding(reorderedRules), true);
-
-  const mutations = [
-    (result) => (result.ruleIndex = -1),
-    (result) => (result.ruleIndex = 0.5),
-    (result) => (result.ruleIndex = Number.MAX_SAFE_INTEGER + 1),
-    (result) => delete result.ruleIndex,
-    (result) =>
-      (result.message.text = result.message.text.replace(
-        "base.sha",
-        "head.sha",
-      )),
-    (result) =>
-      (result.locations[0].physicalLocation.artifactLocation.uri =
-        ".github/workflows/dependency-review.yml"),
-    (result) => (result.locations[0].physicalLocation.region.startLine = 30),
-    (result) => (result.locations[0].physicalLocation.region.endLine = 30),
-    (result) =>
-      (result.locations[0].physicalLocation.region.snippet.text =
-        "${{ github.event.pull_request.head.sha }}"),
-    (result) =>
-      (result.locations[0].message.text = `${result.locations[0].message.text} altered`),
-    (result) => (result.locations[0].physicalLocation.region.extra = true),
-    (result) => result.locations.push(structuredClone(result.locations[0])),
-  ];
-  for (const mutate of mutations) {
-    const changed = structuredClone(exact);
-    mutate(changed);
-    assert.equal(isApprovedFinding(changed), false);
   }
 });
 
@@ -309,64 +300,161 @@ test("fails closed when a repository-policy signature drifts", () => {
   }
 });
 
-test("fails closed when any write-all signature field changes", () => {
-  for (const changed of [
-    { ...exactTokenFinding, ruleId: "OtherRule" },
-    finding("TokenPermissionsID", {
-      path: ".github/workflows/codeql.yml",
-      snippet: "contents: write",
-      message: TOKEN_MESSAGE,
-    }),
-    finding("TokenPermissionsID", {
-      path: "scripts/codeql.yml",
-      snippet: "write-all",
-      message: TOKEN_MESSAGE,
-    }),
-    finding("TokenPermissionsID", {
-      path: ".github/workflows/codeql.yml",
-      snippet: "write-all",
-      message: `${TOKEN_MESSAGE} altered`,
-    }),
-  ]) {
-    assert.equal(isApprovedFinding(changed), false);
-  }
-});
-
-test("fails closed when any Wrangler signature field changes", () => {
-  for (const changed of [
-    finding("PinnedDependenciesID", {
-      path: ".github/workflows/other.yml",
-      snippet:
-        exactWranglerFinding.locations[0].physicalLocation.region.snippet.text,
-      message: PINNED_MESSAGE,
-    }),
-    finding("PinnedDependenciesID", {
-      path: ".github/workflows/deploy.yml",
-      snippet: "npm install wrangler@latest",
-      message: PINNED_MESSAGE,
-    }),
-    finding("PinnedDependenciesID", {
-      path: ".github/workflows/deploy.yml",
-      snippet:
-        exactWranglerFinding.locations[0].physicalLocation.region.snippet.text,
-      message: `${PINNED_MESSAGE} altered`,
-    }),
-  ]) {
-    assert.equal(isApprovedFinding(changed), false);
-  }
-});
-
 test("rejects malformed or empty SARIF documents", () => {
-  assert.throws(() => unapprovedFindings({}), /runs array/);
-  assert.throws(() => unapprovedFindings({ runs: [] }), /at least one run/);
+  const validRun = sarif([]).runs[0];
+  for (const malformedDocument of [
+    null,
+    false,
+    0,
+    "sarif",
+    [],
+    {},
+    { runs: [validRun] },
+    { version: "2.0.0", runs: [validRun] },
+  ]) {
+    assert.throws(() => unapprovedFindings(malformedDocument), /runs array/);
+  }
+  assert.throws(
+    () => unapprovedFindings({ version: "2.1.0", runs: [] }),
+    /at least one run/,
+  );
   for (const malformedRun of [null, undefined, false, 0, "run", []]) {
     assert.throws(
-      () => unapprovedFindings({ runs: [malformedRun] }),
+      () => unapprovedFindings({ version: "2.1.0", runs: [malformedRun] }),
       /run must be an object/,
     );
   }
+  for (const automationDetails of [
+    undefined,
+    null,
+    [],
+    {},
+    { id: "" },
+    { id: "   " },
+    { id: 1 },
+  ]) {
+    assert.throws(
+      () =>
+        unapprovedFindings({
+          version: "2.1.0",
+          runs: [{ ...validRun, automationDetails }],
+        }),
+      /automation details/,
+    );
+  }
+  for (const driver of [
+    undefined,
+    null,
+    [],
+    {},
+    { ...validRun.tool.driver, name: "Other" },
+    { ...validRun.tool.driver, semanticVersion: "" },
+    { ...validRun.tool.driver, semanticVersion: 1 },
+    { ...validRun.tool.driver, rules: undefined },
+    { ...validRun.tool.driver, rules: null },
+    { ...validRun.tool.driver, rules: {} },
+  ]) {
+    assert.throws(
+      () =>
+        unapprovedFindings({
+          version: "2.1.0",
+          runs: [{ ...validRun, tool: { driver } }],
+        }),
+      /canonical Scorecard driver/,
+    );
+  }
+  for (const tool of [undefined, null, []]) {
+    assert.throws(
+      () =>
+        unapprovedFindings({
+          version: "2.1.0",
+          runs: [{ ...validRun, tool }],
+        }),
+      /canonical Scorecard driver/,
+    );
+  }
+  for (const results of [undefined, null, "not-an-array", {}]) {
+    assert.throws(
+      () =>
+        unapprovedFindings({
+          version: "2.1.0",
+          runs: [{ ...validRun, results }],
+        }),
+      /results value must be an array/,
+    );
+  }
   assert.throws(
-    () => unapprovedFindings({ runs: [{ results: "not-an-array" }] }),
+    () =>
+      unapprovedFindings({
+        version: "2.1.0",
+        runs: [validRun, { ...validRun, results: undefined }],
+      }),
     /results value must be an array/,
   );
+});
+
+test("rejects externalized findings and inconsistent rule descriptors", () => {
+  const approved = sarif([exactCiiBestPracticesFinding]);
+  const [validRun] = approved.runs;
+  assert.throws(
+    () =>
+      unapprovedFindings({
+        ...approved,
+        inlineExternalProperties: [
+          { results: [{ ruleId: "VulnerabilitiesID" }] },
+        ],
+      }),
+    /must not externalize inline properties/,
+  );
+  for (const externalPropertyFileReferences of [
+    {},
+    { results: [] },
+    {
+      results: [
+        { location: { uri: "hidden-results.sarif-external-properties" } },
+      ],
+    },
+  ]) {
+    assert.throws(
+      () =>
+        unapprovedFindings({
+          ...approved,
+          runs: [{ ...validRun, externalPropertyFileReferences }],
+        }),
+      /must not externalize run properties/,
+    );
+  }
+  for (const [field, value] of [
+    ["conversion", {}],
+    ["invocations", []],
+    ["properties", {}],
+  ]) {
+    assert.throws(
+      () =>
+        scorecardResults({
+          ...approved,
+          runs: [{ ...validRun, [field]: value }],
+        }),
+      /canonical inline shape/,
+    );
+  }
+  for (const mutation of [
+    { ...validRun, tool: { driver: { ...validRun.tool.driver, rules: [] } } },
+    {
+      ...validRun,
+      tool: {
+        driver: {
+          ...validRun.tool.driver,
+          rules: [{ id: "CIIBestPracticesID" }, { id: "CIIBestPracticesID" }],
+        },
+      },
+    },
+    { ...validRun, results: [{ ...validRun.results[0], ruleIndex: 1 }] },
+    { ...validRun, results: [{ ...validRun.results[0], ruleId: "OtherRule" }] },
+  ]) {
+    assert.throws(
+      () => unapprovedFindings({ ...approved, runs: [mutation] }),
+      /rule descriptor/,
+    );
+  }
 });

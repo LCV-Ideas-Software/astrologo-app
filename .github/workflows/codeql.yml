@@ -15,14 +15,15 @@ on:
       - checks_requested
   schedule:
     - cron: "17 6 * * 2"
-permissions: write-all
+permissions: {}
 concurrency:
   group: codeql-${{ github.ref }}
-  queue: max
   cancel-in-progress: false
 jobs:
   analyze:
-    permissions: write-all
+    permissions:
+      contents: read
+      security-events: write # Upload the CodeQL SARIF analysis.
     name: Analyze ${{ matrix.language }}
     runs-on: ubuntu-latest
     timeout-minutes: 20

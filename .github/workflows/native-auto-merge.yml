@@ -1,7 +1,7 @@
 name: Trusted Dependency Review
 
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] Base-only scanner treats the candidate solely as immutable Git data.
     branches:
       - main
     types:
@@ -11,7 +11,7 @@ on:
       - ready_for_review
       - edited
 
-permissions: write-all
+permissions: {}
 
 concurrency:
   group: trusted-dependency-review-${{ github.repository }}-${{ github.event.pull_request.number }}
@@ -23,13 +23,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: read
+      contents: read # Read the trusted base and immutable Git objects.
       pull-requests: read # Re-read the bound pull request before and after Git tree inspection.
     steps:
       - name: Check out the trusted base revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
           fetch-depth: 1
 
@@ -38,7 +38,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           TARGET_REPOSITORY: ${{ github.repository }}
           PULL_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ github.sha }}
           HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node .github/scripts/trusted-dependency-review.mjs
@@ -47,7 +47,7 @@ jobs:
         id: dependency-review
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
-          base-ref: ${{ github.event.pull_request.base.sha }}
+          base-ref: ${{ github.sha }}
           head-ref: ${{ github.event.pull_request.head.sha }}
           fail-on-severity: low
           fail-on-scopes: runtime, development, unknown
@@ -58,7 +58,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TARGET_REPOSITORY: ${{ github.repository }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PULL_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.sha }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           DEPENDENCY_CHANGES: ${{ steps.dependency-review.outputs.dependency-changes }}
         run: >-

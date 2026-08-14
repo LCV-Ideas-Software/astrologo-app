@@ -4,7 +4,7 @@ on:
     types:
       - checks_requested
 
-permissions: write-all
+permissions: {}
 
 concurrency:
   group: dependency-review-${{ github.event.merge_group.head_sha }}
@@ -15,7 +15,8 @@ jobs:
     name: Dependency Review
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: write-all
+    permissions:
+      contents: read
     steps:
       - name: Check out the trusted merge-group base
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
