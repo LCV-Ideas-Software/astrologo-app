@@ -8,6 +8,7 @@ import {
   FINAL_DEPENDENCY_REVIEW_OID,
   FINAL_TRUSTED_DEPENDENCY_REVIEW,
   FINAL_TRUSTED_DEPENDENCY_REVIEW_OID,
+  MAX_DEPENDENCY_CHANGES,
   assertCandidateTree,
   assertDependencyReviewComplete,
   assertReviewedNpmLocks,
@@ -91,7 +92,7 @@ const LEAST_PRIVILEGE_ROLLOUT_TRANSITIONS = [
   [
     ".github/scripts/scorecard-workflow.test.mjs",
     "5237744f213ad3908851a96101e042bce898ca9a",
-    "0e03f7c735ea4ef3977e82d9f67512d863ca56b7",
+    "61d44c38f1f813db8eab6927e2f9f9ea1288e415",
   ],
   [
     ".github/zizmor.yml",
@@ -330,6 +331,138 @@ function reviewedLockFixtures() {
     headTree: tree(values.rootHead),
     values,
   };
+}
+
+function directManifestChanges(
+  manifest,
+  {
+    baseVersion = "^4.120.0",
+    headVersion = "4.123.0",
+    baseScope = "development",
+    headScope = baseScope,
+  } = {},
+) {
+  const added = dependencyChange("added", "wrangler", headVersion);
+  added.manifest = manifest;
+  added.scope = headScope;
+  added.license = "MIT OR Apache-2.0";
+  added.source_repository_url = "https://github.com/cloudflare/workers-sdk";
+  const removed = dependencyChange("removed", "wrangler", baseVersion);
+  removed.manifest = manifest;
+  removed.scope = baseScope;
+  removed.package_url = "pkg:npm/wrangler";
+  removed.license = null;
+  return [added, removed];
+}
+
+function reviewedDirectManifestFixtures(
+  packagePath,
+  {
+    baseSection = "devDependencies",
+    headSection = baseSection,
+    baseVersion = "^4.120.0",
+    headVersion = "4.123.0",
+  } = {},
+) {
+  const rootStable = { name: "root-test", version: "1.0.0" };
+  const frontendStable = { name: "frontend-test", version: "1.0.0" };
+  const withWrangler = (value, section, version) => ({
+    ...structuredClone(value),
+    [section]: { wrangler: version },
+  });
+  const rootBase =
+    packagePath === "package.json"
+      ? withWrangler(rootStable, baseSection, baseVersion)
+      : rootStable;
+  const rootHead =
+    packagePath === "package.json"
+      ? withWrangler(rootStable, headSection, headVersion)
+      : rootStable;
+  const frontendBase =
+    packagePath === "astrologo-frontend/package.json"
+      ? withWrangler(frontendStable, baseSection, baseVersion)
+      : frontendStable;
+  const frontendHead =
+    packagePath === "astrologo-frontend/package.json"
+      ? withWrangler(frontendStable, headSection, headVersion)
+      : frontendStable;
+  const placementBySection = {
+    dependencies: {},
+    devDependencies: { dev: true },
+    optionalDependencies: { optional: true },
+    peerDependencies: { peer: true },
+  };
+  const lock = (packageJson, section) => ({
+    name: packageJson.name,
+    version: packageJson.version,
+    lockfileVersion: 3,
+    requires: true,
+    packages: {
+      "": structuredClone(packageJson),
+      ...(section === undefined
+        ? {}
+        : {
+            "node_modules/wrangler": registryDescriptor(
+              "wrangler",
+              "4.123.0",
+              8,
+              placementBySection[section],
+            ),
+          }),
+    },
+  });
+  const values = {
+    rootBasePackage: formattedJsonBlob(rootBase),
+    rootHeadPackage: formattedJsonBlob(rootHead),
+    rootBaseLock: formattedJsonBlob(
+      lock(rootBase, packagePath === "package.json" ? baseSection : undefined),
+    ),
+    rootHeadLock: formattedJsonBlob(
+      lock(rootHead, packagePath === "package.json" ? headSection : undefined),
+    ),
+    frontendBasePackage: formattedJsonBlob(frontendBase),
+    frontendHeadPackage: formattedJsonBlob(frontendHead),
+    frontendBaseLock: formattedJsonBlob(
+      lock(
+        frontendBase,
+        packagePath === "astrologo-frontend/package.json"
+          ? baseSection
+          : undefined,
+      ),
+    ),
+    frontendHeadLock: formattedJsonBlob(
+      lock(
+        frontendHead,
+        packagePath === "astrologo-frontend/package.json"
+          ? headSection
+          : undefined,
+      ),
+    ),
+  };
+  const tree = (phase) => ({
+    sha: phase === "base" ? SHA.baseTree : SHA.headTree,
+    truncated: false,
+    tree: [
+      blob(
+        "package.json",
+        values[`${phase === "base" ? "rootBase" : "rootHead"}Package`].oid,
+      ),
+      blob(
+        "package-lock.json",
+        values[`${phase === "base" ? "rootBase" : "rootHead"}Lock`].oid,
+      ),
+      blob(
+        "astrologo-frontend/package.json",
+        values[`${phase === "base" ? "frontendBase" : "frontendHead"}Package`]
+          .oid,
+      ),
+      blob(
+        "astrologo-frontend/package-lock.json",
+        values[`${phase === "base" ? "frontendBase" : "frontendHead"}Lock`].oid,
+      ),
+    ],
+  });
+  return { baseTree: tree("base"), headTree: tree("head"), values };
 }
 
 function reviewedLockCase(basePackages, headPackages) {
@@ -1916,6 +2049,128 @@ test("npm lock changes match Dependency Review and official registry metadata", 
   assert.notDeepEqual(tampered, tamperedBlob.response);
 });
 
+test("direct npm manifests match exact dependency section deltas in both projects", async () => {
+  const { expected } = expectedPullRequest();
+  const run = ({
+    manifest,
+    fixtureOptions,
+    comparison = directManifestChanges(manifest),
+  }) => {
+    const fixture = reviewedDirectManifestFixtures(manifest, fixtureOptions);
+    const responses = new Map(
+      Object.values(fixture.values).map((value) => [value.oid, value.response]),
+    );
+    return assertReviewedNpmLocks({
+      expected,
+      baseTree: fixture.baseTree,
+      headTree: fixture.headTree,
+      comparison,
+      api: async (path) => {
+        const response = responses.get(path.split("/").at(-1));
+        assert.notEqual(response, undefined, `unexpected npm blob ${path}`);
+        return structuredClone(response);
+      },
+      fetchImplementation: async () =>
+        assert.fail("stable lock entries must not query the npm registry"),
+    });
+  };
+
+  for (const manifest of ["package.json", "astrologo-frontend/package.json"]) {
+    await assert.doesNotReject(run({ manifest }));
+  }
+
+  const manifest = "astrologo-frontend/package.json";
+  for (const [section, scope] of [
+    ["dependencies", "runtime"],
+    ["devDependencies", "development"],
+    ["optionalDependencies", "runtime"],
+    ["peerDependencies", "runtime"],
+  ]) {
+    await assert.doesNotReject(
+      run({
+        manifest,
+        fixtureOptions: { baseSection: section, headSection: section },
+        comparison: directManifestChanges(manifest, {
+          baseScope: scope,
+          headScope: scope,
+        }),
+      }),
+    );
+  }
+  await assert.rejects(
+    run({
+      manifest,
+      fixtureOptions: {
+        baseSection: "dependencies",
+        headSection: "optionalDependencies",
+        baseVersion: "4.123.0",
+        headVersion: "4.123.0",
+      },
+      comparison: [],
+    }),
+    /section changes require a trusted lockfile rotation/,
+  );
+  await assert.rejects(
+    run({
+      manifest,
+      fixtureOptions: {
+        baseSection: "dependencies",
+        headSection: "optionalDependencies",
+        baseVersion: "^4.120.0",
+        headVersion: "4.123.0",
+      },
+      comparison: directManifestChanges(manifest, {
+        baseScope: "runtime",
+        headScope: "runtime",
+      }),
+    }),
+    /section changes require a trusted lockfile rotation/,
+  );
+  await assert.rejects(
+    run({
+      manifest,
+      fixtureOptions: {
+        baseSection: "devDependencies",
+        headSection: "dependencies",
+        baseVersion: "4.123.0",
+        headVersion: "4.123.0",
+      },
+      comparison: directManifestChanges(manifest, {
+        baseVersion: "4.123.0",
+        headVersion: "4.123.0",
+        baseScope: "development",
+        headScope: "runtime",
+      }),
+    }),
+    /section changes require a trusted lockfile rotation/,
+  );
+
+  const valid = directManifestChanges(manifest);
+  await assert.rejects(
+    run({ manifest, comparison: valid.slice(0, 1) }),
+    /direct dependency changes must match package.json/,
+  );
+  const divergent = structuredClone(valid);
+  divergent[0].scope = "runtime";
+  await assert.rejects(
+    run({ manifest, comparison: divergent }),
+    /direct dependency changes must match package.json/,
+  );
+  await assert.rejects(
+    run({
+      manifest,
+      comparison: [
+        ...valid,
+        {
+          ...dependencyChange("added", "unreviewed-extra", "1.0.0"),
+          manifest,
+        },
+      ],
+    }),
+    /direct dependency changes must match package.json/,
+  );
+});
+
 test("npm lock topology, bundled payloads and every occurrence fail closed", async () => {
   const { expected } = expectedPullRequest();
   const run = ({ fixture, comparison, registry = new Map() }) => {
@@ -2154,10 +2409,24 @@ test("dependency pagination accepts the live 2/18/2 response shape", async () =>
 });
 
 test("dependency comparison rejects total change overflow", async () => {
-  const overflow = Array.from({ length: 5_001 }, () => DEPENDENCY_CHANGES[0]);
+  const overflow = Array.from(
+    { length: MAX_DEPENDENCY_CHANGES + 1 },
+    () => DEPENDENCY_CHANGES[0],
+  );
   await assert.rejects(
     dependencyReviewRun([dependencyResponse(overflow)], []),
     /dependency comparison exceeded the reviewed total change limit/,
+  );
+});
+
+test("dependency review action output rejects total change overflow", async () => {
+  const overflow = Array.from(
+    { length: MAX_DEPENDENCY_CHANGES + 1 },
+    () => DEPENDENCY_CHANGES[0],
+  );
+  await assert.rejects(
+    dependencyReviewRun([], overflow),
+    /dependency review action output exceeded the reviewed total change limit/,
   );
 });
 

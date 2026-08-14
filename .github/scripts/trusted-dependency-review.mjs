@@ -9,7 +9,7 @@ const API_VERSION = "2022-11-28";
 const SNAPSHOT_WARNINGS_HEADER = "x-github-dependency-graph-snapshot-warnings";
 const DEPENDENCY_PAGE_SIZE = 5;
 const MAX_DEPENDENCY_PAGES = 1_000;
-const MAX_DEPENDENCY_CHANGES = 5_000;
+export const MAX_DEPENDENCY_CHANGES = 5_000;
 const MAX_PACKAGE_JSON_BYTES = 128 * 1024;
 const MAX_PACKAGE_LOCK_BYTES = 1024 * 1024;
 const MAX_REGISTRY_METADATA_BYTES = 256 * 1024;
@@ -153,7 +153,7 @@ const LEAST_PRIVILEGE_ROLLOUT = [
   [
     ".github/scripts/scorecard-workflow.test.mjs",
     "5237744f213ad3908851a96101e042bce898ca9a",
-    "0e03f7c735ea4ef3977e82d9f67512d863ca56b7",
+    "61d44c38f1f813db8eab6927e2f9f9ea1288e415",
   ],
   [
     ".github/zizmor.yml",
@@ -202,6 +202,12 @@ const REVIEWED_NPM_PROJECTS = [
     manifest: "astrologo-frontend/package-lock.json",
     packagePath: "astrologo-frontend/package.json",
   },
+];
+const NPM_DIRECT_DEPENDENCY_SECTIONS = [
+  ["dependencies", "runtime"],
+  ["devDependencies", "development"],
+  ["optionalDependencies", "runtime"],
+  ["peerDependencies", "runtime"],
 ];
 const REVIEWED_PACKAGE_EMBEDDED_CONFIG_KEYS = [
   "biome",
@@ -1000,6 +1006,105 @@ function comparisonIdentity(change, manifest, changeType) {
     : null;
 }
 
+function directPackageDependencies(packageJson, label) {
+  const dependencies = new Map();
+  for (const [section, scope] of NPM_DIRECT_DEPENDENCY_SECTIONS) {
+    const values = packageJson[section];
+    if (values === undefined) continue;
+    assert.equal(
+      isPlainObject(values),
+      true,
+      `${label} ${section} must be an object`,
+    );
+    for (const name of Object.keys(values).sort()) {
+      const version = values[name];
+      assert.equal(
+        typeof version === "string" &&
+          version.length > 0 &&
+          version.trim() === version,
+        true,
+        `${label} ${section}.${name} must be a non-empty dependency version`,
+      );
+      assert.equal(
+        dependencies.has(name),
+        false,
+        `${label} dependency ${name} appears in multiple npm sections`,
+      );
+      dependencies.set(name, { name, scope, section, version });
+    }
+  }
+  return dependencies;
+}
+
+function directDependencyRecord(changeType, dependency) {
+  return {
+    change_type: changeType,
+    name: dependency.name,
+    scope: dependency.scope,
+    version: dependency.version,
+  };
+}
+
+function canonicalDirectDependencyChanges(changes) {
+  return changes.map(canonicalDescriptor).sort();
+}
+
+function assertDirectPackageManifestComparison({
+  basePackage,
+  headPackage,
+  comparison,
+  packagePath,
+}) {
+  const base = directPackageDependencies(basePackage, `base ${packagePath}`);
+  const head = directPackageDependencies(
+    headPackage,
+    `candidate ${packagePath}`,
+  );
+  const expected = [];
+  for (const name of new Set([...base.keys(), ...head.keys()])) {
+    const before = base.get(name);
+    const after = head.get(name);
+    if (
+      before !== undefined &&
+      after !== undefined &&
+      canonicalDescriptor(before) === canonicalDescriptor(after)
+    ) {
+      continue;
+    }
+    if (
+      before !== undefined &&
+      after !== undefined &&
+      before.section !== after.section
+    ) {
+      assert.fail(
+        `${packagePath} dependency ${name} moved between npm sections; section changes require a trusted lockfile rotation`,
+      );
+    }
+    if (before !== undefined)
+      expected.push(directDependencyRecord("removed", before));
+    if (after !== undefined)
+      expected.push(directDependencyRecord("added", after));
+  }
+
+  const actual = comparison
+    .filter(
+      (change) => change.ecosystem === "npm" && change.manifest === packagePath,
+    )
+    .map((change) => {
+      assert.equal(
+        change.scope === "runtime" || change.scope === "development",
+        true,
+        `${packagePath} direct dependency scope must be explicit`,
+      );
+      return directDependencyRecord(change.change_type, change);
+    });
+  assert.deepEqual(
+    canonicalDirectDependencyChanges(actual),
+    canonicalDirectDependencyChanges(expected),
+    `${packagePath} direct dependency changes must match package.json`,
+  );
+}
+
 function identityDelta(left, right) {
   const delta = [];
   for (const identity of left.keys())
@@ -1229,7 +1334,10 @@ export async function assertReviewedNpmLocks({
     ),
   );
   const reviewedManifests = new Set(
-    REVIEWED_NPM_PROJECTS.map(({ manifest }) => manifest),
+    REVIEWED_NPM_PROJECTS.flatMap(({ manifest, packagePath }) => [
+      manifest,
+      packagePath,
+    ]),
   );
   for (const change of normalizedComparison) {
     if (change.ecosystem === "npm") {
@@ -1276,6 +1384,12 @@ export async function assertReviewedNpmLocks({
           label: "candidate",
         }),
       ]);
+    assertDirectPackageManifestComparison({
+      basePackage: basePackageBlob.json,
+      headPackage: headPackageBlob.json,
+      comparison: normalizedComparison,
+      packagePath,
+    });
     for (const [label, value] of [
       ["base", baseLockBlob],
       ["candidate", headLockBlob],
@@ -1801,13 +1915,17 @@ function normalizeDependencyChange(change, label) {
   return normalized;
 }
 
-function canonicalDependencyChanges(changes, label) {
-  assert.equal(Array.isArray(changes), true, `${label} must be an array`);
+function assertDependencyChangeLimit(length, label) {
   assert.equal(
-    changes.length <= MAX_DEPENDENCY_CHANGES,
+    length <= MAX_DEPENDENCY_CHANGES,
     true,
     `${label} exceeded the reviewed total change limit`,
   );
+}
+
+function canonicalDependencyChanges(changes, label) {
+  assert.equal(Array.isArray(changes), true, `${label} must be an array`);
+  assertDependencyChangeLimit(changes.length, label);
   return changes
     .map((change, index) =>
       JSON.stringify(normalizeDependencyChange(change, `${label}[${index}]`)),
@@ -1929,10 +2047,9 @@ async function readDependencyComparison({
       true,
       "dependency comparison page must be an array",
     );
-    assert.equal(
-      pageChanges.length <= MAX_DEPENDENCY_CHANGES - changes.length,
-      true,
-      "dependency comparison exceeded the reviewed total change limit",
+    assertDependencyChangeLimit(
+      changes.length + pageChanges.length,
+      "dependency comparison",
     );
     for (const [index, change] of pageChanges.entries()) {
       changes.push(
