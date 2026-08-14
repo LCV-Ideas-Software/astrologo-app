@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 
 const API_VERSION = "2022-11-28";
 const SNAPSHOT_WARNINGS_HEADER = "x-github-dependency-graph-snapshot-warnings";
-const DEPENDENCY_PAGE_SIZE = 100;
+const DEPENDENCY_PAGE_SIZE = 5;
 const MAX_DEPENDENCY_PAGES = 1_000;
 const MAX_PACKAGE_JSON_BYTES = 128 * 1024;
 const MAX_PACKAGE_LOCK_BYTES = 1024 * 1024;
@@ -137,7 +137,7 @@ const LEAST_PRIVILEGE_ROLLOUT = [
   [
     ".github/workflows/zizmor.yml",
     "c163e87b4faa65fec369a65eea1ca7957a25a9ed",
-    "ba97a86fdf9324d9843397483a055e6fcb05078c",
+    "949fbdd1794f812729500b5f4fcb849cfb3d7266",
   ],
   [
     ".github/scripts/enforce-scorecard.mjs",
@@ -152,7 +152,7 @@ const LEAST_PRIVILEGE_ROLLOUT = [
   [
     ".github/scripts/scorecard-workflow.test.mjs",
     "5237744f213ad3908851a96101e042bce898ca9a",
-    "8eda6286d7bcf4c6f401baf61cb99f40bc8c145e",
+    "45d6d0b21cc896ba3c25a36790bcff3f36bf17ad",
   ],
   [
     ".github/zizmor.yml",

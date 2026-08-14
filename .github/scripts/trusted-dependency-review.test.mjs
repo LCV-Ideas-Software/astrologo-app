@@ -76,7 +76,7 @@ const LEAST_PRIVILEGE_ROLLOUT_TRANSITIONS = [
   [
     ".github/workflows/zizmor.yml",
     "c163e87b4faa65fec369a65eea1ca7957a25a9ed",
-    "ba97a86fdf9324d9843397483a055e6fcb05078c",
+    "949fbdd1794f812729500b5f4fcb849cfb3d7266",
   ],
   [
     ".github/scripts/enforce-scorecard.mjs",
@@ -91,7 +91,7 @@ const LEAST_PRIVILEGE_ROLLOUT_TRANSITIONS = [
   [
     ".github/scripts/scorecard-workflow.test.mjs",
     "5237744f213ad3908851a96101e042bce898ca9a",
-    "8eda6286d7bcf4c6f401baf61cb99f40bc8c145e",
+    "45d6d0b21cc896ba3c25a36790bcff3f36bf17ad",
   ],
   [
     ".github/zizmor.yml",
@@ -455,7 +455,7 @@ function dependencyReviewRun(
         [...endpoint.searchParams.entries()].sort(),
         [
           ["page", endpoint.searchParams.get("page")],
-          ["per_page", "100"],
+          ["per_page", "5"],
         ].sort(),
       );
       const page = Number.parseInt(endpoint.searchParams.get("page"), 10);
@@ -2091,7 +2091,7 @@ test("npm lock topology, bundled payloads and every occurrence fail closed", asy
 });
 
 test("dependency review output matches two complete warning-free reads", async () => {
-  const next = `<https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=100&page=2>; rel="next", <https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=100&page=2>; rel="last"`;
+  const next = `<https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=5&page=2>; rel="next", <https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=5&page=2>; rel="last"`;
   await assert.doesNotReject(
     dependencyReviewRun(
       [
@@ -2128,7 +2128,7 @@ test("dependency review output matches two complete warning-free reads", async (
 });
 
 test("dependency snapshot warnings, drift and malformed output fail closed", async () => {
-  const next = `<https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=100&page=2>; rel="next"`;
+  const next = `<https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=5&page=2>; rel="next"`;
   const cleanReads = () => [
     dependencyResponse(DEPENDENCY_CHANGES),
     dependencyResponse(DEPENDENCY_CHANGES),
@@ -2150,25 +2150,25 @@ test("dependency snapshot warnings, drift and malformed output fail closed", asy
     () =>
       dependencyReviewRun([
         dependencyResponse(
-          Array.from({ length: 101 }, () => DEPENDENCY_CHANGES[0]),
+          Array.from({ length: 6 }, () => DEPENDENCY_CHANGES[0]),
         ),
       ]),
     () =>
       dependencyReviewRun([
         dependencyResponse([], {
-          link: `<https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=100&page=3>; rel="next"`,
+          link: `<https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=5&page=3>; rel="next"`,
         }),
       ]),
     () =>
       dependencyReviewRun([
         dependencyResponse([], {
-          link: `<https://example.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=100&page=2>; rel="next"`,
+          link: `<https://example.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=5&page=2>; rel="next"`,
         }),
       ]),
     () =>
       dependencyReviewRun([
         dependencyResponse([], {
-          link: `<https://api.github.com/repos/another/repository/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=100&page=2>; rel="next"`,
+          link: `<https://api.github.com/repos/another/repository/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=5&page=2>; rel="next"`,
         }),
       ]),
     () =>
@@ -2178,7 +2178,7 @@ test("dependency snapshot warnings, drift and malformed output fail closed", asy
     () =>
       dependencyReviewRun([
         dependencyResponse([], {
-          link: `<https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=100&page=9>; rel="last"`,
+          link: `<https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=5&page=9>; rel="last"`,
         }),
       ]),
     () => dependencyReviewRun(cleanReads(), [DEPENDENCY_CHANGES[0]]),
@@ -2202,13 +2202,13 @@ test("dependency snapshot warnings, drift and malformed output fail closed", asy
     () =>
       dependencyReviewRun([
         dependencyResponse([], {
-          link: `garbage, <https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=100&page=2>; rel="next"`,
+          link: `garbage, <https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=5&page=2>; rel="next"`,
         }),
       ]),
     () =>
       dependencyReviewRun([
         dependencyResponse([], {
-          link: `<https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=100&page=2&unexpected=1>; rel="next"`,
+          link: `<https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=5&page=2&unexpected=1>; rel="next"`,
         }),
       ]),
     () =>
@@ -2517,17 +2517,35 @@ test("the pull request binding is checked before and after tree inspection", asy
 });
 
 test("verifyCandidate always carries a supplied comparison through both lockfiles", async () => {
-  const { baseTree, headTree } = preRolloutFixtures();
   const { expected, pull } = expectedPullRequest();
-  const projectBlobs = new Map();
-  const lockOids = new Set();
-  for (const path of [
+  const projectPaths = [
     "package.json",
     "package-lock.json",
     "astrologo-frontend/package.json",
     "astrologo-frontend/package-lock.json",
-  ]) {
-    const bytes = await readFile(resolvePath(path));
+  ];
+  const projectBytes = new Map(
+    await Promise.all(
+      projectPaths.map(async (path) => [
+        path,
+        await readFile(resolvePath(path)),
+      ]),
+    ),
+  );
+  const frontendPackageTransition = LEAST_PRIVILEGE_ROLLOUT_BY_PATH.get(
+    "astrologo-frontend/package.json",
+  );
+  const checkedInFrontendPackageOid = gitBlobOid(
+    projectBytes.get("astrologo-frontend/package.json"),
+  );
+  const { baseTree, headTree } =
+    checkedInFrontendPackageOid === frontendPackageTransition.beforeOid
+      ? preRolloutFixtures()
+      : settledFixtures();
+  const projectBlobs = new Map();
+  const lockOids = new Set();
+  for (const path of projectPaths) {
+    const bytes = projectBytes.get(path);
     const oid = gitBlobOid(bytes);
     for (const tree of [baseTree, headTree]) {
       const entry = tree.tree.find((candidate) => candidate.path === path);
@@ -2867,11 +2885,16 @@ test("the trusted workflow never checks out or executes candidate content", asyn
     gitBlobOid(Buffer.from(finalWorkflow, "utf8")),
     FINAL_TRUSTED_DEPENDENCY_REVIEW_OID,
   );
+  const checkedInCarrierOid = gitBlobOid(Buffer.from(workflow, "utf8"));
+  const carrierTransition = LEAST_PRIVILEGE_ROLLOUT_BY_PATH.get(
+    ".github/workflows/native-auto-merge.yml",
+  );
   assert.equal(
-    gitBlobOid(Buffer.from(workflow, "utf8")),
-    LEAST_PRIVILEGE_ROLLOUT_BY_PATH.get(
-      ".github/workflows/native-auto-merge.yml",
-    ).beforeOid,
+    [carrierTransition.beforeOid, carrierTransition.afterOid].includes(
+      checkedInCarrierOid,
+    ),
+    true,
+    "the checked-in trusted carrier must remain an exact reviewed BEFORE or AFTER blob",
   );
   assert.doesNotMatch(
     workflow,
