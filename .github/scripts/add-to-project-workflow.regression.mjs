@@ -99,7 +99,10 @@ const ESPERADO = [
   "  issues:",
   "    # transferred cobre a issue transferida PARA este repositorio: o README da action",
   "    # pinada lista o evento como o caminho suportado para \"Issues... transferred into",
-  "    # your repository\", e a adicao e idempotente (re-adicionar devolve o mesmo item).",
+  "    # your repository\". A mutacao addProjectV2ItemById e idempotente para item ativo",
+  "    # (re-adicionar devolve o mesmo item; provado por sonda), e o pin inclui o fix",
+  "    # upstream #797: duplicata que a API rejeitaria (ex.: item arquivado) vira skip",
+  "    # com aviso, nao falha do run — essencial para reopened/ready_for_review.",
   "    types: [opened, reopened, transferred]",
   "  pull_request_target: # zizmor: ignore[dangerous-triggers] -- sem checkout e sem execucao de codigo do PR; somente metadados; secret do environment para PR de fork (cobertura de Dependabot nao garantida: decidida por sonda na ativacao)",
   "    types: [opened, reopened, ready_for_review]",
@@ -152,13 +155,13 @@ const ESPERADO = [
   "          permission-pull-requests: read",
   "",
   "      - name: Add to repository project",
-  "        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0",
+  "        uses: actions/add-to-project@c7c85ddefbcfcea7da1845330fbc20fd7033d6f6 # v2.0.0 + fix #797 (item ja existente vira skip, nao erro)",
   "        with:",
   "          project-url: https://github.com/orgs/LCV-Ideas-Software/projects/__QUADRO__",
   "          github-token: ${{ steps.token.outputs.token }}",
   "",
   "      - name: Add to portfolio project",
-  "        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0",
+  "        uses: actions/add-to-project@c7c85ddefbcfcea7da1845330fbc20fd7033d6f6 # v2.0.0 + fix #797 (item ja existente vira skip, nao erro)",
   "        with:",
   "          project-url: https://github.com/orgs/LCV-Ideas-Software/projects/17",
   "          github-token: ${{ steps.token.outputs.token }}",
@@ -202,8 +205,8 @@ test("the projects workflow uses exactly the two pinned metadata actions", () =>
   const uses = [...normalized.matchAll(/uses\s*:\s*["']?([^\s,"'}\]]+)/g)].map((m) => m[1]);
   assert.deepEqual(uses, [
     "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1",
-    "actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd",
-    "actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd",
+    "actions/add-to-project@c7c85ddefbcfcea7da1845330fbc20fd7033d6f6",
+    "actions/add-to-project@c7c85ddefbcfcea7da1845330fbc20fd7033d6f6",
   ]);
 });
 
