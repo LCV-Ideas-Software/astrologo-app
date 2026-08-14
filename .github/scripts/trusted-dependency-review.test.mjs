@@ -76,7 +76,7 @@ const LEAST_PRIVILEGE_ROLLOUT_TRANSITIONS = [
   [
     ".github/workflows/zizmor.yml",
     "c163e87b4faa65fec369a65eea1ca7957a25a9ed",
-    "949fbdd1794f812729500b5f4fcb849cfb3d7266",
+    "63df6af729c3ec830df340eb5ccea00e564b575d",
   ],
   [
     ".github/scripts/enforce-scorecard.mjs",
@@ -91,7 +91,7 @@ const LEAST_PRIVILEGE_ROLLOUT_TRANSITIONS = [
   [
     ".github/scripts/scorecard-workflow.test.mjs",
     "5237744f213ad3908851a96101e042bce898ca9a",
-    "45d6d0b21cc896ba3c25a36790bcff3f36bf17ad",
+    "0e03f7c735ea4ef3977e82d9f67512d863ca56b7",
   ],
   [
     ".github/zizmor.yml",
@@ -2127,6 +2127,40 @@ test("dependency review output matches two complete warning-free reads", async (
   );
 });
 
+test("dependency pagination accepts the live 2/18/2 response shape", async () => {
+  const changes = Array.from({ length: 22 }, (_, index) =>
+    dependencyChange("added", `example-package-${index}`, "1.0.0"),
+  );
+  const comparisonUrl = `https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=5`;
+  const firstLink = `<${comparisonUrl}&page=2>; rel="next", <${comparisonUrl}&page=3>; rel="last"`;
+  const middleLink = `<${comparisonUrl}&page=1>; rel="first", <${comparisonUrl}&page=1>; rel="prev", <${comparisonUrl}&page=3>; rel="next", <${comparisonUrl}&page=3>; rel="last"`;
+  const pages = [changes.slice(0, 2), changes.slice(2, 20), changes.slice(20)];
+  await assert.doesNotReject(
+    dependencyReviewRun(
+      [...pages, ...pages].map((page, index) =>
+        dependencyResponse(page, {
+          link:
+            index % pages.length === 0
+              ? firstLink
+              : index % pages.length === 1
+                ? middleLink
+                : undefined,
+        }),
+      ),
+      [...changes].reverse(),
+      [1, 2, 3, 1, 2, 3],
+    ),
+  );
+});
+
+test("dependency comparison rejects total change overflow", async () => {
+  const overflow = Array.from({ length: 5_001 }, () => DEPENDENCY_CHANGES[0]);
+  await assert.rejects(
+    dependencyReviewRun([dependencyResponse(overflow)], []),
+    /dependency comparison exceeded the reviewed total change limit/,
+  );
+});
+
 test("dependency snapshot warnings, drift and malformed output fail closed", async () => {
   const next = `<https://api.github.com/repositories/1182022862/dependency-graph/compare/${SHA.base}...${SHA.head}?per_page=5&page=2>; rel="next"`;
   const cleanReads = () => [
@@ -2147,12 +2181,6 @@ test("dependency snapshot warnings, drift and malformed output fail closed", asy
       dependencyReviewRun([dependencyResponse([], { includeWarning: false })]),
     () => dependencyReviewRun([dependencyResponse([], { status: 500 })]),
     () => dependencyReviewRun([dependencyResponse({}, { link: undefined })]),
-    () =>
-      dependencyReviewRun([
-        dependencyResponse(
-          Array.from({ length: 6 }, () => DEPENDENCY_CHANGES[0]),
-        ),
-      ]),
     () =>
       dependencyReviewRun([
         dependencyResponse([], {
