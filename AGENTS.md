@@ -19,6 +19,8 @@ Aplicacao servida por Cloudflare. Deploy exclusivamente via GitHub Actions.
 npm run lint
 npm run format:public:check
 npm run projects:boundaries
+# no pacote do monorepo, com npm ci antes:
+#   astrologo-frontend/ -> npm run lint && npm run biome && npm test && npm run build && npm run build:functions && node scripts/check-tracked-executables.mjs
 ```
 
 ## Workspace Policy
