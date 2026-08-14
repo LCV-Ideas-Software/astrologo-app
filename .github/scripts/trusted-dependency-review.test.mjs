@@ -92,7 +92,7 @@ const LEAST_PRIVILEGE_ROLLOUT_TRANSITIONS = [
   [
     ".github/scripts/scorecard-workflow.test.mjs",
     "5237744f213ad3908851a96101e042bce898ca9a",
-    "61d44c38f1f813db8eab6927e2f9f9ea1288e415",
+    "d3e564b9f2002d9322699e3dfa3f1ebbcd625037",
   ],
   [
     ".github/zizmor.yml",
