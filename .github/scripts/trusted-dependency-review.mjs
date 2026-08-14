@@ -9,6 +9,7 @@ const API_VERSION = "2022-11-28";
 const SNAPSHOT_WARNINGS_HEADER = "x-github-dependency-graph-snapshot-warnings";
 const DEPENDENCY_PAGE_SIZE = 5;
 const MAX_DEPENDENCY_PAGES = 1_000;
+const MAX_DEPENDENCY_CHANGES = 5_000;
 const MAX_PACKAGE_JSON_BYTES = 128 * 1024;
 const MAX_PACKAGE_LOCK_BYTES = 1024 * 1024;
 const MAX_REGISTRY_METADATA_BYTES = 256 * 1024;
@@ -137,7 +138,7 @@ const LEAST_PRIVILEGE_ROLLOUT = [
   [
     ".github/workflows/zizmor.yml",
     "c163e87b4faa65fec369a65eea1ca7957a25a9ed",
-    "949fbdd1794f812729500b5f4fcb849cfb3d7266",
+    "63df6af729c3ec830df340eb5ccea00e564b575d",
   ],
   [
     ".github/scripts/enforce-scorecard.mjs",
@@ -152,7 +153,7 @@ const LEAST_PRIVILEGE_ROLLOUT = [
   [
     ".github/scripts/scorecard-workflow.test.mjs",
     "5237744f213ad3908851a96101e042bce898ca9a",
-    "45d6d0b21cc896ba3c25a36790bcff3f36bf17ad",
+    "0e03f7c735ea4ef3977e82d9f67512d863ca56b7",
   ],
   [
     ".github/zizmor.yml",
@@ -1802,6 +1803,11 @@ function normalizeDependencyChange(change, label) {
 
 function canonicalDependencyChanges(changes, label) {
   assert.equal(Array.isArray(changes), true, `${label} must be an array`);
+  assert.equal(
+    changes.length <= MAX_DEPENDENCY_CHANGES,
+    true,
+    `${label} exceeded the reviewed total change limit`,
+  );
   return changes
     .map((change, index) =>
       JSON.stringify(normalizeDependencyChange(change, `${label}[${index}]`)),
@@ -1924,15 +1930,15 @@ async function readDependencyComparison({
       "dependency comparison page must be an array",
     );
     assert.equal(
-      pageChanges.length <= DEPENDENCY_PAGE_SIZE,
+      pageChanges.length <= MAX_DEPENDENCY_CHANGES - changes.length,
       true,
-      "dependency comparison page exceeded the reviewed page size",
+      "dependency comparison exceeded the reviewed total change limit",
     );
-    changes.push(
-      ...pageChanges.map((change, index) =>
+    for (const [index, change] of pageChanges.entries()) {
+      changes.push(
         normalizeDependencyChange(change, `comparison page ${page}[${index}]`),
-      ),
-    );
+      );
+    }
     if (
       !hasNextDependencyPage(
         response.headers.get("link"),
