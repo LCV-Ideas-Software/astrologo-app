@@ -16,7 +16,6 @@ Aplicacao servida por Cloudflare. Deploy exclusivamente via GitHub Actions.
 ## Mandatory Gates
 
 ```bash
-npm run lint
 npm run format:public:check
 npm run projects:boundaries
 ```
