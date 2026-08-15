@@ -1,5 +1,11 @@
 # Changelog — Astrólogo Frontend
 
+## [Unreleased]
+
+- O pacote do web app passa a ser explicitamente privado, preserva `APP v02.25.05` como versao interna exibida no rodape e deixa de depender de GitHub Releases/tags.
+- `eslint-plugin-react-refresh` sobe de 0.5.3 para 0.5.4 e `typescript-eslint` de 8.66.0 para 8.67.0.
+- O deploy passa a usar o Wrangler Action oficial com o binding D1 versionado no `wrangler.json`.
+
 ## [v02.25.05] - 10/08/2026
 
 - O teto rejeitado e o limite aceito pelo provedor passam a ser persistidos por job/modelo e reutilizados entre fragmentos, reduções e síntese; uma rejeição posterior invalida limites e pisos obsoletos, evitando chamadas repetidas sem tornar o teto permanente (achados Copilot e Codex do PR anterior).
@@ -11,16 +17,20 @@
 ## [v02.25.03] - 2026-08-09
 
 - Negociação de teto fora do orçamento: `outputTokenCeiling` persistido no payload clampa a escalada (sem oscilação) e o refund devolve a tentativa da negociação — piso 1.024 sempre alcançável (achados codex P1 + Copilot do PR anterior).
+
 ## [v02.25.02] - 2026-08-09
 
 - Headroom de saída restaurado para modelos fora da tabela (65.535) e auto-recuperação descendente no 400 de `maxOutputTokens` (metade, piso 1.024) no retry da etapa; substitui a garantia absoluta da v02.25.01 por recuperação documentada.
+
 ## [v02.25.01] - 2026-08-09
 
 - Teto conservador de saída para IDs fora da tabela validada: 65.535 → 8.192 (request inicial da orquestração), impedindo escalada de `MAX_TOKENS` acima do comprovadamente aceito (achado codex P2). Lockfile realinhado ao manifesto.
+
 ## [v02.25.00] - 2026-08-09
 
 - **Seletor de modelos sempre respeitado (diretiva fleet-wide)**: a tabela de capacidades deixa de gatear a seleção — o ID configurado no seletor do admin é usado exatamente como está (validação apenas sintática); IDs fora da tabela validada recebem limites conservadores (entrada 128 mil tokens pela orquestração; saída 65.535). `gemini-3.6-flash` entra na tabela validada (saída 65.536).
 - Fallback para `gemini-3.1-pro-preview` apenas em runtime, quando o Vertex responde 404 de publisher model para o modelo selecionado, antes de persistir o plano (`modelAvailability.ts`); 404 da mint OAuth nunca troca o modelo (`VertexHttpError` com operação de origem).
+
 ## [v02.24.00] - 2026-08-08
 
 ### Alterado

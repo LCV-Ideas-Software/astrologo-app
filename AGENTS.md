@@ -18,9 +18,8 @@ Aplicacao servida por Cloudflare. Deploy exclusivamente via GitHub Actions.
 ```bash
 npm run lint
 npm run format:public:check
-node --test .github/scripts/add-to-project-workflow.regression.mjs
 # no pacote do monorepo, com npm ci antes:
-#   astrologo-frontend/ -> npm run lint && npm run biome && npm test && npm run build && npm run build:functions && node scripts/check-tracked-executables.mjs
+#   astrologo-frontend/ -> npm run lint && npm run biome && npm test && npm run build && npm run build:functions
 ```
 
 ## Workspace Policy
@@ -71,7 +70,6 @@ enfrentar este problema daqui a tres meses?"_ Se sim, vira Discussion.
 - Conhecimento especifico deste repo -> Discussions **deste repositorio** (Q&A ou Ideas).
 - Conhecimento transversal a varios repos (politica de release, regra de ruleset, restricao
   de plataforma) -> Discussions **da organizacao**.
-
 
 **Excecao de seguranca** (tambem no G3): causa raiz, caminho de exploracao ou licao de
 remediacao ligada a **qualquer caso coberto pelo reporte privado de `SECURITY.md`** nao

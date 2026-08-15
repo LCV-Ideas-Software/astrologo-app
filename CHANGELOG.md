@@ -1,9 +1,19 @@
 # Changelog — Astrologo App
 
 ## [Unreleased]
-### Added
 
-- Governanca de trabalho sobre GitHub Projects, Issues e Discussions: quadro dedicado do repositorio, formularios de issue para Incident, Maintenance e Spike, atalhos para Discussions no seletor de issues, workflow `add-to-project` (inerte ate a organizacao definir `LCV_PROJECTS_APP_CLIENT_ID`; gatilho `pull_request_target` sem checkout nem execucao de codigo do PR, para alcancar PRs de fork com o secret do environment — cobertura de PRs do Dependabot e de branches com nome tipo SHA nao e garantida por este gatilho e fica declarada no proprio arquivo — com excecao estreita e documentada do zizmor), verificador do invariante privilegiado em workflow proprio `projects-workflow-boundaries` executado a partir do ref base protegido, e o ritual de registro G1..G4 versionado em `AGENTS.md` e `CLAUDE.md` para Claude Code e ChatGPT-Codex.
+### Alterado
+
+- CodeQL, Dependency Review, OpenSSF Scorecard e Zizmor passam a usar diretamente as implementacoes oficiais, sem gate SARIF, reusable workflow, manifesto, scanner ou validador proprio.
+- O deploy passa a usar `cloudflare/wrangler-action` oficial; o identificador da D1 compartilhada fica versionado no `wrangler.json`, enquanto tokens e credenciais permanecem secretos.
+- O Auto-add nativo dos Projects #11 e #17 substitui o workflow com GitHub App e seu verificador.
+- `eslint-plugin-react-refresh` sobe de 0.5.3 para 0.5.4 e `typescript-eslint` de 8.66.0 para 8.67.0 nos dois pacotes; CodeQL sobe para v4.37.7.
+- O cooldown nativo do Dependabot passa a sete dias para atualizacoes de versao npm; atualizacoes de seguranca continuam imediatas e Actions permanecem excluidas do atraso.
+
+### Removido
+
+- Native Auto-merge, Auto-release, Releases/tags do web app, validadores customizados de Dependency Review/Scorecard/Projects e o verificador proprio de binarios rastreados.
+- O versionamento GitHub externo deixa de ser produzido; a versao interna `APP v02.25.05`, exibida no rodape e validada pelos testes normais do aplicativo, permanece inalterada.
 
 ## [v02.25.05] - 10/08/2026
 

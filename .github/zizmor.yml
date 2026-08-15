@@ -1,6 +1,0 @@
-rules:
-  dependabot-cooldown:
-    # GitHub applies a three-day default to version updates while security
-    # updates bypass cooldown. Preserve that upstream security/freshness balance.
-    config:
-      days: 3
