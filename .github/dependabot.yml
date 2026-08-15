@@ -8,7 +8,7 @@ updates:
       time: "01:00"
       timezone: "America/Los_Angeles"
     cooldown:
-      default-days: 3
+      default-days: 7
       exclude:
         - "*"
     labels:
@@ -35,9 +35,9 @@ updates:
       time: "01:00"
       timezone: "America/Los_Angeles"
     cooldown:
-      default-days: 3
+      default-days: 7
     ignore:
-      # typescript-eslint 8.66.0 still declares TypeScript <6.1.0.
+      # typescript-eslint 8.67.0 still declares TypeScript <6.1.0.
       # Remove this constraint as soon as the upstream peer range supports it.
       - dependency-name: "typescript"
         versions:
@@ -82,9 +82,9 @@ updates:
       time: "01:00"
       timezone: "America/Los_Angeles"
     cooldown:
-      default-days: 3
+      default-days: 7
     ignore:
-      # typescript-eslint 8.66.0 still declares TypeScript <6.1.0.
+      # typescript-eslint 8.67.0 still declares TypeScript <6.1.0.
       # Remove this constraint as soon as the upstream peer range supports it.
       - dependency-name: "typescript"
         versions:

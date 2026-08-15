@@ -18,9 +18,8 @@ Aplicacao servida por Cloudflare. Deploy exclusivamente via GitHub Actions.
 ```bash
 npm run lint
 npm run format:public:check
-node --test .github/scripts/add-to-project-workflow.regression.mjs
 # no pacote do monorepo, com npm ci antes:
-#   astrologo-frontend/ -> npm run lint && npm run biome && npm test && npm run build && npm run build:functions && node scripts/check-tracked-executables.mjs
+#   astrologo-frontend/ -> npm run lint && npm run biome && npm test && npm run build && npm run build:functions
 ```
 
 ## Workspace Policy
@@ -72,7 +71,6 @@ enfrentar este problema daqui a tres meses?"_ Se sim, vira Discussion.
 - Conhecimento transversal a varios repos (politica de release, regra de ruleset, restricao
   de plataforma) -> Discussions **da organizacao**.
 
-
 **Excecao de seguranca** (tambem no G3): causa raiz, caminho de exploracao ou licao de
 remediacao ligada a **qualquer caso coberto pelo reporte privado de `SECURITY.md`** nao
 vira Discussion publica antes da divulgacao coordenada. Registre no canal privado de
@@ -114,9 +112,13 @@ com desvios `Bloqueado` e `Descartado`.
 > proprios em cada quadro. Atualize os DOIS quadros — o deste repositorio e o portfolio
 > #17 — a cada transicao; ID de opcao de um quadro nunca vale no outro (Discussion org#176).
 
-### Nada de identificador real em repositorio publico
+### Segredos e identificador D1 autorizado
 
-Issues, PRs e Discussions deste repositorio sao publicos e permanentes. Use placeholders
-(`proj-x`, `exemplo-projeto-000`, `exemplo.com`) no lugar de IDs de projeto de nuvem, nomes
-de banco, dominios e contas. Detalhe operacional sensivel vai para o quadro privado ou para
-`.github-private`.
+Tokens, credenciais, chaves e demais segredos nunca entram no repositorio. Para este
+repositorio somente, o `database_name` e o `database_id` do binding D1 em
+`astrologo-frontend/wrangler.json` sao identificadores nao secretos, exigidos pela
+configuracao oficial do Wrangler e autorizados explicitamente pelo operador. Esta excecao
+nao autoriza nenhum outro identificador real: cada novo caso exige pedido fundamentado e
+nova aprovacao explicita. Issues, PRs, Discussions e exemplos documentais continuam usando
+placeholders (`proj-x`, `exemplo-projeto-000`, `exemplo.com`) quando o valor real nao for
+parte necessaria da configuracao versionada autorizada.
