@@ -37,7 +37,7 @@ updates:
     cooldown:
       default-days: 7
     ignore:
-      # typescript-eslint 8.66.0 still declares TypeScript <6.1.0.
+      # typescript-eslint 8.67.0 still declares TypeScript <6.1.0.
       # Remove this constraint as soon as the upstream peer range supports it.
       - dependency-name: "typescript"
         versions:
@@ -84,7 +84,7 @@ updates:
     cooldown:
       default-days: 7
     ignore:
-      # typescript-eslint 8.66.0 still declares TypeScript <6.1.0.
+      # typescript-eslint 8.67.0 still declares TypeScript <6.1.0.
       # Remove this constraint as soon as the upstream peer range supports it.
       - dependency-name: "typescript"
         versions:
