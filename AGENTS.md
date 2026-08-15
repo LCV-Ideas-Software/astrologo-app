@@ -112,9 +112,13 @@ com desvios `Bloqueado` e `Descartado`.
 > proprios em cada quadro. Atualize os DOIS quadros — o deste repositorio e o portfolio
 > #17 — a cada transicao; ID de opcao de um quadro nunca vale no outro (Discussion org#176).
 
-### Nada de identificador real em repositorio publico
+### Segredos e identificador D1 autorizado
 
-Issues, PRs e Discussions deste repositorio sao publicos e permanentes. Use placeholders
-(`proj-x`, `exemplo-projeto-000`, `exemplo.com`) no lugar de IDs de projeto de nuvem, nomes
-de banco, dominios e contas. Detalhe operacional sensivel vai para o quadro privado ou para
-`.github-private`.
+Tokens, credenciais, chaves e demais segredos nunca entram no repositorio. Para este
+repositorio somente, o `database_name` e o `database_id` do binding D1 em
+`astrologo-frontend/wrangler.json` sao identificadores nao secretos, exigidos pela
+configuracao oficial do Wrangler e autorizados explicitamente pelo operador. Esta excecao
+nao autoriza nenhum outro identificador real: cada novo caso exige pedido fundamentado e
+nova aprovacao explicita. Issues, PRs, Discussions e exemplos documentais continuam usando
+placeholders (`proj-x`, `exemplo-projeto-000`, `exemplo.com`) quando o valor real nao for
+parte necessaria da configuracao versionada autorizada.
