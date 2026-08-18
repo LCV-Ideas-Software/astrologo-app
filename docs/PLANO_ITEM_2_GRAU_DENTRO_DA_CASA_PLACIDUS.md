@@ -1,5 +1,16 @@
 # Plano do item 2 — grau dentro da Casa Placidus
 
+> **⛔ SUPERADO (18/08/2026).** A substância deste plano foi entregue na
+> v02.21.00 (12/07/2026) por uma arquitetura diferente da proposta abaixo: o
+> grau mundano derivado do `swe_house_pos` vive no suplemento
+> `natalChartAnalysisV1` (`rawSwissHousePosition`, `degreeWithinHouseDeg`,
+> `mundaneLongitudeDeg`), persistido à parte e exposto no painel, no e-mail, no
+> prompt de IA e na ajuda contextual, com "indisponível" para mapas antigos —
+> sem evoluir o `housePlacement` do payload posicional `2.0.0` para `2.1.0`
+> como este plano propunha. O contrato abaixo permanece apenas como registro
+> histórico; reintroduzir o grau dentro do próprio `dados_posicionais_v2` seria
+> decisão nova, fora deste plano. Rastreio: issue #276.
+
 ## Objetivo
 
 Acrescentar, em uma segunda entrega, a coordenada fracionária que indica quanto o planeta avançou dentro de sua Casa Placidus. A primeira entrega já calcula as 12 cúspides e a casa de cada planeta; o item 2 preservará esse resultado e passará a expor também o “grau mundano” da casa com semântica inequívoca.
