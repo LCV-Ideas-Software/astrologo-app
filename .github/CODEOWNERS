@@ -6,7 +6,6 @@
 /AGENTS.md @lcv-leo
 /CLAUDE.md @lcv-leo
 /.github/CODEOWNERS @lcv-leo
-/.github/copilot-instructions.md @lcv-leo
 /.github/dependabot.yml @lcv-leo
 /.github/workflows/ @lcv-leo
 
