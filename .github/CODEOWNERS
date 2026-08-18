@@ -5,10 +5,6 @@
 # Agent and repository governance
 /AGENTS.md @lcv-leo
 /CLAUDE.md @lcv-leo
-/GEMINI.md @lcv-leo
-/.ai/ @lcv-leo
-/.agents/ @lcv-leo
-/.gemini/ @lcv-leo
 /.github/CODEOWNERS @lcv-leo
 /.github/copilot-instructions.md @lcv-leo
 /.github/dependabot.yml @lcv-leo
@@ -16,8 +12,5 @@
 
 # Application and infra surfaces
 /astrologo-frontend/src/ @lcv-leo
-/src-tauri/ @lcv-leo
-/wrangler.json @lcv-leo
+/astrologo-frontend/functions/ @lcv-leo
 /**/wrangler.json @lcv-leo
-/wrangler.toml @lcv-leo
-/**/wrangler.toml @lcv-leo
