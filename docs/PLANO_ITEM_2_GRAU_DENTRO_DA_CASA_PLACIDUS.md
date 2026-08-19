@@ -4,12 +4,15 @@
 > v02.21.00 (12/07/2026) por uma arquitetura diferente da proposta abaixo: o
 > grau mundano derivado do `swe_house_pos` vive no suplemento
 > `natalChartAnalysisV1` (`rawSwissHousePosition`, `degreeWithinHouseDeg`,
-> `mundaneLongitudeDeg`), persistido à parte e exposto no painel, no e-mail, no
-> prompt de IA e na ajuda contextual, com "indisponível" para mapas antigos —
-> sem evoluir o `housePlacement` do payload posicional `2.0.0` para `2.1.0`
-> como este plano propunha. O contrato abaixo permanece apenas como registro
-> histórico; reintroduzir o grau dentro do próprio `dados_posicionais_v2` seria
-> decisão nova, fora deste plano. Rastreio: issue #276.
+> `mundaneLongitudeDeg`), persistido à parte e, quando o suplemento existe,
+> exposto no painel, no e-mail, no prompt de IA e na ajuda contextual. Mapas
+> anteriores sem esse suplemento continuam legíveis pelo `dadosPosicionaisV2`,
+> mas não exibem nem estimam o grau mundano; o rótulo "indisponível" só aparece
+> quando um suplemento presente registra o campo como `unavailable` — sem evoluir
+> o `housePlacement` do payload posicional `2.0.0` para `2.1.0` como este plano
+> propunha. O contrato abaixo permanece apenas como registro histórico;
+> reintroduzir o grau dentro do próprio `dados_posicionais_v2` seria decisão nova,
+> fora deste plano. Rastreio: issue #276.
 
 ## Objetivo
 

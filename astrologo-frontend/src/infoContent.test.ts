@@ -124,12 +124,15 @@ describe('conteúdo leigo dos botões Saiba mais', () => {
     expect(text).not.toContain('perfil metodológico versionado');
   });
 
-  it('distingue casa, cúspide e grau mundano', () => {
+  it('distingue casa, cúspide, artefato natal ausente e grau mundano indisponível', () => {
     const text = flatten('houseInfluences');
     expect(text).toContain('grau mundano');
     expect(text).not.toContain('swe_house_pos');
     expect(text).toMatch(/não é estimad[oa] pelo tamanho do arco/iu);
-    expect(text).toContain('indisponível');
+    expect(text).toContain('Mapas antigos podem não ter esse dado');
+    expect(text).toContain('não é exibido nem estimado');
+    expect(text).toContain('Quando o mapa possui a análise das casas');
+    expect(text).toContain('aparece como indisponível');
   });
 
   it('explica céu atual e trânsitos sem prometer acontecimentos', () => {

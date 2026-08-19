@@ -377,7 +377,7 @@ const houseInfluencesContent: InfoContent = {
       items: [
         'O grau no signo vem da longitude tropical. O grau da cúspide marca o começo zodiacal de uma casa. O grau mundano indica o avanço do corpo dentro da divisão Placidus e usa uma escala própria de 0 a menos de 30 graus.',
         'A posição proporcional dentro da casa vem do mesmo cálculo das Casas Placidus. Ela não é estimada pelo tamanho do arco entre duas cúspides, porque essa aproximação confundiria referências diferentes.',
-        'Mapas antigos não guardam o valor fracionário. Neles, ou quando Placidus não pode ser calculado com segurança, o grau mundano aparece como indisponível em vez de ser inventado.',
+        'Mapas antigos podem não ter esse dado. Nesses casos, o grau mundano não é exibido nem estimado. Quando o mapa possui a análise das casas, mas o motor não pode calcular a posição com segurança, o grau mundano aparece como indisponível em vez de ser inventado.',
       ],
     },
     {
