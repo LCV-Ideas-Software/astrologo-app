@@ -44,7 +44,7 @@
     "world-atlas": "2.0.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.7",
+    "@biomejs/biome": "^2.5.8",
     "@eslint/js": "^10.0.1",
     "@fusionstrings/swiss-eph": "0.1.1",
     "@types/d3-geo": "3.1.1",
