@@ -4,6 +4,7 @@
 
 ### Alterado
 
+- A criação de Linear Releases após deploy bem-sucedido passa a usar a action oficial `linear/linear-release-action` v0.16.0, pinada por SHA completo; o gatilho pós-Deploy, o SHA publicado, o histórico Git completo, o environment dedicado e as permissões mínimas permanecem inalterados.
 - CodeQL, Dependency Review, OpenSSF Scorecard e Zizmor passam a usar diretamente as implementacoes oficiais, sem gate SARIF, reusable workflow, manifesto, scanner ou validador proprio.
 - O deploy passa a usar `cloudflare/wrangler-action` oficial; o identificador da D1 compartilhada fica versionado no `wrangler.json`, enquanto tokens e credenciais permanecem secretos.
 - O Auto-add nativo dos Projects #11 e #17 substitui o workflow com GitHub App e seu verificador.
