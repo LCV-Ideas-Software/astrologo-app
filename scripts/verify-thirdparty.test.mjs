@@ -133,6 +133,28 @@ function withViteManifestSpec(
   return { candidate, candidatePackageSets };
 }
 
+function withReactSource({ requested, resolved }) {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  frontend.manifest.dependencies.react = requested;
+  frontend.lockfile.packages[""].dependencies.react = requested;
+  frontend.lockfile.packages["node_modules/react"].resolved = resolved;
+  const reactRow = directRowLine(canonical, {
+    component: "astrologo-frontend/package.json",
+    name: "react",
+    relation: "dependencies",
+  });
+  assert.ok(reactRow);
+  const candidate = canonical.replace(
+    reactRow,
+    replaceRowCell(replaceRowCell(reactRow, 3, requested), 6, resolved),
+  );
+  return { candidate, candidatePackageSets };
+}
+
 test("accepts the current complete inventory", () => {
   assert.deepEqual(errorsFor(canonical, publicCopy), []);
 });
@@ -240,6 +262,46 @@ test("rejects npm aliases that obscure the locked package identity", () => {
   assert.match(
     errorsFor(candidate, candidate, candidatePackageSets).join("\n"),
     /npm package aliases are not supported.*react resolves to preact/u,
+  );
+});
+
+test("accepts an integrity-pinned package from a custom registry", () => {
+  const requested = packageSet(packageSets, "astrologo-frontend/package.json")
+    .manifest.dependencies.react;
+  const { candidate, candidatePackageSets } = withReactSource({
+    requested,
+    resolved: "https://registry.example.test/npm/react/-/react-19.2.8.tgz",
+  });
+  assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
+});
+
+test("accepts an exact HTTPS tarball dependency", () => {
+  const tarball = "https://artifacts.example.test/react-19.2.8.tgz";
+  const { candidate, candidatePackageSets } = withReactSource({
+    requested: tarball,
+    resolved: tarball,
+  });
+  assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
+});
+
+test("accepts a Git dependency locked to a commit in the same repository", () => {
+  const { candidate, candidatePackageSets } = withReactSource({
+    requested: "git+https://github.com/facebook/react.git#v19.2.8",
+    resolved:
+      "git+https://github.com/facebook/react.git#0123456789abcdef0123456789abcdef01234567",
+  });
+  assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
+});
+
+test("rejects a Git lock resolved from another repository", () => {
+  const { candidate, candidatePackageSets } = withReactSource({
+    requested: "git+https://github.com/facebook/react.git#v19.2.8",
+    resolved:
+      "git+https://github.com/example/other.git#0123456789abcdef0123456789abcdef01234567",
+  });
+  assert.match(
+    errorsFor(candidate, candidate, candidatePackageSets).join("\n"),
+    /locked Git source mismatch .* react/u,
   );
 });
 
@@ -754,7 +816,7 @@ test("rejects an unrelated source for a retained package identity", () => {
 
   assert.match(
     errorsFor(canonical, publicCopy, candidatePackageSets).join("\n"),
-    /locked source mismatch.*retained dependency.*d3-array/u,
+    /public registry identity mismatch.*retained dependency.*d3-array/u,
   );
 });
 
@@ -934,6 +996,53 @@ test("rejects divergence between distributed NOTICE copies", () => {
     ).join("\n"),
     /NOTICE and astrologo-frontend\/public\/legal\/NOTICE\.txt differ/u,
   );
+});
+
+test("preserves the complete audited Swiss Ephemeris notice block", () => {
+  const startToken =
+    "/* Copyright (C) 1997 - 2021 Astrodienst AG, Switzerland.  All rights reserved.";
+  const start = canonicalNotice.indexOf(startToken);
+  const end = canonicalNotice.indexOf("*/", start);
+  assert.ok(start >= 0 && end > start);
+  const truncated = `${canonicalNotice.slice(0, start)}${canonicalNotice.slice(end + 2)}`;
+  assert.match(
+    errorsFor(
+      canonical,
+      publicCopy,
+      packageSets,
+      trackedPackageFiles,
+      truncated,
+      truncated,
+    ).join("\n"),
+    /Swiss Ephemeris special NOTICE block is missing/u,
+  );
+});
+
+test("binds versioned THIRDPARTY prose to the audited Swiss records", () => {
+  const narrativeStart = canonical.indexOf("<!-- audited-files:end -->");
+  assert.ok(narrativeStart >= 0);
+  const narrative = canonical.slice(narrativeStart);
+  const mutateNarrative = (value, replacement) =>
+    `${canonical.slice(0, narrativeStart)}${canonical.slice(narrativeStart).replace(value, replacement)}`;
+  const metadata = [
+    narrative.match(/@fusionstrings\/swiss-eph@[0-9.]+/u)?.[0],
+    narrative.match(/retorna `[^`]+`/u)?.[0],
+    narrative.match(
+      /https:\/\/github\.com\/fusionstrings\/swiss-eph\/tree\/\w+/u,
+    )?.[0],
+    narrative.match(
+      /https:\/\/github\.com\/aloistr\/swisseph\/tree\/\w+/u,
+    )?.[0],
+  ];
+  for (const value of metadata) {
+    assert.ok(value);
+    const stale = mutateNarrative(value, `${value}-stale`);
+    assert.match(
+      errorsFor(stale, stale).join("\n"),
+      /THIRDPARTY narrative metadata mismatch/u,
+      value,
+    );
+  }
 });
 
 test("binds every duplicated NOTICE datum to the audited inventory", () => {

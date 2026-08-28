@@ -88,6 +88,8 @@ const MODIFICATION_OVERRIDES = new Map([
 const SWISS_EPHEMERIS = {
   version: "2.10.03",
   sourceRevision: "5ae0bce00dbc66c6315c86da20518e3dd138255b",
+  noticeSha256:
+    "408f30c432942c931be83a68c59b70e4465ae6c36e88fa0e58c8e000d79536b8",
 };
 const AUDITED_TARBALLS = [
   {
@@ -276,9 +278,101 @@ function entryKey({ component, name, relation }) {
   return JSON.stringify([component, name, relation]);
 }
 
-function expectedRegistrySource(name, version) {
+function isGitSpec(spec) {
+  const withoutFragment = spec.split("#", 1)[0];
+  return (
+    /^(?:git(?:\+(?:ssh|https?|file))?|github|gitlab|bitbucket):/iu.test(
+      withoutFragment,
+    ) ||
+    /^git@[^:]+:.+/u.test(withoutFragment) ||
+    /^[^/@\s]+\/[^/\s]+(?:#.*)?$/u.test(spec) ||
+    /^https?:\/\/[^/]+\/.+\.git(?:#.*)?$/iu.test(spec)
+  );
+}
+
+function publicRegistryPath(name, version) {
   const tarballName = name.split("/").at(-1);
-  return `https://registry.npmjs.org/${name}/-/${tarballName}-${version}.tgz`;
+  return `/${name}/-/${tarballName}-${version}.tgz`;
+}
+
+function gitRepositoryIdentity(spec) {
+  const withoutFragment = spec.split("#", 1)[0];
+  const shorthand = withoutFragment.match(
+    /^(?:(github|gitlab|bitbucket):)?([^/@\s]+)\/([^/\s]+)$/iu,
+  );
+  if (shorthand) {
+    const host =
+      {
+        github: "github.com",
+        gitlab: "gitlab.com",
+        bitbucket: "bitbucket.org",
+      }[shorthand[1]?.toLowerCase() ?? "github"] ?? "github.com";
+    return `${host}/${shorthand[2]}/${shorthand[3].replace(/\.git$/iu, "")}`.toLowerCase();
+  }
+  const scp = withoutFragment.match(/^git@([^:]+):(.+)$/iu);
+  if (scp) {
+    return `${scp[1]}/${scp[2].replace(/\.git$/iu, "")}`.toLowerCase();
+  }
+  try {
+    const parsed = new URL(withoutFragment.replace(/^git\+/iu, ""));
+    return `${parsed.hostname}/${parsed.pathname.replace(/^\/+|\/+$/gu, "").replace(/\.git$/iu, "")}`.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function validateLockedSource({ name, requested, locked, context, errors }) {
+  if (isGitSpec(requested)) {
+    const requestedIdentity = gitRepositoryIdentity(requested);
+    const resolvedIdentity = gitRepositoryIdentity(locked.resolved);
+    if (
+      !requestedIdentity ||
+      requestedIdentity !== resolvedIdentity ||
+      !/#[0-9a-f]{40}$/iu.test(locked.resolved)
+    ) {
+      errors.push(
+        `locked Git source mismatch for ${context} ${name}: requested=${requested} package-lock=${locked.resolved}`,
+      );
+      return false;
+    }
+    return true;
+  }
+
+  if (/^https?:\/\//iu.test(requested)) {
+    if (locked.resolved !== requested || !locked.integrity) {
+      errors.push(
+        `locked tarball source mismatch for ${context} ${name}: requested=${requested} package-lock=${locked.resolved}`,
+      );
+      return false;
+    }
+    return true;
+  }
+
+  if (
+    !locked.integrity ||
+    !(
+      /^https?:\/\//iu.test(locked.resolved) ||
+      /^registry\.npmjs\.org\//iu.test(locked.resolved)
+    )
+  ) {
+    errors.push(
+      `unsupported or incomplete registry source for ${context} ${name}: ${locked.resolved}`,
+    );
+    return false;
+  }
+  const expectedPublicPath = publicRegistryPath(name, locked.version);
+  if (
+    (/^https?:\/\/registry\.npmjs\.org\//iu.test(locked.resolved) &&
+      new URL(locked.resolved).pathname !== expectedPublicPath) ||
+    (/^registry\.npmjs\.org\//iu.test(locked.resolved) &&
+      locked.resolved !== `registry.npmjs.org${expectedPublicPath}`)
+  ) {
+    errors.push(
+      `public registry identity mismatch for ${context} ${name}: ${locked.resolved}`,
+    );
+    return false;
+  }
+  return true;
 }
 
 function validateLockedIdentity({ name, requested, locked, context, errors }) {
@@ -296,14 +390,7 @@ function validateLockedIdentity({ name, requested, locked, context, errors }) {
     return false;
   }
 
-  const expectedSource = expectedRegistrySource(name, locked.version);
-  if (locked.resolved !== expectedSource) {
-    errors.push(
-      `locked source mismatch for ${context} ${name}: package-lock=${locked.resolved} expected=${expectedSource}`,
-    );
-    return false;
-  }
-  return true;
+  return validateLockedSource({ name, requested, locked, context, errors });
 }
 
 function validateLockedManifestSpec({
@@ -729,10 +816,6 @@ export function parseDirectDependencies(markdown) {
         `duplicate direct-dependency row: ${component} ${relation} ${name}`,
       );
     }
-    if (!source.startsWith("https://")) {
-      throw new Error(`direct-dependency source must use HTTPS: ${name}`);
-    }
-
     seen.add(key);
     rows.push({
       component,
@@ -1083,10 +1166,15 @@ function verifyDistributedNotice(canonicalNotice, publicNotice, lockfile) {
   }
 
   const normalized = canonicalNotice.replace(/\s+/gu, " ").trim();
+  const noticeLines = canonicalNotice
+    .split(/\r?\n/u)
+    .map((line) => line.trim());
   const unquote = (value) => value.replace(/^`|`$/gu, "");
-  const requiredMetadata = [
+  const requiredPhrases = [
     `Esta distribuição incorpora astronomy-engine ${astronomy.version} (${astronomy.license}), @js-temporal/polyfill ${temporal.version} (${temporal.license}), sua dependência transitiva jsbi ${jsbi.version} (${jsbi.license}) e um binário WebAssembly derivado da Swiss Ephemeris.`,
     `resolve o export \`./wasm-wasi\` publicado em @fusionstrings/swiss-eph@${swiss.version}`,
+  ];
+  const requiredLines = [
     `SHA-256: ${unquote(swissArtifact.row[2])}`,
     `SHA-512: ${unquote(swissArtifact.row[3])}`,
     `Tamanho: ${swissArtifact.row[1]}`,
@@ -1094,9 +1182,63 @@ function verifyDistributedNotice(canonicalNotice, publicNotice, lockfile) {
     `https://github.com/fusionstrings/swiss-eph/tree/${swissTarball.gitHead}`,
     `https://github.com/aloistr/swisseph/tree/${SWISS_EPHEMERIS.sourceRevision}`,
   ];
-  for (const metadata of requiredMetadata) {
+  for (const metadata of requiredPhrases) {
     if (!normalized.includes(metadata)) {
       errors.push(`NOTICE audited metadata mismatch: ${metadata}`);
+    }
+  }
+  for (const metadata of requiredLines) {
+    if (!noticeLines.includes(metadata)) {
+      errors.push(`NOTICE audited metadata mismatch: ${metadata}`);
+    }
+  }
+
+  const swissNoticeStart =
+    "/* Copyright (C) 1997 - 2021 Astrodienst AG, Switzerland.  All rights reserved.";
+  const starts = canonicalNotice.split(swissNoticeStart).length - 1;
+  const start = canonicalNotice.indexOf(swissNoticeStart);
+  const end = start === -1 ? -1 : canonicalNotice.indexOf("*/", start);
+  if (starts !== 1 || end === -1) {
+    errors.push("Swiss Ephemeris special NOTICE block is missing or ambiguous");
+  } else {
+    const block = canonicalNotice.slice(start, end + 2);
+    const actualHash = createHash("sha256").update(block).digest("hex");
+    if (actualHash !== SWISS_EPHEMERIS.noticeSha256) {
+      errors.push(
+        `Swiss Ephemeris special NOTICE block mismatch: sha256=${actualHash} audited=${SWISS_EPHEMERIS.noticeSha256}`,
+      );
+    }
+  }
+  return errors;
+}
+
+function verifyThirdPartyNarrative(markdown, lockfile) {
+  const errors = [];
+  const start = markdown.indexOf(FILE_MARKERS[1]);
+  const end = markdown.indexOf("## Avisos de licenças permissivas", start);
+  if (start === -1 || end === -1 || end <= start) {
+    return ["missing bounded THIRDPARTY legal narrative"];
+  }
+
+  const narrative = markdown.slice(start + FILE_MARKERS[1].length, end);
+  const normalized = narrative.replace(/\s+/gu, " ").trim();
+  const swiss = lockfile.packages?.["node_modules/@fusionstrings/swiss-eph"];
+  const swissTarball = AUDITED_TARBALLS.find(
+    ({ name }) => name === "@fusionstrings/swiss-eph",
+  );
+  if (!swiss?.version || !swissTarball) {
+    return ["missing locked or audited Swiss metadata required by narrative"];
+  }
+
+  const requiredMetadata = [
+    `resolve o export público \`./wasm-wasi\` de \`@fusionstrings/swiss-eph@${swiss.version}\``,
+    `a carga real retorna \`${SWISS_EPHEMERIS.version}\` em \`swe_version()\``,
+    `https://github.com/fusionstrings/swiss-eph/tree/${swissTarball.gitHead};`,
+    `https://github.com/aloistr/swisseph/tree/${SWISS_EPHEMERIS.sourceRevision};`,
+  ];
+  for (const metadata of requiredMetadata) {
+    if (!normalized.includes(metadata)) {
+      errors.push(`THIRDPARTY narrative metadata mismatch: ${metadata}`);
     }
   }
   return errors;
@@ -1137,6 +1279,7 @@ export function verifyThirdParty({
     errors.push("missing configured frontend lockfile");
   } else {
     errors.push(...verifyRetainedInventory(canonical, frontendLockfile));
+    errors.push(...verifyThirdPartyNarrative(canonical, frontendLockfile));
     errors.push(
       ...verifyDistributedNotice(
         canonicalNotice,
