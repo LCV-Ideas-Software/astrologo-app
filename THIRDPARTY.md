@@ -1,36 +1,55 @@
 # Third-Party Components
 
+## Dependências diretas do manifesto
+
+<!-- direct-dependencies:start -->
+
 | Componente | Versão | Licença Original | Modificado? | Link de Origem |
 |------------|--------|------------------|-------------|----------------|
-| @eslint/js | ^9.39.4 | MIT | Não | https://registry.npmjs.org/@eslint/js/-/js-9.39.4.tgz |
-| @tailwindcss/vite | ^4.2.2 | MIT | Não | https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.2.2.tgz |
-| @types/node | ^25.5.0 | MIT | Não | https://registry.npmjs.org/@types/node/-/node-25.5.0.tgz |
-| @types/react | ^19.2.14 | MIT | Não | https://registry.npmjs.org/@types/react/-/react-19.2.14.tgz |
-| @types/react-dom | ^19.2.3 | MIT | Não | https://registry.npmjs.org/@types/react-dom/-/react-dom-19.2.3.tgz |
-| @vitejs/plugin-react | ^6.0.1 | MIT | Não | https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-6.0.1.tgz |
-| dompurify | ^3.3.3 | (MPL-2.0 OR Apache-2.0) | Não | https://registry.npmjs.org/dompurify/-/dompurify-3.3.3.tgz |
-| eslint | ^9.39.4 | MIT | Não | https://registry.npmjs.org/eslint/-/eslint-9.39.4.tgz |
-| eslint-plugin-react-hooks | ^7.0.1 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-7.0.1.tgz |
-| eslint-plugin-react-refresh | ^0.5.2 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.2.tgz |
-| globals | ^17.4.0 | MIT | Não | https://registry.npmjs.org/globals/-/globals-17.4.0.tgz |
-| lucide-react | ^1.7.0 | ISC | Não | https://registry.npmjs.org/lucide-react/-/lucide-react-1.7.0.tgz |
-| react | ^19.2.4 | MIT | Não | https://registry.npmjs.org/react/-/react-19.2.4.tgz |
-| react-dom | ^19.2.4 | MIT | Não | https://registry.npmjs.org/react-dom/-/react-dom-19.2.4.tgz |
-| tailwindcss | ^4.2.2 | MIT | Não | https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.2.2.tgz |
+| @js-temporal/polyfill | 0.5.1 | ISC | Não | https://registry.npmjs.org/@js-temporal/polyfill/-/polyfill-0.5.1.tgz |
+| @tailwindcss/vite | ^4.3.3 | MIT | Não | https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.3.tgz |
+| astronomy-engine | 2.1.19 | MIT | Não | https://registry.npmjs.org/astronomy-engine/-/astronomy-engine-2.1.19.tgz |
+| d3-geo | 3.1.1 | ISC; incorpora GeographicLib sob MIT | Não | https://registry.npmjs.org/d3-geo/-/d3-geo-3.1.1.tgz |
+| dompurify | ^3.4.14 | (MPL-2.0 OR Apache-2.0) | Não | https://registry.npmjs.org/dompurify/-/dompurify-3.4.14.tgz |
+| lucide-react | ^1.33.0 | ISC | Não | https://registry.npmjs.org/lucide-react/-/lucide-react-1.33.0.tgz |
+| react | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react/-/react-19.2.8.tgz |
+| react-dom | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react-dom/-/react-dom-19.2.8.tgz |
+| sanitize-html | ^2.17.7 | MIT | Não | https://registry.npmjs.org/sanitize-html/-/sanitize-html-2.17.7.tgz |
+| tailwindcss | ^4.3.3 | MIT | Não | https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.3.tgz |
+| topojson-client | 3.1.0 | ISC | Não | https://registry.npmjs.org/topojson-client/-/topojson-client-3.1.0.tgz |
+| world-atlas | 2.0.2 | ISC; dados Natural Earth em domínio público | Não | https://registry.npmjs.org/world-atlas/-/world-atlas-2.0.2.tgz |
+| @biomejs/biome | ^2.5.9 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/@biomejs/biome/-/biome-2.5.9.tgz |
+| @eslint/js | ^10.0.1 | MIT | Não | https://registry.npmjs.org/@eslint/js/-/js-10.0.1.tgz |
+| @fusionstrings/swiss-eph | 0.1.1 | AGPL-3.0-only (manifesto upstream: `AGPL-3.0`) | Não; o módulo é consumido sem alteração | https://registry.npmjs.org/@fusionstrings/swiss-eph/-/swiss-eph-0.1.1.tgz |
+| @types/d3-geo | 3.1.1 | MIT | Não | https://registry.npmjs.org/@types/d3-geo/-/d3-geo-3.1.1.tgz |
+| @types/node | ^26.2.0 | MIT | Não | https://registry.npmjs.org/@types/node/-/node-26.2.0.tgz |
+| @types/react | ^19.2.18 | MIT | Não | https://registry.npmjs.org/@types/react/-/react-19.2.18.tgz |
+| @types/react-dom | ^19.2.4 | MIT | Não | https://registry.npmjs.org/@types/react-dom/-/react-dom-19.2.4.tgz |
+| @types/sanitize-html | ^2.16.1 | MIT | Não | https://registry.npmjs.org/@types/sanitize-html/-/sanitize-html-2.16.1.tgz |
+| @types/topojson-client | 3.1.5 | MIT | Não | https://registry.npmjs.org/@types/topojson-client/-/topojson-client-3.1.5.tgz |
+| @vitejs/plugin-react | ^6.1.0 | MIT | Não | https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-6.1.0.tgz |
+| eslint | ^10.8.1 | MIT | Não | https://registry.npmjs.org/eslint/-/eslint-10.8.1.tgz |
+| eslint-config-prettier | ^10.1.8 | MIT | Não | https://registry.npmjs.org/eslint-config-prettier/-/eslint-config-prettier-10.1.8.tgz |
+| eslint-plugin-react-hooks | ^7.1.1 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-7.1.1.tgz |
+| eslint-plugin-react-refresh | ^0.5.4 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.4.tgz |
+| fast-check | 4.9.0 | MIT | Não | https://registry.npmjs.org/fast-check/-/fast-check-4.9.0.tgz |
+| globals | ^17.11.0 | MIT | Não | https://registry.npmjs.org/globals/-/globals-17.11.0.tgz |
 | typescript | ~6.0.3 | Apache-2.0 | Não | https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz |
-| typescript-eslint | ^8.66.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.66.0.tgz |
-| vite | ^8.0.3 | MIT | Não | https://registry.npmjs.org/vite/-/vite-8.0.3.tgz |
-| vitest | ^4.1.2 | MIT | Não | https://registry.npmjs.org/vitest/-/vitest-4.1.2.tgz |
-| astronomy-engine | 2.1.19 | MIT | Não | https://github.com/cosinekitty/astronomy/tree/v2.1.19 |
-| d3-geo | 3.1.1 | ISC; incorpora GeographicLib sob MIT | Não | https://github.com/d3/d3-geo/tree/v3.1.1 |
+| typescript-eslint | ^8.67.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.67.0.tgz |
+| vite | ^8.2.2 | MIT | Não | https://registry.npmjs.org/vite/-/vite-8.2.2.tgz |
+| vitest | ^4.1.11 | MIT | Não | https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz |
+| wrangler | 4.124.0 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler/-/wrangler-4.124.0.tgz |
+
+<!-- direct-dependencies:end -->
+
+## Dependências transitivas e artefatos incorporados
+
+| Componente | Versão | Licença Original | Modificado? | Link de Origem |
+|------------|--------|------------------|-------------|----------------|
 | d3-array (dependência transitiva de runtime de d3-geo) | 3.2.4 | ISC | Não | https://github.com/d3/d3-array/tree/v3.2.4 |
 | internmap (dependência transitiva de runtime de d3-array) | 2.0.3 | ISC | Não | https://github.com/mbostock/internmap/tree/v2.0.3 |
-| topojson-client | 3.1.0 | ISC | Não | https://github.com/topojson/topojson-client/tree/v3.1.0 |
 | commander (dependência transitiva de runtime de topojson-client) | 2.20.3 | MIT | Não | https://github.com/tj/commander.js/tree/v2.20.3 |
-| world-atlas | 2.0.2 | ISC; dados Natural Earth em domínio público | Não | https://github.com/topojson/world-atlas/tree/v2.0.2 |
-| @js-temporal/polyfill | 0.5.1 | ISC | Não | https://github.com/js-temporal/temporal-polyfill/tree/v0.5.1 |
 | jsbi (dependência transitiva de runtime de @js-temporal/polyfill) | 4.3.2 | Apache-2.0 | Não | https://github.com/GoogleChromeLabs/jsbi/tree/5382367c7e3199858d36bb620977e1f90605bcb9 |
-| @fusionstrings/swiss-eph (dependência de build e origem do módulo WASM) | 0.1.1 | AGPL-3.0-only (manifesto upstream: `AGPL-3.0`) | Não; o módulo é consumido sem alteração | https://github.com/fusionstrings/swiss-eph/tree/e7a7a9311d3058f337b73b72f45ea6d80cffa5f0 |
 | Swiss Ephemeris incorporada no WASM | `swe_version() = 2.10.03`; fonte `5ae0bce00dbc66c6315c86da20518e3dd138255b` | AGPL-3.0-only, conforme a opção AGPL da licença dual | Não pelo projeto Astrologo | https://github.com/aloistr/swisseph/tree/5ae0bce00dbc66c6315c86da20518e3dd138255b |
 
 ## Cartografia local e dados Natural Earth

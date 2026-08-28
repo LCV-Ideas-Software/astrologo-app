@@ -29,6 +29,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Verify third-party inventory contract
+        run: npm run test:thirdparty
+
       - name: Review pull request dependencies
         if: ${{ github.event_name == 'pull_request' }}
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
