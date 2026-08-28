@@ -497,7 +497,9 @@ function markdownContextAt(markdown, offset) {
         end: new RegExp(`</${rawTag[1]}>`, "iu"),
       };
     }
-    if (/^<!--/u.test(indented)) return { untilBlank: false, end: /-->/u };
+    if (/^<!--/u.test(indented)) {
+      return { untilBlank: false, end: /--!?>/u };
+    }
     if (/^<\?/u.test(indented)) return { untilBlank: false, end: /\?>/u };
     if (/^<![A-Za-z]/u.test(indented)) {
       return { untilBlank: false, end: />/u };
@@ -537,10 +539,10 @@ function markdownContextAt(markdown, offset) {
     let cursor = 0;
     while (cursor < line.length) {
       if (inHtmlComment) {
-        const close = line.indexOf("-->", cursor);
-        if (close === -1) break;
+        const close = /--!?>/u.exec(line.slice(cursor));
+        if (!close) break;
         inHtmlComment = false;
-        cursor = close + 3;
+        cursor += close.index + close[0].length;
         continue;
       }
 

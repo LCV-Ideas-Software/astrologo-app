@@ -539,6 +539,14 @@ test("rejects a direct-dependency table hidden in an HTML comment", () => {
   );
 });
 
+test("recognizes the HTML parser's incorrectly closed comment terminator", () => {
+  const visible = canonical.replace(
+    "<!-- direct-dependencies:start -->",
+    "<!-- preceding comment\n--!>\n<!-- direct-dependencies:start -->",
+  );
+  assert.deepEqual(errorsFor(visible, visible), []);
+});
+
 test("rejects a direct-dependency table hidden in a fenced code block", () => {
   const hidden = canonical
     .replace(
