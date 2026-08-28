@@ -11,6 +11,7 @@ const LEGAL_FILES = {
   NOTICE: `${LEGAL_PUBLIC_BASE}NOTICE.txt`,
   THIRDPARTY: `${LEGAL_PUBLIC_BASE}THIRDPARTY.md`,
   BUNDLED_LICENSES: `${LEGAL_PUBLIC_BASE}BUNDLED-LICENSES.md`,
+  FUNCTIONS_BUNDLED_LICENSES: `${LEGAL_PUBLIC_BASE}FUNCTIONS-BUNDLED-LICENSES.md`,
 } as const;
 
 type DocsState = {
@@ -116,8 +117,8 @@ export function LicencasModule() {
       <p style={{ color: '#5f6368', marginBottom: '32px' }}>
         O código do aplicativo é disponibilizado sob a GNU Affero General Public License v3 ou posterior
         (AGPL-3.0-or-later). Os componentes de terceiros preservam suas próprias licenças, incluindo MIT, ISC,
-        Apache-2.0, MPL-2.0 e AGPL-3.0, conforme documentado em NOTICE, THIRDPARTY.md e no relatório do bundle do
-        navegador.
+        Apache-2.0, MPL-2.0 e AGPL-3.0, conforme documentado em NOTICE, THIRDPARTY.md e nos relatórios dos bundles do
+        navegador e das Cloudflare Pages Functions.
       </p>
 
       <section style={sectionStyle}>
@@ -174,17 +175,25 @@ export function LicencasModule() {
           Licenças das Dependências Empacotadas
         </h2>
         <p style={{ ...paragraphStyle, textIndent: 0 }}>
-          O build oficial do Vite gera o relatório integral das licenças efetivamente incorporadas ao bundle do
-          navegador.{' '}
+          O Vite oficial gera o relatório integral do bundle do navegador. O relatório das Cloudflare Pages Functions
+          deriva do metafile oficial do Wrangler, conferido contra o lockfile npm e os textos de licença dos pacotes
+          efetivamente incorporados.{' '}
           {import.meta.env.PROD ? (
             <>
               <a href={LEGAL_FILES.BUNDLED_LICENSES} target="_blank" rel="noopener noreferrer">
                 Abrir BUNDLED-LICENSES.md
               </a>
+              {' e '}
+              <a href={LEGAL_FILES.FUNCTIONS_BUNDLED_LICENSES} target="_blank" rel="noopener noreferrer">
+                abrir FUNCTIONS-BUNDLED-LICENSES.md
+              </a>
               .
             </>
           ) : (
-            <>O relatório fica disponível após o build de produção.</>
+            <>
+              Os relatórios ficam disponíveis após o pipeline de publicação executar os builds do navegador e das
+              Functions.
+            </>
           )}
         </p>
       </section>

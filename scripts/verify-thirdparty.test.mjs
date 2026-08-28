@@ -37,17 +37,66 @@ test("inventário de imports cobre ESM, dynamic import e CommonJS", () => {
     'import packageRoot from "sample-package";',
     'import value from "sample-package/static";',
     "import 'sample-package/side-effect';",
+    'export { value } from "sample-package/re-exported";',
+    'export * from "sample-package/export-all";',
     "await import(`sample-package/dynamic`);",
     "require('sample-package/commonjs');",
     'require.resolve("sample-package/resolved");',
+    'import imported = require("sample-package/import-equals");',
+    'type Imported = import("sample-package/types").Imported;',
   ].join("\n");
   assert.deepEqual(extractPackageImports(source, packageName), [
     "sample-package",
     "sample-package/static",
     "sample-package/side-effect",
+    "sample-package/re-exported",
+    "sample-package/export-all",
     "sample-package/dynamic",
     "sample-package/commonjs",
     "sample-package/resolved",
+    "sample-package/import-equals",
+    "sample-package/types",
+  ]);
+});
+
+test("inventário de imports ignora exemplos em comentários e strings", () => {
+  const packageName = "sample-package";
+  const source = [
+    '// import map from "sample-package/comment-line";',
+    '/* require("sample-package/comment-block") */',
+    "const example = 'import map from \"sample-package/string\";';",
+    'const template = `require("sample-package/template")`;',
+    'import actual from "sample-package/actual";',
+  ].join("\n");
+
+  assert.deepEqual(extractPackageImports(source, packageName), [
+    "sample-package/actual",
+  ]);
+});
+
+test("inventário falha fechado para qualquer especificador não estático", () => {
+  for (const source of [
+    "await import(`${name}/countries-110m.json`);",
+    "await import(name);",
+    'await import("world-atlas/" + asset);',
+    "require(makeName());",
+    "require.resolve(makeName());",
+  ]) {
+    assert.throws(
+      () => extractPackageImports(source, "sample-package"),
+      /Especificador de módulo não estático não pode ser auditado/,
+    );
+  }
+});
+
+test("inventário distingue require global de binding sombreado", () => {
+  const source = [
+    "function require(value) { return value; }",
+    'require("sample-package/not-a-module-load");',
+    'import actual from "sample-package/actual";',
+  ].join("\n");
+  assert.deepEqual(extractPackageImports(source, "sample-package"), [
+    "sample-package/actual",
   ]);
 });
 
@@ -107,8 +156,16 @@ function canonicalUpstreamEvidence() {
           },
         ],
       },
+      noticeBytes: Buffer.from(canonicalState.fragments.swissNotice, "utf8"),
       tarballIntegrity: POLICY.swiss.wrapperIntegrity,
       tarballSha256: POLICY.swiss.wrapperTarballSha256,
+    },
+    functionsBundle: {
+      wranglerMit: Buffer.from(canonicalState.fragments.wranglerMit, "utf8"),
+      wranglerApache: Buffer.from(
+        canonicalState.fragments.wranglerApache,
+        "utf8",
+      ),
     },
   };
 }
@@ -216,6 +273,12 @@ test("dependência ausente, especificação stale e origem customizada falham", 
   }, /origem ou especificação não homologada/);
 
   expectContractFailure((state) => {
+    const root = rootFor(state, "package.json");
+    root.manifest.devDependencies.prettier = "^99.0.0";
+    root.lock.packages[""].devDependencies.prettier = "^99.0.0";
+  }, /versão resolvida 3\.9\.6 não satisfaz/);
+
+  expectContractFailure((state) => {
     rootFor(state, "package.json").lock.packages[
       "node_modules/prettier"
     ].resolved = "https://registry.example/prettier.tgz";
@@ -310,6 +373,21 @@ test("proveniência oficial vincula npm, commits GitHub e gitlink Swiss", () => 
   expectUpstreamFailure((evidence) => {
     evidence.swiss.tree.truncated = true;
   }, /árvore GitHub do wrapper Swiss foi truncada/i);
+  expectUpstreamFailure((evidence) => {
+    evidence.swiss.noticeBytes = Buffer.from(
+      canonicalState.fragments.swissNotice.replace(
+        "The trademarks 'Swiss Ephemeris'",
+        "The trademark notice was removed",
+      ),
+      "utf8",
+    );
+  }, /Aviso integral Swiss Ephemeris/);
+  expectUpstreamFailure((evidence) => {
+    evidence.functionsBundle.wranglerMit = Buffer.from(
+      `${canonicalState.fragments.wranglerMit}\ntexto alterado`,
+      "utf8",
+    );
+  }, /Licenças oficiais do Wrangler/);
 });
 
 test("igualdade integral rejeita linha duplicada, conteúdo envolvente e metadado NOTICE stale", () => {

@@ -2,7 +2,7 @@ Copyright © 2026 LCV Ideas & Software
 
 AVISOS DE TERCEIROS (THIRD-PARTY NOTICES)
 -----------------------------------------
-Esta distribuição incorpora componentes sob MIT, ISC, Apache-2.0, MPL-2.0 e GNU AGPL v3. O inventário exato está em THIRDPARTY.md; o bundle do navegador publica os textos integrais aplicáveis em legal/BUNDLED-LICENSES.md. Esse artefato não cobre o bundle separado das Cloudflare Functions.
+Esta distribuição incorpora componentes sob MIT, ISC, Apache-2.0, MPL-2.0 e GNU AGPL v3. O inventário exato está em THIRDPARTY.md; o bundle do navegador publica os textos integrais aplicáveis em legal/BUNDLED-LICENSES.md, e o bundle Cloudflare Pages Functions publica seu inventário efetivo e textos integrais em legal/FUNCTIONS-BUNDLED-LICENSES.md.
 
 ASTRONOMY ENGINE 2.1.19 — MIT
 -----------------------------
@@ -88,6 +88,9 @@ AVISO ESPECIAL DA SWISS EPHEMERIS — REPRODUÇÃO INTEGRAL
   the Swiss Ephemeris. This copyright notice is the ONLY place where the
   names of the authors can legally appear, except in cases where they have
   given special permission in writing.
+
+  The trademarks 'Swiss Ephemeris' and 'Swiss Ephemeris inside' may be used
+  for promoting such software, products or services.
 */
 
 OFERTA DE CÓDIGO-FONTE — GNU AGPL v3, SEÇÕES 6 E 13

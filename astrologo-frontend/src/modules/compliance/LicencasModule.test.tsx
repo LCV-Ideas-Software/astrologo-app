@@ -9,6 +9,7 @@ describe('relatório de licenças do bundle', () => {
     const html = renderToStaticMarkup(<LicencasModule />);
 
     expect(html).not.toContain('href="/legal/BUNDLED-LICENSES.md"');
-    expect(html).toContain('disponível após o build de produção');
+    expect(html).not.toContain('href="/legal/FUNCTIONS-BUNDLED-LICENSES.md"');
+    expect(html).toContain('disponíveis após o pipeline de publicação');
   });
 });

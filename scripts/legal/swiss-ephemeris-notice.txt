@@ -47,4 +47,7 @@
   the Swiss Ephemeris. This copyright notice is the ONLY place where the
   names of the authors can legally appear, except in cases where they have
   given special permission in writing.
+
+  The trademarks 'Swiss Ephemeris' and 'Swiss Ephemeris inside' may be used
+  for promoting such software, products or services.
 */

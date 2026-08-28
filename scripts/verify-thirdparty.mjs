@@ -4,6 +4,9 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import semver from "semver";
+import tseslint from "typescript-eslint";
+
 import { POLICY } from "./legal/thirdparty-policy.mjs";
 
 const REPOSITORY_ROOT = path.resolve(
@@ -27,6 +30,20 @@ const sriSha512 = (bytes) =>
   `sha512-${createHash("sha512").update(bytes).digest("base64")}`;
 const normalizeFragment = (value) =>
   value.replaceAll("\r\n", "\n").replace(/\n+$/, "");
+
+function extractCopyrightNotice(bytes, sourceName) {
+  const source = Buffer.from(bytes).toString("utf8").replaceAll("\r\n", "\n");
+  const start = source.indexOf("/* Copyright");
+  const end = start < 0 ? -1 : source.indexOf("*/", start);
+  assert(
+    start >= 0 && end >= 0,
+    `${sourceName} não contém o aviso de copyright esperado.`,
+  );
+  return normalizeFragment(source.slice(start, end + 2))
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .join("\n");
+}
 
 function assert(condition, message) {
   if (!condition) throw new ContractError(message);
@@ -79,6 +96,8 @@ export async function loadUpstreamEvidence({
 } = {}) {
   const worldSlug = githubRepositorySlug(POLICY.cartography.sourceRepository);
   const swissSlug = githubRepositorySlug(POLICY.swiss.wrapperSourceRepository);
+  const wranglerPolicy = POLICY.functionsBundle.licenseFallbacks.wrangler;
+  const wranglerSlug = githubRepositorySlug(wranglerPolicy.sourceRepository);
   const registryUrl = (name, version) =>
     `https://registry.npmjs.org/${encodeURIComponent(name)}/${version}`;
   const githubUrl = (slug, suffix) =>
@@ -99,33 +118,61 @@ export async function loadUpstreamEvidence({
       typeof swissMetadata.dist?.tarball === "string",
     "Metadados npm oficiais não contêm URLs de tarball.",
   );
-  const [swissTree, worldReadme, worldTarball, swissTarball] =
-    await Promise.all([
-      fetchOfficial(
-        githubUrl(
-          swissSlug,
-          `git/trees/${POLICY.swiss.wrapperGitHead}?recursive=1`,
-        ),
-        { fetchImpl, githubToken },
+  const [
+    swissTree,
+    swissNotice,
+    worldReadme,
+    worldTarball,
+    swissTarball,
+    wranglerMit,
+    wranglerApache,
+  ] = await Promise.all([
+    fetchOfficial(
+      githubUrl(
+        swissSlug,
+        `git/trees/${POLICY.swiss.wrapperGitHead}?recursive=1`,
       ),
-      fetchOfficial(
-        githubUrl(
-          worldSlug,
-          `contents/README.md?ref=${POLICY.cartography.gitHead}`,
-        ),
-        { fetchImpl, githubToken, raw: true },
+      { fetchImpl, githubToken },
+    ),
+    fetchOfficial(
+      githubUrl(
+        githubRepositorySlug(POLICY.swiss.upstreamSourceRepository),
+        `contents/${POLICY.swiss.upstreamNoticePath}?ref=${POLICY.swiss.upstreamRevision}`,
       ),
-      fetchOfficial(worldMetadata.dist.tarball, {
-        fetchImpl,
-        githubToken,
-        raw: true,
-      }),
-      fetchOfficial(swissMetadata.dist.tarball, {
-        fetchImpl,
-        githubToken,
-        raw: true,
-      }),
-    ]);
+      { fetchImpl, githubToken, raw: true },
+    ),
+    fetchOfficial(
+      githubUrl(
+        worldSlug,
+        `contents/README.md?ref=${POLICY.cartography.gitHead}`,
+      ),
+      { fetchImpl, githubToken, raw: true },
+    ),
+    fetchOfficial(worldMetadata.dist.tarball, {
+      fetchImpl,
+      githubToken,
+      raw: true,
+    }),
+    fetchOfficial(swissMetadata.dist.tarball, {
+      fetchImpl,
+      githubToken,
+      raw: true,
+    }),
+    fetchOfficial(
+      githubUrl(
+        wranglerSlug,
+        `contents/${wranglerPolicy.licensePaths[0]}?ref=${wranglerPolicy.revision}`,
+      ),
+      { fetchImpl, githubToken, raw: true },
+    ),
+    fetchOfficial(
+      githubUrl(
+        wranglerSlug,
+        `contents/${wranglerPolicy.licensePaths[1]}?ref=${wranglerPolicy.revision}`,
+      ),
+      { fetchImpl, githubToken, raw: true },
+    ),
+  ]);
 
   return {
     worldAtlas: {
@@ -136,8 +183,13 @@ export async function loadUpstreamEvidence({
     swiss: {
       metadata: swissMetadata,
       tree: swissTree,
+      noticeBytes: swissNotice,
       tarballIntegrity: sriSha512(swissTarball),
       tarballSha256: sha256(swissTarball),
+    },
+    functionsBundle: {
+      wranglerMit,
+      wranglerApache,
     },
   };
 }
@@ -202,6 +254,32 @@ export function validateUpstreamEvidence(evidence) {
       upstreamEntries[0].sha === POLICY.swiss.upstreamRevision,
     "Gitlink vendor/swisseph divergiu da revisão upstream oferecida.",
   );
+  const upstreamNotice = extractCopyrightNotice(
+    swiss.noticeBytes,
+    `${POLICY.swiss.upstreamSourceRepository}/${POLICY.swiss.upstreamNoticePath}`,
+  );
+  assert(
+    sha256(Buffer.from(upstreamNotice, "utf8")) ===
+      POLICY.fragments.swissNotice.normalizedSha256,
+    "Aviso integral Swiss Ephemeris divergiu da revisão upstream fixada.",
+  );
+
+  const functionsBundle = evidence.functionsBundle;
+  assert(
+    sha256(
+      Buffer.from(
+        normalizeFragment(functionsBundle.wranglerMit.toString("utf8")),
+        "utf8",
+      ),
+    ) === POLICY.fragments.wranglerMit.normalizedSha256 &&
+      sha256(
+        Buffer.from(
+          normalizeFragment(functionsBundle.wranglerApache.toString("utf8")),
+          "utf8",
+        ),
+      ) === POLICY.fragments.wranglerApache.normalizedSha256,
+    "Licenças oficiais do Wrangler divergiram da revisão upstream fixada.",
+  );
 }
 
 export async function verifyUpstream(options) {
@@ -235,7 +313,7 @@ async function trackedPackageImports(repositoryRoot, packageName) {
     /\.(?:[cm]?[jt]sx?)$/.test(candidate),
   )) {
     const source = await readFile(path.join(repositoryRoot, file), "utf8");
-    for (const specifier of extractPackageImports(source, packageName)) {
+    for (const specifier of extractPackageImports(source, packageName, file)) {
       imports.push({ source: file, specifier });
     }
   }
@@ -246,13 +324,95 @@ async function trackedPackageImports(repositoryRoot, packageName) {
   );
 }
 
-export function extractPackageImports(source, packageName) {
-  const escapedPackageName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const quotedSpecifier = new RegExp(
-    `(?:\\bfrom\\s*|\\bimport\\s*(?:\\(\\s*)?|\\brequire(?:\\.resolve)?\\s*\\(\\s*)["'\`](${escapedPackageName}(?:\/[^"'\`]+)?)["'\`]`,
-    "g",
+function staticModuleSpecifier(node) {
+  if (node?.type === "Literal" && typeof node.value === "string") {
+    return node.value;
+  }
+  if (
+    node?.type === "TemplateLiteral" &&
+    node.expressions.length === 0 &&
+    node.quasis.length === 1
+  ) {
+    return node.quasis[0].value.cooked;
+  }
+  return undefined;
+}
+
+export function extractPackageImports(
+  source,
+  packageName,
+  fileName = "source.tsx",
+) {
+  const { ast, scopeManager, visitorKeys } = tseslint.parser.parseForESLint(
+    source,
+    {
+      ecmaVersion: "latest",
+      filePath: fileName,
+      jsDocParsingMode: "none",
+      sourceType: "module",
+    },
   );
-  return [...source.matchAll(quotedSpecifier)].map((match) => match[1]);
+  const unresolvedIdentifiers = new Set(
+    scopeManager.globalScope.through.map((reference) => reference.identifier),
+  );
+  const imports = [];
+
+  function collect(node) {
+    const specifier = staticModuleSpecifier(node);
+    if (specifier === undefined) {
+      throw new ContractError(
+        `Especificador de módulo não estático não pode ser auditado em ${fileName}.`,
+      );
+    }
+    if (specifier === packageName || specifier?.startsWith(`${packageName}/`)) {
+      imports.push(specifier);
+    }
+  }
+
+  function visit(node) {
+    if (
+      node.type === "ImportDeclaration" ||
+      node.type === "ExportAllDeclaration"
+    ) {
+      collect(node.source);
+    } else if (node.type === "ExportNamedDeclaration" && node.source) {
+      collect(node.source);
+    } else if (node.type === "ImportExpression") {
+      collect(node.source);
+    } else if (node.type === "TSImportType") {
+      collect(node.source);
+    } else if (node.type === "TSExternalModuleReference") {
+      collect(node.expression);
+    } else if (node.type === "CallExpression") {
+      const isRequire =
+        node.callee.type === "Identifier" &&
+        node.callee.name === "require" &&
+        unresolvedIdentifiers.has(node.callee);
+      const isRequireResolve =
+        node.callee.type === "MemberExpression" &&
+        node.callee.computed === false &&
+        node.callee.object.type === "Identifier" &&
+        node.callee.object.name === "require" &&
+        unresolvedIdentifiers.has(node.callee.object) &&
+        node.callee.property.type === "Identifier" &&
+        node.callee.property.name === "resolve";
+      if (isRequire || isRequireResolve) {
+        collect(node.arguments[0]);
+      }
+    }
+
+    for (const key of visitorKeys[node.type] ?? []) {
+      const children = Array.isArray(node[key]) ? node[key] : [node[key]];
+      for (const child of children) {
+        if (child) {
+          visit(child);
+        }
+      }
+    }
+  }
+
+  visit(ast);
+  return imports;
 }
 
 async function readJson(file) {
@@ -333,6 +493,18 @@ export async function loadState(repositoryRoot = REPOSITORY_ROOT) {
     },
     fragments: {
       astronomy: await loadFragment(repositoryRoot, POLICY.fragments.astronomy),
+      launderMit: await loadFragment(
+        repositoryRoot,
+        POLICY.fragments.launderMit,
+      ),
+      wranglerMit: await loadFragment(
+        repositoryRoot,
+        POLICY.fragments.wranglerMit,
+      ),
+      wranglerApache: await loadFragment(
+        repositoryRoot,
+        POLICY.fragments.wranglerApache,
+      ),
       swissNotice: await loadFragment(
         repositoryRoot,
         POLICY.fragments.swissNotice,
@@ -431,6 +603,10 @@ export function validateState(state) {
           typeof locked.version === "string" &&
             installed.version === locked.version,
           `${name}: versão instalada ${String(installed.version)} diverge do lock ${String(locked.version)}.`,
+        );
+        assert(
+          semver.satisfies(locked.version, declaredVersion),
+          `${name}: versão resolvida ${locked.version} não satisfaz a especificação declarada ${declaredVersion}.`,
         );
         assert(
           typeof locked.license === "string" &&
@@ -595,7 +771,7 @@ export function renderThirdparty(rows) {
     "",
     "Este arquivo é gerado por `npm run generate:thirdparty`. Não o edite manualmente.",
     "",
-    "A tabela deriva exclusivamente dos manifestos npm rastreados, dos respectivos `package-lock.json` e dos `package.json` instalados por `npm ci`. Os textos integrais das licenças do bundle do navegador são gerados pelo Vite em `/legal/BUNDLED-LICENSES.md`; o bundle separado das Cloudflare Functions não é coberto por esse artefato. O inventário direto permanece neste documento e as exceções permanecem no NOTICE canônico.",
+    "A tabela deriva exclusivamente dos manifestos npm rastreados, dos respectivos `package-lock.json` e dos `package.json` instalados por `npm ci`. O Vite oficial gera os textos integrais do bundle do navegador em `/legal/BUNDLED-LICENSES.md`; o Wrangler oficial produz o metafile que alimenta o relatório fail-closed do bundle Cloudflare Pages Functions em `/legal/FUNCTIONS-BUNDLED-LICENSES.md`. O inventário direto permanece neste documento e as exceções permanecem no NOTICE canônico.",
     "",
     `## Dependências diretas (${rows.length} relações)`,
     "",
@@ -618,9 +794,9 @@ export function renderThirdparty(rows) {
   );
   const appendix = [
     "",
-    "## Textos das licenças do bundle do navegador",
+    "## Textos das licenças dos bundles publicados",
     "",
-    "O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos módulos efetivamente incluídos no bundle do navegador. Ele não cobre o bundle separado das Cloudflare Functions. Esse artefato complementa — e não substitui — este inventário, o NOTICE, a GNU AGPL e a oferta de Corresponding Source.",
+    "O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos módulos efetivamente incluídos no bundle do navegador. O build oficial do Wrangler publica um metafile integral, validado contra o `package-lock.json`, os pacotes instalados e as licenças correspondentes para gerar `legal/FUNCTIONS-BUNDLED-LICENSES.md`. Ambos complementam — e não substituem — este inventário, o NOTICE, a GNU AGPL e a oferta de Corresponding Source.",
     "",
     "## Cartografia e Natural Earth",
     "",
@@ -656,7 +832,7 @@ export function renderNotice(fragments) {
     "",
     "AVISOS DE TERCEIROS (THIRD-PARTY NOTICES)",
     "-----------------------------------------",
-    "Esta distribuição incorpora componentes sob MIT, ISC, Apache-2.0, MPL-2.0 e GNU AGPL v3. O inventário exato está em THIRDPARTY.md; o bundle do navegador publica os textos integrais aplicáveis em legal/BUNDLED-LICENSES.md. Esse artefato não cobre o bundle separado das Cloudflare Functions.",
+    "Esta distribuição incorpora componentes sob MIT, ISC, Apache-2.0, MPL-2.0 e GNU AGPL v3. O inventário exato está em THIRDPARTY.md; o bundle do navegador publica os textos integrais aplicáveis em legal/BUNDLED-LICENSES.md, e o bundle Cloudflare Pages Functions publica seu inventário efetivo e textos integrais em legal/FUNCTIONS-BUNDLED-LICENSES.md.",
     "",
     `ASTRONOMY ENGINE ${POLICY.astronomy.version} — ${POLICY.astronomy.license}`,
     "-----------------------------",

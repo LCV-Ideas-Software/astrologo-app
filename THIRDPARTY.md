@@ -2,9 +2,9 @@
 
 Este arquivo é gerado por `npm run generate:thirdparty`. Não o edite manualmente.
 
-A tabela deriva exclusivamente dos manifestos npm rastreados, dos respectivos `package-lock.json` e dos `package.json` instalados por `npm ci`. Os textos integrais das licenças do bundle do navegador são gerados pelo Vite em `/legal/BUNDLED-LICENSES.md`; o bundle separado das Cloudflare Functions não é coberto por esse artefato. O inventário direto permanece neste documento e as exceções permanecem no NOTICE canônico.
+A tabela deriva exclusivamente dos manifestos npm rastreados, dos respectivos `package-lock.json` e dos `package.json` instalados por `npm ci`. O Vite oficial gera os textos integrais do bundle do navegador em `/legal/BUNDLED-LICENSES.md`; o Wrangler oficial produz o metafile que alimenta o relatório fail-closed do bundle Cloudflare Pages Functions em `/legal/FUNCTIONS-BUNDLED-LICENSES.md`. O inventário direto permanece neste documento e as exceções permanecem no NOTICE canônico.
 
-## Dependências diretas (41 relações)
+## Dependências diretas (42 relações)
 
 | Manifesto | Componente | Relação | Versão declarada | Versão resolvida | Licença do artefato | Origem |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -15,6 +15,7 @@ A tabela deriva exclusivamente dos manifestos npm rastreados, dos respectivos `p
 | package.json | eslint-plugin-react-refresh | devDependencies | ^0.5.4 | 0.5.4 | MIT | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.4.tgz |
 | package.json | globals | devDependencies | ^17.11.0 | 17.11.0 | MIT | https://registry.npmjs.org/globals/-/globals-17.11.0.tgz |
 | package.json | prettier | devDependencies | ^3.9.6 | 3.9.6 | MIT | https://registry.npmjs.org/prettier/-/prettier-3.9.6.tgz |
+| package.json | semver | devDependencies | ^7.8.5 | 7.8.5 | ISC | https://registry.npmjs.org/semver/-/semver-7.8.5.tgz |
 | package.json | typescript-eslint | devDependencies | ^8.67.0 | 8.67.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.67.0.tgz |
 | astrologo-frontend/package.json | @js-temporal/polyfill | dependencies | 0.5.1 | 0.5.1 | ISC | https://registry.npmjs.org/@js-temporal/polyfill/-/polyfill-0.5.1.tgz |
 | astrologo-frontend/package.json | @tailwindcss/vite | dependencies | ^4.3.3 | 4.3.3 | MIT | https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.3.tgz |
@@ -50,9 +51,9 @@ A tabela deriva exclusivamente dos manifestos npm rastreados, dos respectivos `p
 | astrologo-frontend/package.json | vitest | devDependencies | ^4.1.11 | 4.1.11 | MIT | https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz |
 | astrologo-frontend/package.json | wrangler | devDependencies | 4.125.0 | 4.125.0 | MIT OR Apache-2.0 | https://registry.npmjs.org/wrangler/-/wrangler-4.125.0.tgz |
 
-## Textos das licenças do bundle do navegador
+## Textos das licenças dos bundles publicados
 
-O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos módulos efetivamente incluídos no bundle do navegador. Ele não cobre o bundle separado das Cloudflare Functions. Esse artefato complementa — e não substitui — este inventário, o NOTICE, a GNU AGPL e a oferta de Corresponding Source.
+O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos módulos efetivamente incluídos no bundle do navegador. O build oficial do Wrangler publica um metafile integral, validado contra o `package-lock.json`, os pacotes instalados e as licenças correspondentes para gerar `legal/FUNCTIONS-BUNDLED-LICENSES.md`. Ambos complementam — e não substituem — este inventário, o NOTICE, a GNU AGPL e a oferta de Corresponding Source.
 
 ## Cartografia e Natural Earth
 
