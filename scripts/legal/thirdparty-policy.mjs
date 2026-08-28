@@ -1,4 +1,7 @@
 export const POLICY = Object.freeze({
+  project: Object.freeze({
+    sourceRepository: "https://github.com/LCV-Ideas-Software/astrologo-app",
+  }),
   packageRoots: Object.freeze([
     Object.freeze({
       manifest: "package.json",
@@ -33,7 +36,6 @@ export const POLICY = Object.freeze({
       path: "scripts/legal/astronomy-engine-mit.txt",
       sha256:
         "693f78b6c29b951902a117252b1232632dade91183f221fd754cfa2246ef578f",
-      source: "https://github.com/cosinekitty/astronomy/blob/v2.1.19/LICENSE",
     }),
     swissNotice: Object.freeze({
       path: "scripts/legal/swiss-ephemeris-notice.txt",
@@ -43,8 +45,48 @@ export const POLICY = Object.freeze({
     swissSourceOffer: Object.freeze({
       path: "scripts/legal/swiss-source-offer.txt",
       sha256:
-        "3479d2b628b7b48fc20fca051a4de6fb939cba68532720368cb2717282ff5e21",
+        "11045b4cdb20e72f37724cfb98899c0b8ae7f657f13eb57fc04d9ff3a6faed9b",
     }),
+  }),
+  astronomy: Object.freeze({
+    package: "astronomy-engine",
+    version: "2.1.19",
+    license: "MIT",
+    sourceRepository: "https://github.com/cosinekitty/astronomy",
+    licensePath: "LICENSE",
+  }),
+  cartography: Object.freeze({
+    package: "world-atlas",
+    version: "2.0.2",
+    license: "ISC",
+    integrity:
+      "sha512-IXfV0qwlKXpckz1FhwXVwKRjiIhOnWttOskm5CtxMsjgE/MXAYRHWJqgXOpM8IkcPBoXnyTU5lFHcYa5ChG0LQ==",
+    gitHead: "a912c0a22c3fbd1979cb6defdd6389d8c35e7c2a",
+    sourceRepository: "https://github.com/topojson/world-atlas",
+    runtimePackages: Object.freeze([
+      "d3-geo",
+      "topojson-client",
+      "world-atlas",
+    ]),
+    readmeRelativePath: "node_modules/world-atlas/README.md",
+    readmeSize: 5_403,
+    readmeSha256:
+      "6fb00482638ef8f6618099e71e3422713c2dd60c7deedcd96d4b95f61d124b9b",
+    dataset: "Natural Earth",
+    datasetVersion: "4.1.0",
+    asset: "countries-110m.json",
+    assetRelativePath: "node_modules/world-atlas/countries-110m.json",
+    assetSize: 107_761,
+    assetSha256:
+      "2516c915867c7baf18ddec727aec46c315541a07cfb3d79a6559b05d5e94eee8",
+    scale: "1:110m",
+    imports: Object.freeze([
+      Object.freeze({
+        source: "astrologo-frontend/src/components/LocalityWorldMap.tsx",
+        specifier: "world-atlas/countries-110m.json",
+      }),
+    ]),
+    termsUrl: "https://www.naturalearthdata.com/about/terms-of-use/",
   }),
   swiss: Object.freeze({
     package: "@fusionstrings/swiss-eph",
@@ -56,6 +98,9 @@ export const POLICY = Object.freeze({
       "ef90330d9ed41da5358b47c60b29ad8f3970a7d09c083fd176f8b9833ad9fcbd",
     upstreamVersion: "2.10.03",
     upstreamRevision: "5ae0bce00dbc66c6315c86da20518e3dd138255b",
+    license: "AGPL-3.0",
+    wrapperSourceRepository: "https://github.com/fusionstrings/swiss-eph",
+    upstreamSourceRepository: "https://github.com/aloistr/swisseph",
     wasmExport: "@fusionstrings/swiss-eph/wasm-wasi",
     wasmRelativePath:
       "node_modules/@fusionstrings/swiss-eph/wasm/swiss-eph-wasi.wasm",

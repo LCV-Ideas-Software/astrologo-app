@@ -56,7 +56,7 @@ O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos
 
 ## Cartografia e Natural Earth
 
-A cartografia usa `d3-geo`, `topojson-client` e `world-atlas`. O mapa-base deriva de Natural Earth 4.1.0, escala 1:110m. Os dados Natural Earth são de domínio público segundo os termos oficiais: https://www.naturalearthdata.com/about/terms-of-use/. “Natural Earth” identifica apenas a proveniência e não constitui endosso.
+A cartografia usa `d3-geo`, `topojson-client`, `world-atlas`. O asset efetivamente importado `world-atlas/countries-110m.json`, proveniente de `world-atlas@2.0.2`, deriva de Natural Earth 4.1.0, escala 1:110m. O pacote resolvido, seu README de proveniência e os bytes do asset são vinculados por versão, tamanho e SHA-256 pela política jurídica. Os dados Natural Earth são de domínio público segundo os termos oficiais: https://www.naturalearthdata.com/about/terms-of-use/. “Natural Earth” identifica apenas a proveniência e não constitui endosso.
 
 ## Astronomy Engine
 

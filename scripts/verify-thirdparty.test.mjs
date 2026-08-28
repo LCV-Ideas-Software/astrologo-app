@@ -8,9 +8,11 @@ import { POLICY } from "./legal/thirdparty-policy.mjs";
 import {
   assertExactOutput,
   escapeMarkdownCell,
+  extractPackageImports,
   loadState,
   renderDocuments,
   validateState,
+  validateUpstreamEvidence,
 } from "./verify-thirdparty.mjs";
 
 const repositoryRoot = path.resolve(
@@ -29,6 +31,26 @@ const expectedRelations = canonicalState.roots.reduce(
   0,
 );
 
+test("inventário de imports cobre ESM, dynamic import e CommonJS", () => {
+  const packageName = "sample-package";
+  const source = [
+    'import packageRoot from "sample-package";',
+    'import value from "sample-package/static";',
+    "import 'sample-package/side-effect';",
+    "await import(`sample-package/dynamic`);",
+    "require('sample-package/commonjs');",
+    'require.resolve("sample-package/resolved");',
+  ].join("\n");
+  assert.deepEqual(extractPackageImports(source, packageName), [
+    "sample-package",
+    "sample-package/static",
+    "sample-package/side-effect",
+    "sample-package/dynamic",
+    "sample-package/commonjs",
+    "sample-package/resolved",
+  ]);
+});
+
 function cloneState() {
   return structuredClone(canonicalState);
 }
@@ -41,6 +63,60 @@ function expectContractFailure(mutate, pattern) {
   const state = cloneState();
   mutate(state);
   assert.throws(() => validateState(state), pattern);
+}
+
+function canonicalUpstreamEvidence() {
+  return {
+    worldAtlas: {
+      metadata: {
+        version: POLICY.cartography.version,
+        license: POLICY.cartography.license,
+        dist: {
+          integrity: POLICY.cartography.integrity,
+          tarball: `https://registry.npmjs.org/world-atlas/-/world-atlas-${POLICY.cartography.version}.tgz`,
+        },
+        gitHead: POLICY.cartography.gitHead,
+        repository: {
+          url: `git+${POLICY.cartography.sourceRepository}.git`,
+        },
+      },
+      readmeBytes: Buffer.from(canonicalState.cartography.readme, "utf8"),
+      tarballIntegrity: POLICY.cartography.integrity,
+    },
+    swiss: {
+      metadata: {
+        version: POLICY.swiss.wrapperVersion,
+        license: POLICY.swiss.license,
+        dist: {
+          integrity: POLICY.swiss.wrapperIntegrity,
+          tarball: `https://registry.npmjs.org/@fusionstrings/swiss-eph/-/swiss-eph-${POLICY.swiss.wrapperVersion}.tgz`,
+        },
+        gitHead: POLICY.swiss.wrapperGitHead,
+        repository: {
+          url: `git+${POLICY.swiss.wrapperSourceRepository}.git`,
+        },
+      },
+      tree: {
+        truncated: false,
+        tree: [
+          {
+            path: "vendor/swisseph",
+            mode: "160000",
+            type: "commit",
+            sha: POLICY.swiss.upstreamRevision,
+          },
+        ],
+      },
+      tarballIntegrity: POLICY.swiss.wrapperIntegrity,
+      tarballSha256: POLICY.swiss.wrapperTarballSha256,
+    },
+  };
+}
+
+function expectUpstreamFailure(mutate, pattern) {
+  const evidence = canonicalUpstreamEvidence();
+  mutate(evidence);
+  assert.throws(() => validateUpstreamEvidence(evidence), pattern);
 }
 
 test("estado canônico produz todas as relações e duas cópias byte a byte", async () => {
@@ -65,6 +141,22 @@ test("estado canônico produz todas as relações e duas cópias byte a byte", a
   assert.match(
     documents.thirdparty,
     /vite \| devDependencies \| \^8\.2\.2 \| 8\.2\.2 \| MIT/,
+  );
+  assert.match(
+    documents.thirdparty,
+    new RegExp(
+      `${POLICY.cartography.package}@${POLICY.cartography.version}.*${POLICY.cartography.dataset} ${POLICY.cartography.datasetVersion}.*${POLICY.cartography.scale}`,
+    ),
+  );
+  assert.ok(
+    documents.notice.includes(
+      `${POLICY.swiss.wrapperSourceRepository}/tree/${POLICY.swiss.wrapperGitHead}`,
+    ),
+  );
+  assert.ok(
+    documents.notice.includes(
+      `${POLICY.swiss.upstreamSourceRepository}/tree/${POLICY.swiss.upstreamRevision}`,
+    ),
   );
   for (const file of POLICY.outputs.thirdparty) {
     assertExactOutput(
@@ -151,6 +243,73 @@ test("binding Swiss valida SRI, tamanho e bytes SHA-256/SHA-512", () => {
   expectContractFailure((state) => {
     state.wasmBytes[0] ^= 0xff;
   }, /SHA-256 do Swiss Ephemeris WASM/);
+  expectContractFailure((state) => {
+    state.fragments.swissSourceOffer +=
+      "\nhttps://example.invalid/tree/0000000000000000000000000000000000000000";
+  }, /não pode conter URLs, versões ou revisões/);
+});
+
+test("proveniência cartográfica vincula pacote, README, asset e import real", () => {
+  expectContractFailure((state) => {
+    const frontend = rootFor(state, "astrologo-frontend/package.json");
+    frontend.manifest.dependencies[POLICY.cartography.package] = "2.0.3";
+    frontend.lock.packages[""].dependencies[POLICY.cartography.package] =
+      "2.0.3";
+    const locked =
+      frontend.lock.packages[`node_modules/${POLICY.cartography.package}`];
+    locked.version = "2.0.3";
+    locked.resolved =
+      "https://registry.npmjs.org/world-atlas/-/world-atlas-2.0.3.tgz";
+    frontend.installed[POLICY.cartography.package].version = "2.0.3";
+  }, /política de proveniência cartográfica/);
+  expectContractFailure((state) => {
+    state.cartography.readme = state.cartography.readme.replace(
+      `version ${POLICY.cartography.datasetVersion} as TopoJSON`,
+      "versão não auditada",
+    );
+  }, /README do world-atlas divergiu/);
+  expectContractFailure((state) => {
+    state.cartography.assetBytes[0] ^= 0xff;
+  }, /Asset countries-110m\.json divergiu/);
+  expectContractFailure((state) => {
+    state.cartography.imports.push({
+      source: "astrologo-frontend/src/components/SecondMap.tsx",
+      specifier: `${POLICY.cartography.package}/countries-50m.json`,
+    });
+  }, /Imports world-atlas divergiram/);
+  expectContractFailure((state) => {
+    state.cartography.imports[0].specifier = `${POLICY.cartography.package}/countries-50m.json`;
+  }, /Imports world-atlas divergiram/);
+});
+
+test("proveniência oficial vincula npm, commits GitHub e gitlink Swiss", () => {
+  assert.doesNotThrow(() =>
+    validateUpstreamEvidence(canonicalUpstreamEvidence()),
+  );
+  expectUpstreamFailure((evidence) => {
+    evidence.worldAtlas.metadata.gitHead = "0".repeat(40);
+  }, /Metadados npm do world-atlas/);
+  expectUpstreamFailure((evidence) => {
+    evidence.worldAtlas.metadata.dist.integrity = "sha512-divergente";
+  }, /Metadados npm do world-atlas/);
+  expectUpstreamFailure((evidence) => {
+    evidence.worldAtlas.readmeBytes[0] ^= 0xff;
+  }, /README no commit GitHub/);
+  expectUpstreamFailure((evidence) => {
+    evidence.worldAtlas.tarballIntegrity = "sha512-divergente";
+  }, /Tarball oficial do world-atlas/);
+  expectUpstreamFailure((evidence) => {
+    evidence.swiss.metadata.gitHead = "0".repeat(40);
+  }, /Metadados npm do wrapper Swiss/);
+  expectUpstreamFailure((evidence) => {
+    evidence.swiss.tarballSha256 = "0".repeat(64);
+  }, /Tarball oficial do wrapper Swiss/);
+  expectUpstreamFailure((evidence) => {
+    evidence.swiss.tree.tree[0].sha = "0".repeat(40);
+  }, /Gitlink vendor\/swisseph/);
+  expectUpstreamFailure((evidence) => {
+    evidence.swiss.tree.truncated = true;
+  }, /árvore GitHub do wrapper Swiss foi truncada/i);
 });
 
 test("igualdade integral rejeita linha duplicada, conteúdo envolvente e metadado NOTICE stale", () => {

@@ -92,16 +92,18 @@ AVISO ESPECIAL DA SWISS EPHEMERIS — REPRODUÇÃO INTEGRAL
 
 OFERTA DE CÓDIGO-FONTE — GNU AGPL v3, SEÇÕES 6 E 13
 ---------------------------------------------------
-O código-fonte da versão do Astrologo oferecida pela interface de rede está em:
-https://github.com/LCV-Ideas-Software/astrologo-app
-
-O Corresponding Source identificado e vinculado a esta distribuição, incluindo
-scripts de build e o submódulo C fixado, está disponível em:
-https://github.com/fusionstrings/swiss-eph/tree/e7a7a9311d3058f337b73b72f45ea6d80cffa5f0
-https://github.com/aloistr/swisseph/tree/5ae0bce00dbc66c6315c86da20518e3dd138255b
+O código-fonte da versão do Astrologo oferecida pela interface de rede está
+disponível no repositório do projeto indicado abaixo. O Corresponding Source
+identificado e vinculado a esta distribuição, incluindo scripts de build e o
+submódulo C fixado, está disponível nas revisões exatas do wrapper e do upstream
+também indicadas abaixo.
 
 O projeto adota para esse componente a opção GNU AGPL v3 da licença dual. O
 texto integral da licença acompanha esta distribuição em LICENSE e é publicado
 na aplicação como public/legal/LICENSE.txt. A LCV Ideas & Software assume manter
 acesso equivalente ao Corresponding Source, gratuito e sem autenticação,
 enquanto o objeto WASM for oferecido ou distribuído.
+
+Projeto: https://github.com/LCV-Ideas-Software/astrologo-app
+Wrapper: https://github.com/fusionstrings/swiss-eph/tree/e7a7a9311d3058f337b73b72f45ea6d80cffa5f0
+Swiss Ephemeris: https://github.com/aloistr/swisseph/tree/5ae0bce00dbc66c6315c86da20518e3dd138255b

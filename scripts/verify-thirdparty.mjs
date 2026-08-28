@@ -12,6 +12,7 @@ const REPOSITORY_ROOT = path.resolve(
 );
 const REGISTRY_VERSION =
   /^(?:[~^]?)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+const GITHUB_API_VERSION = "2026-03-10";
 
 export class ContractError extends Error {
   constructor(message) {
@@ -22,6 +23,8 @@ export class ContractError extends Error {
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const sha512 = (bytes) => createHash("sha512").update(bytes).digest("hex");
+const sriSha512 = (bytes) =>
+  `sha512-${createHash("sha512").update(bytes).digest("base64")}`;
 const normalizeFragment = (value) =>
   value.replaceAll("\r\n", "\n").replace(/\n+$/, "");
 
@@ -29,7 +32,185 @@ function assert(condition, message) {
   if (!condition) throw new ContractError(message);
 }
 
-function trackedPackageMetadata(repositoryRoot) {
+function canonicalGitRepository(value) {
+  return String(value ?? "")
+    .replace(/^git\+/, "")
+    .replace(/\.git$/, "");
+}
+
+function githubRepositorySlug(repositoryUrl) {
+  const url = new URL(repositoryUrl);
+  assert(
+    url.protocol === "https:" && url.hostname === "github.com",
+    `Origem GitHub inválida: ${repositoryUrl}.`,
+  );
+  const slug = url.pathname.replace(/^\//, "").replace(/\.git$/, "");
+  assert(
+    /^[^/]+\/[^/]+$/.test(slug),
+    `Repositório GitHub inválido: ${repositoryUrl}.`,
+  );
+  return slug;
+}
+
+async function fetchOfficial(url, { fetchImpl, githubToken, raw = false }) {
+  const isGitHub = new URL(url).hostname === "api.github.com";
+  const headers = isGitHub
+    ? {
+        Accept: raw
+          ? "application/vnd.github.raw+json"
+          : "application/vnd.github+json",
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
+        ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
+      }
+    : { Accept: "application/json" };
+  const response = await fetchImpl(url, { headers });
+  assert(
+    response.ok,
+    `Fonte oficial ${url} respondeu HTTP ${response.status}.`,
+  );
+  return raw
+    ? Buffer.from(await response.arrayBuffer())
+    : await response.json();
+}
+
+export async function loadUpstreamEvidence({
+  fetchImpl = fetch,
+  githubToken = process.env.GITHUB_TOKEN,
+} = {}) {
+  const worldSlug = githubRepositorySlug(POLICY.cartography.sourceRepository);
+  const swissSlug = githubRepositorySlug(POLICY.swiss.wrapperSourceRepository);
+  const registryUrl = (name, version) =>
+    `https://registry.npmjs.org/${encodeURIComponent(name)}/${version}`;
+  const githubUrl = (slug, suffix) =>
+    `https://api.github.com/repos/${slug}/${suffix}`;
+
+  const [worldMetadata, swissMetadata] = await Promise.all([
+    fetchOfficial(
+      registryUrl(POLICY.cartography.package, POLICY.cartography.version),
+      { fetchImpl, githubToken },
+    ),
+    fetchOfficial(
+      registryUrl(POLICY.swiss.package, POLICY.swiss.wrapperVersion),
+      { fetchImpl, githubToken },
+    ),
+  ]);
+  assert(
+    typeof worldMetadata.dist?.tarball === "string" &&
+      typeof swissMetadata.dist?.tarball === "string",
+    "Metadados npm oficiais não contêm URLs de tarball.",
+  );
+  const [swissTree, worldReadme, worldTarball, swissTarball] =
+    await Promise.all([
+      fetchOfficial(
+        githubUrl(
+          swissSlug,
+          `git/trees/${POLICY.swiss.wrapperGitHead}?recursive=1`,
+        ),
+        { fetchImpl, githubToken },
+      ),
+      fetchOfficial(
+        githubUrl(
+          worldSlug,
+          `contents/README.md?ref=${POLICY.cartography.gitHead}`,
+        ),
+        { fetchImpl, githubToken, raw: true },
+      ),
+      fetchOfficial(worldMetadata.dist.tarball, {
+        fetchImpl,
+        githubToken,
+        raw: true,
+      }),
+      fetchOfficial(swissMetadata.dist.tarball, {
+        fetchImpl,
+        githubToken,
+        raw: true,
+      }),
+    ]);
+
+  return {
+    worldAtlas: {
+      metadata: worldMetadata,
+      readmeBytes: worldReadme,
+      tarballIntegrity: sriSha512(worldTarball),
+    },
+    swiss: {
+      metadata: swissMetadata,
+      tree: swissTree,
+      tarballIntegrity: sriSha512(swissTarball),
+      tarballSha256: sha256(swissTarball),
+    },
+  };
+}
+
+export function validateUpstreamEvidence(evidence) {
+  const world = evidence.worldAtlas;
+  assert(
+    world.metadata.version === POLICY.cartography.version &&
+      world.metadata.license === POLICY.cartography.license &&
+      world.metadata.dist?.integrity === POLICY.cartography.integrity &&
+      world.metadata.dist?.tarball ===
+        expectedRegistryUrl(
+          POLICY.cartography.package,
+          POLICY.cartography.version,
+        ) &&
+      world.metadata.gitHead === POLICY.cartography.gitHead &&
+      canonicalGitRepository(world.metadata.repository?.url) ===
+        POLICY.cartography.sourceRepository,
+    "Metadados npm do world-atlas divergiram da política de proveniência.",
+  );
+  assert(
+    world.readmeBytes.byteLength === POLICY.cartography.readmeSize &&
+      sha256(world.readmeBytes) === POLICY.cartography.readmeSha256,
+    "README no commit GitHub do world-atlas divergiu da evidência instalada.",
+  );
+  assert(
+    world.tarballIntegrity === POLICY.cartography.integrity,
+    "Tarball oficial do world-atlas divergiu do SRI auditado.",
+  );
+
+  const swiss = evidence.swiss;
+  assert(
+    swiss.metadata.version === POLICY.swiss.wrapperVersion &&
+      swiss.metadata.license === POLICY.swiss.license &&
+      swiss.metadata.dist?.integrity === POLICY.swiss.wrapperIntegrity &&
+      swiss.metadata.dist?.tarball ===
+        expectedRegistryUrl(
+          POLICY.swiss.package,
+          POLICY.swiss.wrapperVersion,
+        ) &&
+      swiss.metadata.gitHead === POLICY.swiss.wrapperGitHead &&
+      canonicalGitRepository(swiss.metadata.repository?.url) ===
+        POLICY.swiss.wrapperSourceRepository,
+    "Metadados npm do wrapper Swiss divergiram da política jurídica.",
+  );
+  assert(
+    swiss.tarballIntegrity === POLICY.swiss.wrapperIntegrity &&
+      swiss.tarballSha256 === POLICY.swiss.wrapperTarballSha256,
+    "Tarball oficial do wrapper Swiss divergiu dos hashes auditados.",
+  );
+  assert(
+    swiss.tree.truncated === false,
+    "Árvore GitHub do wrapper Swiss foi truncada; não é evidência completa.",
+  );
+  const upstreamEntries = swiss.tree.tree.filter(
+    (entry) => entry.path === "vendor/swisseph",
+  );
+  assert(
+    upstreamEntries.length === 1 &&
+      upstreamEntries[0].mode === "160000" &&
+      upstreamEntries[0].type === "commit" &&
+      upstreamEntries[0].sha === POLICY.swiss.upstreamRevision,
+    "Gitlink vendor/swisseph divergiu da revisão upstream oferecida.",
+  );
+}
+
+export async function verifyUpstream(options) {
+  const evidence = await loadUpstreamEvidence(options);
+  validateUpstreamEvidence(evidence);
+  return evidence;
+}
+
+function trackedFiles(repositoryRoot) {
   const result = spawnSync("git", ["ls-files", "-z"], {
     cwd: repositoryRoot,
     encoding: "utf8",
@@ -39,13 +220,39 @@ function trackedPackageMetadata(repositoryRoot) {
     result.status === 0,
     `git ls-files falhou: ${result.stderr?.trim() || `status ${result.status}`}`,
   );
-  return result.stdout
-    .split("\0")
-    .filter(Boolean)
-    .filter((file) =>
-      /(?:^|\/)(?:package(?:-lock)?\.json|npm-shrinkwrap\.json)$/.test(file),
-    )
-    .sort();
+  return result.stdout.split("\0").filter(Boolean).sort();
+}
+
+function trackedPackageMetadata(repositoryRoot) {
+  return trackedFiles(repositoryRoot).filter((file) =>
+    /(?:^|\/)(?:package(?:-lock)?\.json|npm-shrinkwrap\.json)$/.test(file),
+  );
+}
+
+async function trackedPackageImports(repositoryRoot, packageName) {
+  const imports = [];
+  for (const file of trackedFiles(repositoryRoot).filter((candidate) =>
+    /\.(?:[cm]?[jt]sx?)$/.test(candidate),
+  )) {
+    const source = await readFile(path.join(repositoryRoot, file), "utf8");
+    for (const specifier of extractPackageImports(source, packageName)) {
+      imports.push({ source: file, specifier });
+    }
+  }
+  return imports.sort((left, right) =>
+    `${left.source}\0${left.specifier}`.localeCompare(
+      `${right.source}\0${right.specifier}`,
+    ),
+  );
+}
+
+export function extractPackageImports(source, packageName) {
+  const escapedPackageName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const quotedSpecifier = new RegExp(
+    `(?:\\bfrom\\s*|\\bimport\\s*(?:\\(\\s*)?|\\brequire(?:\\.resolve)?\\s*\\(\\s*)["'\`](${escapedPackageName}(?:\/[^"'\`]+)?)["'\`]`,
+    "g",
+  );
+  return [...source.matchAll(quotedSpecifier)].map((match) => match[1]);
 }
 
 async function readJson(file) {
@@ -104,12 +311,26 @@ export async function loadState(repositoryRoot = REPOSITORY_ROOT) {
       POLICY.swiss.wasmRelativePath,
     ),
   );
+  const cartographyRoot = path.join(repositoryRoot, frontendRoot.installRoot);
 
   return {
     repositoryRoot,
     trackedFiles: trackedPackageMetadata(repositoryRoot),
     roots,
     wasmBytes,
+    cartography: {
+      readme: await readFile(
+        path.join(cartographyRoot, POLICY.cartography.readmeRelativePath),
+        "utf8",
+      ),
+      assetBytes: await readFile(
+        path.join(cartographyRoot, POLICY.cartography.assetRelativePath),
+      ),
+      imports: await trackedPackageImports(
+        repositoryRoot,
+        POLICY.cartography.package,
+      ),
+    },
     fragments: {
       astronomy: await loadFragment(repositoryRoot, POLICY.fragments.astronomy),
       swissNotice: await loadFragment(
@@ -271,14 +492,90 @@ export function validateState(state) {
     sha512(state.wasmBytes) === POLICY.swiss.wasmSha512,
     "SHA-512 do Swiss Ephemeris WASM divergiu.",
   );
+  assert(
+    /^[0-9a-f]{40}$/.test(POLICY.swiss.wrapperGitHead) &&
+      /^[0-9a-f]{40}$/.test(POLICY.swiss.upstreamRevision),
+    "Revisões Swiss devem ser commits Git completos.",
+  );
+  assert(
+    !/(?:[a-z][a-z0-9+.-]*:\/\/|(?:^|\s)git@|github\.com|\/tree\/|\b[0-9a-f]{7,40}\b|\bv?\d+\.\d+\.\d+\b)/i.test(
+      state.fragments.swissSourceOffer,
+    ),
+    "O fragmento da oferta Swiss não pode conter URLs, versões ou revisões; esses identificadores derivam da política jurídica.",
+  );
+
+  const cartography = rows.find(
+    (row) =>
+      row.manifest === "astrologo-frontend/package.json" &&
+      row.relation === "dependencies" &&
+      row.component === POLICY.cartography.package,
+  );
+  assert(
+    cartography?.resolvedVersion === POLICY.cartography.version,
+    "Versão do world-atlas divergiu da política de proveniência cartográfica.",
+  );
+  assert(
+    cartography.license === POLICY.cartography.license &&
+      cartography.integrity === POLICY.cartography.integrity,
+    "Licença ou SRI do world-atlas divergiu da política de proveniência cartográfica.",
+  );
+  for (const component of POLICY.cartography.runtimePackages) {
+    assert(
+      rows.some(
+        (row) =>
+          row.manifest === "astrologo-frontend/package.json" &&
+          row.relation === "dependencies" &&
+          row.component === component,
+      ),
+      `${component} deve permanecer classificado como dependência cartográfica do frontend.`,
+    );
+  }
+  assert(
+    Buffer.byteLength(state.cartography.readme, "utf8") ===
+      POLICY.cartography.readmeSize &&
+      sha256(state.cartography.readme) === POLICY.cartography.readmeSha256,
+    "README do world-atlas divergiu da evidência de proveniência auditada.",
+  );
+  assert(
+    state.cartography.assetBytes.byteLength === POLICY.cartography.assetSize &&
+      sha256(state.cartography.assetBytes) === POLICY.cartography.assetSha256,
+    `Asset ${POLICY.cartography.asset} divergiu da evidência cartográfica auditada.`,
+  );
+  assert(
+    state.cartography.readme.includes(
+      `version ${POLICY.cartography.datasetVersion} as TopoJSON`,
+    ),
+    "README do world-atlas não comprova a versão Natural Earth declarada.",
+  );
+  const assetSectionStart = state.cartography.readme.indexOf(
+    `<a href="#${POLICY.cartography.asset}"`,
+  );
+  const nextAssetSection = state.cartography.readme.indexOf(
+    '\n<a href="#',
+    assetSectionStart + 1,
+  );
+  const assetSection = state.cartography.readme.slice(
+    assetSectionStart,
+    nextAssetSection === -1 ? undefined : nextAssetSection,
+  );
+  assert(
+    assetSectionStart !== -1 && assetSection.includes(POLICY.cartography.scale),
+    `README do world-atlas não vincula ${POLICY.cartography.asset} à escala ${POLICY.cartography.scale}.`,
+  );
+  assert(
+    JSON.stringify(state.cartography.imports) ===
+      JSON.stringify(POLICY.cartography.imports),
+    `Imports ${POLICY.cartography.package} divergiram da lista cartográfica auditada. Esperado: ${JSON.stringify(POLICY.cartography.imports)}. Encontrado: ${JSON.stringify(state.cartography.imports)}.`,
+  );
 
   const astronomy = rows.find(
     (row) =>
       row.manifest === "astrologo-frontend/package.json" &&
-      row.component === "astronomy-engine",
+      row.component === POLICY.astronomy.package,
   );
   assert(
-    astronomy?.resolvedVersion === "2.1.19" && astronomy.license === "MIT",
+    astronomy?.resolvedVersion === POLICY.astronomy.version &&
+      astronomy.license === POLICY.astronomy.license,
     "Astronomy Engine divergiu do aviso MIT canônico.",
   );
   return rows;
@@ -327,11 +624,11 @@ export function renderThirdparty(rows) {
     "",
     "## Cartografia e Natural Earth",
     "",
-    "A cartografia usa `d3-geo`, `topojson-client` e `world-atlas`. O mapa-base deriva de Natural Earth 4.1.0, escala 1:110m. Os dados Natural Earth são de domínio público segundo os termos oficiais: https://www.naturalearthdata.com/about/terms-of-use/. “Natural Earth” identifica apenas a proveniência e não constitui endosso.",
+    `A cartografia usa ${POLICY.cartography.runtimePackages.map((component) => `\`${component}\``).join(", ")}. O asset efetivamente importado \`${POLICY.cartography.package}/${POLICY.cartography.asset}\`, proveniente de \`${POLICY.cartography.package}@${POLICY.cartography.version}\`, deriva de ${POLICY.cartography.dataset} ${POLICY.cartography.datasetVersion}, escala ${POLICY.cartography.scale}. O pacote resolvido, seu README de proveniência e os bytes do asset são vinculados por versão, tamanho e SHA-256 pela política jurídica. Os dados ${POLICY.cartography.dataset} são de domínio público segundo os termos oficiais: ${POLICY.cartography.termsUrl}. “${POLICY.cartography.dataset}” identifica apenas a proveniência e não constitui endosso.`,
     "",
     "## Astronomy Engine",
     "",
-    `O cálculo astronômico usa Astronomy Engine 2.1.19 sob MIT. O aviso integral canônico e sua fonte oficial (${POLICY.fragments.astronomy.source}) constam do NOTICE.`,
+    `O cálculo astronômico usa Astronomy Engine ${POLICY.astronomy.version} sob ${POLICY.astronomy.license}. O aviso integral canônico e sua fonte oficial (${POLICY.astronomy.sourceRepository}/blob/v${POLICY.astronomy.version}/${POLICY.astronomy.licensePath}) constam do NOTICE.`,
     "",
     "## Swiss Ephemeris e WebAssembly",
     "",
@@ -343,6 +640,16 @@ export function renderThirdparty(rows) {
   return [...header, ...table, ...appendix].join("\n");
 }
 
+function renderSwissSourceOffer(fragment) {
+  return [
+    fragment,
+    "",
+    `Projeto: ${POLICY.project.sourceRepository}`,
+    `Wrapper: ${POLICY.swiss.wrapperSourceRepository}/tree/${POLICY.swiss.wrapperGitHead}`,
+    `Swiss Ephemeris: ${POLICY.swiss.upstreamSourceRepository}/tree/${POLICY.swiss.upstreamRevision}`,
+  ].join("\n");
+}
+
 export function renderNotice(fragments) {
   return [
     "Copyright © 2026 LCV Ideas & Software",
@@ -351,7 +658,7 @@ export function renderNotice(fragments) {
     "-----------------------------------------",
     "Esta distribuição incorpora componentes sob MIT, ISC, Apache-2.0, MPL-2.0 e GNU AGPL v3. O inventário exato está em THIRDPARTY.md; o bundle do navegador publica os textos integrais aplicáveis em legal/BUNDLED-LICENSES.md. Esse artefato não cobre o bundle separado das Cloudflare Functions.",
     "",
-    "ASTRONOMY ENGINE 2.1.19 — MIT",
+    `ASTRONOMY ENGINE ${POLICY.astronomy.version} — ${POLICY.astronomy.license}`,
     "-----------------------------",
     fragments.astronomy,
     "",
@@ -372,7 +679,7 @@ export function renderNotice(fragments) {
     "",
     "OFERTA DE CÓDIGO-FONTE — GNU AGPL v3, SEÇÕES 6 E 13",
     "---------------------------------------------------",
-    fragments.swissSourceOffer,
+    renderSwissSourceOffer(fragments.swissSourceOffer),
     "",
   ].join("\n");
 }
@@ -422,13 +729,17 @@ async function main() {
   const args = process.argv.slice(2);
   assert(
     args.length <= 1 &&
-      (args.length === 0 || args[0] === "--check" || args[0] === "--write"),
-    "Uso: verify-thirdparty.mjs [--check|--write]",
+      (args.length === 0 ||
+        args[0] === "--check" ||
+        args[0] === "--write" ||
+        args[0] === "--check-upstream"),
+    "Uso: verify-thirdparty.mjs [--check|--write|--check-upstream]",
   );
   const write = args[0] === "--write";
   const result = await applyContract({ write });
+  if (args[0] === "--check-upstream") await verifyUpstream();
   console.log(
-    `${write ? "Gerados" : "Verificados"} THIRDPARTY/NOTICE (${result.rows.length} relações diretas).`,
+    `${write ? "Gerados" : "Verificados"} THIRDPARTY/NOTICE (${result.rows.length} relações diretas)${args[0] === "--check-upstream" ? " e proveniência oficial upstream" : ""}.`,
   );
 }
 

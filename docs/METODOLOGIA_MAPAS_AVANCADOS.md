@@ -73,7 +73,7 @@ Para ascensão reta `α`, GAST `θ`, latitude geográfica `φ` e declinação `�
 
 As linhas de horizonte são amostradas na resolução escolhida, com altitude de referência 0°, sem refração e sem modelo de elevação do observador. Latitudes sem cruzamento geométrico válido ficam parciais ou indisponíveis; segmentos que atravessam o antimeridiano são separados para não desenhar uma linha falsa através do mapa.
 
-O mapa-base é Natural Earth 1:110m, empacotado por `world-atlas@2.0.2`, convertido por `topojson-client@3.1.0` e projetado/renderizado em SVG por `d3-geo@3.1.1`. Não há tiles externos nem envio de dados a um serviço cartográfico. O Natural Earth declara seus dados em domínio público em <https://www.naturalearthdata.com/about/terms-of-use/>.
+O mapa-base, sua proveniência, o asset efetivamente importado e as versões resolvidas das bibliotecas cartográficas são auditados no `THIRDPARTY.md` canônico. A geometria é convertida por `topojson-client` e projetada/renderizada em SVG por `d3-geo`; não há tiles externos nem envio de dados a um serviço cartográfico.
 
 O contrato não calcula parans, espaço local, linhas de eclipse, direções por azimute ou um raio quilométrico de influência. Proximidade visual e cruzamento de linhas não autorizam afirmar maior intensidade. O mapa não recomenda mudança, viagem, investimento ou moradia.
 

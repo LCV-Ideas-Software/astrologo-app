@@ -44,7 +44,9 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Verify live third-party inventory contract
-        run: npm run verify:thirdparty
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run verify:thirdparty:upstream
 
       - name: Test third-party inventory contract
         run: npm run test:thirdparty
