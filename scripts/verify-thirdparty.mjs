@@ -1,4 +1,6 @@
+import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { dirname, posix } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const START_MARKER = "<!-- direct-dependencies:start -->";
@@ -48,7 +50,7 @@ const MODIFICATION_OVERRIDES = new Map([
   ],
 ]);
 
-function manifestEntries(component, manifest) {
+function manifestEntries(component, manifest, lockfile) {
   const optionalNames = new Set(
     Object.keys(manifest.optionalDependencies ?? {}),
   );
@@ -59,6 +61,14 @@ function manifestEntries(component, manifest) {
       relation,
       version,
     }));
+  const installedPeerDependencies = Object.fromEntries(
+    Object.entries(manifest.peerDependencies ?? {}).filter(([name]) => {
+      const isOptional =
+        manifest.peerDependenciesMeta?.[name]?.optional === true;
+      const isInstalled = Boolean(lockfile.packages?.[`node_modules/${name}`]);
+      return !isOptional || isInstalled;
+    }),
+  );
 
   return [
     ...sectionEntries(
@@ -71,12 +81,52 @@ function manifestEntries(component, manifest) {
     ),
     ...sectionEntries("devDependencies", manifest.devDependencies),
     ...sectionEntries("optionalDependencies", manifest.optionalDependencies),
-    ...sectionEntries("peerDependencies", manifest.peerDependencies),
+    ...sectionEntries("peerDependencies", installedPeerDependencies),
   ];
 }
 
 function entryKey({ component, name, relation }) {
   return JSON.stringify([component, name, relation]);
+}
+
+function lockfilePathFor(component) {
+  const directory = dirname(component).replaceAll("\\", "/");
+  return directory === "."
+    ? "package-lock.json"
+    : posix.join(directory, "package-lock.json");
+}
+
+export function verifyPackageTopology(packageSets, trackedPackageFiles) {
+  const configured = new Set(
+    packageSets.flatMap(({ component }) => [
+      component,
+      lockfilePathFor(component),
+    ]),
+  );
+  const tracked = new Set(
+    trackedPackageFiles
+      .map((file) => file.replaceAll("\\", "/"))
+      .filter((file) => {
+        const segments = file.split("/");
+        return !segments.some((segment) =>
+          ["node_modules", "build", "dist"].includes(segment),
+        );
+      }),
+  );
+  const errors = [];
+
+  for (const file of tracked) {
+    if (!configured.has(file)) {
+      errors.push(`unclassified tracked package metadata: ${file}`);
+    }
+  }
+  for (const file of configured) {
+    if (!tracked.has(file)) {
+      errors.push(`configured package metadata is not tracked: ${file}`);
+    }
+  }
+
+  return errors;
 }
 
 function markerSection(markdown) {
@@ -145,8 +195,14 @@ export function parseDirectDependencies(markdown) {
   return rows;
 }
 
-export function verifyThirdParty({ packageSets, canonical, publicCopy }) {
+export function verifyThirdParty({
+  packageSets,
+  trackedPackageFiles,
+  canonical,
+  publicCopy,
+}) {
   const errors = [];
+  errors.push(...verifyPackageTopology(packageSets, trackedPackageFiles));
   if (canonical !== publicCopy) {
     errors.push(
       "THIRDPARTY.md and astrologo-frontend/public/legal/THIRDPARTY.md differ",
@@ -160,8 +216,8 @@ export function verifyThirdParty({ packageSets, canonical, publicCopy }) {
     return [...errors, error.message];
   }
 
-  const expected = packageSets.flatMap(({ component, manifest }) =>
-    manifestEntries(component, manifest),
+  const expected = packageSets.flatMap(({ component, manifest, lockfile }) =>
+    manifestEntries(component, manifest, lockfile),
   );
   const observed = new Map(rows.map((row) => [entryKey(row), row]));
   const lockfiles = new Map(
@@ -266,8 +322,25 @@ async function main() {
       "utf8",
     ),
   ]);
+  const trackedPackageFiles = execFileSync(
+    "git",
+    [
+      "ls-files",
+      "-z",
+      "--",
+      ":(glob)**/package.json",
+      ":(glob)**/package-lock.json",
+    ],
+    {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8",
+    },
+  )
+    .split("\0")
+    .filter(Boolean);
   const errors = verifyThirdParty({
     packageSets,
+    trackedPackageFiles,
     canonical,
     publicCopy,
   });
@@ -278,8 +351,8 @@ async function main() {
     return;
   }
 
-  const count = packageSets.flatMap(({ component, manifest }) =>
-    manifestEntries(component, manifest),
+  const count = packageSets.flatMap(({ component, manifest, lockfile }) =>
+    manifestEntries(component, manifest, lockfile),
   ).length;
   console.log(
     `THIRDPARTY válido: ${count} dependências diretas e cópias idênticas.`,

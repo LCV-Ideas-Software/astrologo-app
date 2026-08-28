@@ -46,6 +46,12 @@ const packageSets = [
     lockfile: JSON.parse(frontendLockfileText),
   },
 ];
+const trackedPackageFiles = [
+  "package.json",
+  "package-lock.json",
+  "astrologo-frontend/package.json",
+  "astrologo-frontend/package-lock.json",
+];
 
 function packageSet(sets, component) {
   const match = sets.find((candidate) => candidate.component === component);
@@ -82,6 +88,7 @@ function errorsFor(
 ) {
   return verifyThirdParty({
     packageSets: candidatePackageSets,
+    trackedPackageFiles,
     canonical: markdown,
     publicCopy: publicMarkdown,
   });
@@ -202,13 +209,16 @@ test("includes optional dependencies in the direct inventory", () => {
   );
 });
 
-test("includes peer dependencies in the direct inventory", () => {
+test("includes installed optional peer dependencies in the direct inventory", () => {
   const candidatePackageSets = structuredClone(packageSets);
   const frontend = packageSet(
     candidatePackageSets,
     "astrologo-frontend/package.json",
   );
   frontend.manifest.peerDependencies = { "peer-test": "^1.0.0" };
+  frontend.manifest.peerDependenciesMeta = {
+    "peer-test": { optional: true },
+  };
   frontend.lockfile.packages["node_modules/peer-test"] = {
     version: "1.0.0",
     resolved: "https://registry.npmjs.org/peer-test/-/peer-test-1.0.0.tgz",
@@ -218,6 +228,19 @@ test("includes peer dependencies in the direct inventory", () => {
     errorsFor(canonical, publicCopy, candidatePackageSets).join("\n"),
     /missing direct dependency: .* peerDependencies peer-test/u,
   );
+});
+
+test("omits an optional peer dependency that is not installed", () => {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  frontend.manifest.peerDependencies = { "optional-peer-test": "^1.0.0" };
+  frontend.manifest.peerDependenciesMeta = {
+    "optional-peer-test": { optional: true },
+  };
+  assert.deepEqual(errorsFor(canonical, publicCopy, candidatePackageSets), []);
 });
 
 test("accepts the same package as both development and peer dependency", () => {
@@ -304,6 +327,39 @@ test("rejects an extra direct dependency", () => {
   assert.match(
     errorsFor(extra).join("\n"),
     /extra direct dependency: .* dependencies invented-package/u,
+  );
+});
+
+test("validates direct rows in a later table inside the bounded section", () => {
+  const extra = canonical.replace(
+    "<!-- direct-dependencies:end -->",
+    "## Continuação inválida\n\n| Manifesto | Componente | Relação | Versão | Licença Original | Modificado? | Link de Origem |\n| --- | --- | --- | --- | --- | --- | --- |\n| astrologo-frontend/package.json | late-table-package | dependencies | 1.0.0 | MIT | Não | https://example.invalid/late-table-package-1.0.0.tgz |\n\n<!-- direct-dependencies:end -->",
+  );
+  assert.match(
+    errorsFor(extra).join("\n"),
+    /extra direct dependency: .* late-table-package/u,
+  );
+});
+
+test("rejects a newly tracked package manifest until it is classified", () => {
+  const candidateTrackedFiles = [
+    ...trackedPackageFiles,
+    "future/package.json",
+    "future/package-lock.json",
+  ];
+  const errors = verifyThirdParty({
+    packageSets,
+    trackedPackageFiles: candidateTrackedFiles,
+    canonical,
+    publicCopy,
+  });
+  assert.match(
+    errors.join("\n"),
+    /unclassified tracked package metadata: future\/package\.json/u,
+  );
+  assert.match(
+    errors.join("\n"),
+    /unclassified tracked package metadata: future\/package-lock\.json/u,
   );
 });
 
