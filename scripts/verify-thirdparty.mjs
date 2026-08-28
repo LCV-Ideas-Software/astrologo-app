@@ -206,6 +206,42 @@ function entryKey({ component, name, relation }) {
   return JSON.stringify([component, name, relation]);
 }
 
+function expectedRegistrySource(name, version) {
+  const tarballName = name.split("/").at(-1);
+  return `https://registry.npmjs.org/${name}/-/${tarballName}-${version}.tgz`;
+}
+
+function validateLockedIdentity({
+  name,
+  requested,
+  locked,
+  context,
+  errors,
+}) {
+  if (!locked.version || !locked.resolved) {
+    errors.push(`missing locked identity metadata for ${context} ${name}`);
+    return false;
+  }
+  if (
+    requested.startsWith("npm:") ||
+    (locked.name !== undefined && locked.name !== name)
+  ) {
+    errors.push(
+      `npm package aliases are not supported in THIRDPARTY inventory: ${context} ${name} resolves to ${locked.name ?? requested}`,
+    );
+    return false;
+  }
+
+  const expectedSource = expectedRegistrySource(name, locked.version);
+  if (locked.resolved !== expectedSource) {
+    errors.push(
+      `locked source mismatch for ${context} ${name}: package-lock=${locked.resolved} expected=${expectedSource}`,
+    );
+    return false;
+  }
+  return true;
+}
+
 function lockfilePathFor(component) {
   const directory = dirname(component).replaceAll("\\", "/");
   return directory === "."
@@ -404,7 +440,19 @@ function resolveDependencyRecord(lockfile, parentPath, name, errors) {
 
   for (const path of dependencyCandidatePaths(parentPath, name)) {
     const locked = lockfile.packages?.[path];
-    if (locked) return { path, locked };
+    if (!locked) continue;
+    if (
+      !validateLockedIdentity({
+        name,
+        requested: declared[name],
+        locked,
+        context: `retained dependency from ${parentPath}`,
+        errors,
+      })
+    ) {
+      return null;
+    }
+    return { path, locked };
   }
 
   errors.push(
@@ -645,20 +693,15 @@ export function verifyThirdParty({
     }
 
     if (
-      version.startsWith("npm:") ||
-      (locked.name !== undefined && locked.name !== name)
-    ) {
-      errors.push(
-        `npm package aliases are not supported in THIRDPARTY inventory: ${name} resolves to ${locked.name ?? version}`,
-      );
+      !validateLockedIdentity({
+        name,
+        requested: version,
+        locked,
+        context: component,
+        errors,
+      })
+    )
       continue;
-    }
-
-    if (!locked.resolved.endsWith(`-${locked.version}.tgz`)) {
-      errors.push(
-        `lockfile version does not match resolved source for ${name}: version=${locked.version} resolved=${locked.resolved}`,
-      );
-    }
     if (row.source !== locked.resolved) {
       errors.push(
         `resolved source mismatch for ${name}: THIRDPARTY=${row.source} package-lock=${locked.resolved}`,

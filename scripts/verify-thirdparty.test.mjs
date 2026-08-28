@@ -433,6 +433,44 @@ test("resolves a retained dependency through its documented parent", () => {
   );
 });
 
+test("rejects aliases in retained dependency resolution", () => {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  const parent = frontend.lockfile.packages["node_modules/d3-geo"];
+  const retained = frontend.lockfile.packages["node_modules/d3-array"];
+  assert.ok(parent?.dependencies?.["d3-array"] && retained?.version);
+  parent.dependencies["d3-array"] =
+    `npm:other-package@${retained.version}`;
+  retained.name = "other-package";
+  retained.resolved =
+    `https://registry.npmjs.org/other-package/-/other-package-${retained.version}.tgz`;
+
+  assert.match(
+    errorsFor(canonical, publicCopy, candidatePackageSets).join("\n"),
+    /npm package aliases are not supported.*retained dependency.*d3-array resolves to other-package/u,
+  );
+});
+
+test("rejects an unrelated source for a retained package identity", () => {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  const retained = frontend.lockfile.packages["node_modules/d3-array"];
+  assert.ok(retained?.version && retained.resolved);
+  retained.resolved =
+    `https://registry.npmjs.org/other-package/-/other-package-${retained.version}.tgz`;
+
+  assert.match(
+    errorsFor(canonical, publicCopy, candidatePackageSets).join("\n"),
+    /locked source mismatch.*retained dependency.*d3-array/u,
+  );
+});
+
 test("rejects stale audited artifact metadata", () => {
   const jsbi = canonical
     .split(/\r?\n/u)
