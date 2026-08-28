@@ -46,7 +46,7 @@
 | astrologo-frontend/package.json | typescript-eslint           | devDependencies | ^8.67.0  | MIT                                            | Não                                     | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.67.0.tgz                    |
 | astrologo-frontend/package.json | vite                        | devDependencies | ^8.2.2   | MIT                                            | Não                                     | https://registry.npmjs.org/vite/-/vite-8.2.2.tgz                                               |
 | astrologo-frontend/package.json | vitest                      | devDependencies | ^4.1.11  | MIT                                            | Não                                     | https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz                                          |
-| astrologo-frontend/package.json | wrangler                    | devDependencies | 4.124.0  | MIT OR Apache-2.0                              | Não                                     | https://registry.npmjs.org/wrangler/-/wrangler-4.124.0.tgz                                     |
+| astrologo-frontend/package.json | wrangler                    | devDependencies | 4.125.0  | MIT OR Apache-2.0                              | Não                                     | https://registry.npmjs.org/wrangler/-/wrangler-4.125.0.tgz                                     |
 <!-- direct-dependencies:end -->
 
 ## Dependências transitivas e artefatos incorporados
