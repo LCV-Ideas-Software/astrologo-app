@@ -4,53 +4,61 @@
 
 <!-- direct-dependencies:start -->
 
-| Componente | Versão | Licença Original | Modificado? | Link de Origem |
-|------------|--------|------------------|-------------|----------------|
-| @js-temporal/polyfill | 0.5.1 | ISC | Não | https://registry.npmjs.org/@js-temporal/polyfill/-/polyfill-0.5.1.tgz |
-| @tailwindcss/vite | ^4.3.3 | MIT | Não | https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.3.tgz |
-| astronomy-engine | 2.1.19 | MIT | Não | https://registry.npmjs.org/astronomy-engine/-/astronomy-engine-2.1.19.tgz |
-| d3-geo | 3.1.1 | ISC; incorpora GeographicLib sob MIT | Não | https://registry.npmjs.org/d3-geo/-/d3-geo-3.1.1.tgz |
-| dompurify | ^3.4.14 | (MPL-2.0 OR Apache-2.0) | Não | https://registry.npmjs.org/dompurify/-/dompurify-3.4.14.tgz |
-| lucide-react | ^1.33.0 | ISC | Não | https://registry.npmjs.org/lucide-react/-/lucide-react-1.33.0.tgz |
-| react | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react/-/react-19.2.8.tgz |
-| react-dom | ^19.2.8 | MIT | Não | https://registry.npmjs.org/react-dom/-/react-dom-19.2.8.tgz |
-| sanitize-html | ^2.17.7 | MIT | Não | https://registry.npmjs.org/sanitize-html/-/sanitize-html-2.17.7.tgz |
-| tailwindcss | ^4.3.3 | MIT | Não | https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.3.tgz |
-| topojson-client | 3.1.0 | ISC | Não | https://registry.npmjs.org/topojson-client/-/topojson-client-3.1.0.tgz |
-| world-atlas | 2.0.2 | ISC; dados Natural Earth em domínio público | Não | https://registry.npmjs.org/world-atlas/-/world-atlas-2.0.2.tgz |
-| @biomejs/biome | ^2.5.9 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/@biomejs/biome/-/biome-2.5.9.tgz |
-| @eslint/js | ^10.0.1 | MIT | Não | https://registry.npmjs.org/@eslint/js/-/js-10.0.1.tgz |
-| @fusionstrings/swiss-eph | 0.1.1 | AGPL-3.0-only (manifesto upstream: `AGPL-3.0`) | Não; o módulo é consumido sem alteração | https://registry.npmjs.org/@fusionstrings/swiss-eph/-/swiss-eph-0.1.1.tgz |
-| @types/d3-geo | 3.1.1 | MIT | Não | https://registry.npmjs.org/@types/d3-geo/-/d3-geo-3.1.1.tgz |
-| @types/node | ^26.2.0 | MIT | Não | https://registry.npmjs.org/@types/node/-/node-26.2.0.tgz |
-| @types/react | ^19.2.18 | MIT | Não | https://registry.npmjs.org/@types/react/-/react-19.2.18.tgz |
-| @types/react-dom | ^19.2.4 | MIT | Não | https://registry.npmjs.org/@types/react-dom/-/react-dom-19.2.4.tgz |
-| @types/sanitize-html | ^2.16.1 | MIT | Não | https://registry.npmjs.org/@types/sanitize-html/-/sanitize-html-2.16.1.tgz |
-| @types/topojson-client | 3.1.5 | MIT | Não | https://registry.npmjs.org/@types/topojson-client/-/topojson-client-3.1.5.tgz |
-| @vitejs/plugin-react | ^6.1.0 | MIT | Não | https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-6.1.0.tgz |
-| eslint | ^10.8.1 | MIT | Não | https://registry.npmjs.org/eslint/-/eslint-10.8.1.tgz |
-| eslint-config-prettier | ^10.1.8 | MIT | Não | https://registry.npmjs.org/eslint-config-prettier/-/eslint-config-prettier-10.1.8.tgz |
-| eslint-plugin-react-hooks | ^7.1.1 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-7.1.1.tgz |
-| eslint-plugin-react-refresh | ^0.5.4 | MIT | Não | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.4.tgz |
-| fast-check | 4.9.0 | MIT | Não | https://registry.npmjs.org/fast-check/-/fast-check-4.9.0.tgz |
-| globals | ^17.11.0 | MIT | Não | https://registry.npmjs.org/globals/-/globals-17.11.0.tgz |
-| typescript | ~6.0.3 | Apache-2.0 | Não | https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz |
-| typescript-eslint | ^8.67.0 | MIT | Não | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.67.0.tgz |
-| vite | ^8.2.2 | MIT | Não | https://registry.npmjs.org/vite/-/vite-8.2.2.tgz |
-| vitest | ^4.1.11 | MIT | Não | https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz |
-| wrangler | 4.124.0 | MIT OR Apache-2.0 | Não | https://registry.npmjs.org/wrangler/-/wrangler-4.124.0.tgz |
+| Manifesto                       | Componente                  | Relação         | Versão   | Licença Original                               | Modificado?                             | Link de Origem                                                                                 |
+| ------------------------------- | --------------------------- | --------------- | -------- | ---------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| package.json                    | @eslint/js                  | devDependencies | ^10.0.1  | MIT                                            | Não                                     | https://registry.npmjs.org/@eslint/js/-/js-10.0.1.tgz                                          |
+| package.json                    | eslint                      | devDependencies | ^10.8.1  | MIT                                            | Não                                     | https://registry.npmjs.org/eslint/-/eslint-10.8.1.tgz                                          |
+| package.json                    | eslint-config-prettier      | devDependencies | ^10.1.8  | MIT                                            | Não                                     | https://registry.npmjs.org/eslint-config-prettier/-/eslint-config-prettier-10.1.8.tgz          |
+| package.json                    | eslint-plugin-react-hooks   | devDependencies | ^7.1.1   | MIT                                            | Não                                     | https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-7.1.1.tgz     |
+| package.json                    | eslint-plugin-react-refresh | devDependencies | ^0.5.4   | MIT                                            | Não                                     | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.4.tgz |
+| package.json                    | globals                     | devDependencies | ^17.11.0 | MIT                                            | Não                                     | https://registry.npmjs.org/globals/-/globals-17.11.0.tgz                                       |
+| package.json                    | prettier                    | devDependencies | ^3.9.6   | MIT                                            | Não                                     | https://registry.npmjs.org/prettier/-/prettier-3.9.6.tgz                                       |
+| package.json                    | typescript-eslint           | devDependencies | ^8.67.0  | MIT                                            | Não                                     | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.67.0.tgz                    |
+| astrologo-frontend/package.json | @js-temporal/polyfill       | dependencies    | 0.5.1    | ISC                                            | Não                                     | https://registry.npmjs.org/@js-temporal/polyfill/-/polyfill-0.5.1.tgz                          |
+| astrologo-frontend/package.json | @tailwindcss/vite           | dependencies    | ^4.3.3   | MIT                                            | Não                                     | https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.3.tgz                                  |
+| astrologo-frontend/package.json | astronomy-engine            | dependencies    | 2.1.19   | MIT                                            | Não                                     | https://registry.npmjs.org/astronomy-engine/-/astronomy-engine-2.1.19.tgz                      |
+| astrologo-frontend/package.json | d3-geo                      | dependencies    | 3.1.1    | ISC; incorpora GeographicLib sob MIT           | Não                                     | https://registry.npmjs.org/d3-geo/-/d3-geo-3.1.1.tgz                                           |
+| astrologo-frontend/package.json | dompurify                   | dependencies    | ^3.4.14  | (MPL-2.0 OR Apache-2.0)                        | Não                                     | https://registry.npmjs.org/dompurify/-/dompurify-3.4.14.tgz                                    |
+| astrologo-frontend/package.json | lucide-react                | dependencies    | ^1.33.0  | ISC                                            | Não                                     | https://registry.npmjs.org/lucide-react/-/lucide-react-1.33.0.tgz                              |
+| astrologo-frontend/package.json | react                       | dependencies    | ^19.2.8  | MIT                                            | Não                                     | https://registry.npmjs.org/react/-/react-19.2.8.tgz                                            |
+| astrologo-frontend/package.json | react-dom                   | dependencies    | ^19.2.8  | MIT                                            | Não                                     | https://registry.npmjs.org/react-dom/-/react-dom-19.2.8.tgz                                    |
+| astrologo-frontend/package.json | sanitize-html               | dependencies    | ^2.17.7  | MIT                                            | Não                                     | https://registry.npmjs.org/sanitize-html/-/sanitize-html-2.17.7.tgz                            |
+| astrologo-frontend/package.json | tailwindcss                 | dependencies    | ^4.3.3   | MIT                                            | Não                                     | https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.3.tgz                                 |
+| astrologo-frontend/package.json | topojson-client             | dependencies    | 3.1.0    | ISC                                            | Não                                     | https://registry.npmjs.org/topojson-client/-/topojson-client-3.1.0.tgz                         |
+| astrologo-frontend/package.json | world-atlas                 | dependencies    | 2.0.2    | ISC; dados Natural Earth em domínio público    | Não                                     | https://registry.npmjs.org/world-atlas/-/world-atlas-2.0.2.tgz                                 |
+| astrologo-frontend/package.json | @biomejs/biome              | devDependencies | ^2.5.9   | MIT OR Apache-2.0                              | Não                                     | https://registry.npmjs.org/@biomejs/biome/-/biome-2.5.9.tgz                                    |
+| astrologo-frontend/package.json | @eslint/js                  | devDependencies | ^10.0.1  | MIT                                            | Não                                     | https://registry.npmjs.org/@eslint/js/-/js-10.0.1.tgz                                          |
+| astrologo-frontend/package.json | @fusionstrings/swiss-eph    | devDependencies | 0.1.1    | AGPL-3.0-only (manifesto upstream: `AGPL-3.0`) | Não; o módulo é consumido sem alteração | https://registry.npmjs.org/@fusionstrings/swiss-eph/-/swiss-eph-0.1.1.tgz                      |
+| astrologo-frontend/package.json | @types/d3-geo               | devDependencies | 3.1.1    | MIT                                            | Não                                     | https://registry.npmjs.org/@types/d3-geo/-/d3-geo-3.1.1.tgz                                    |
+| astrologo-frontend/package.json | @types/node                 | devDependencies | ^26.2.0  | MIT                                            | Não                                     | https://registry.npmjs.org/@types/node/-/node-26.2.0.tgz                                       |
+| astrologo-frontend/package.json | @types/react                | devDependencies | ^19.2.18 | MIT                                            | Não                                     | https://registry.npmjs.org/@types/react/-/react-19.2.18.tgz                                    |
+| astrologo-frontend/package.json | @types/react-dom            | devDependencies | ^19.2.4  | MIT                                            | Não                                     | https://registry.npmjs.org/@types/react-dom/-/react-dom-19.2.4.tgz                             |
+| astrologo-frontend/package.json | @types/sanitize-html        | devDependencies | ^2.16.1  | MIT                                            | Não                                     | https://registry.npmjs.org/@types/sanitize-html/-/sanitize-html-2.16.1.tgz                     |
+| astrologo-frontend/package.json | @types/topojson-client      | devDependencies | 3.1.5    | MIT                                            | Não                                     | https://registry.npmjs.org/@types/topojson-client/-/topojson-client-3.1.5.tgz                  |
+| astrologo-frontend/package.json | @vitejs/plugin-react        | devDependencies | ^6.1.0   | MIT                                            | Não                                     | https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-6.1.0.tgz                       |
+| astrologo-frontend/package.json | eslint                      | devDependencies | ^10.8.1  | MIT                                            | Não                                     | https://registry.npmjs.org/eslint/-/eslint-10.8.1.tgz                                          |
+| astrologo-frontend/package.json | eslint-config-prettier      | devDependencies | ^10.1.8  | MIT                                            | Não                                     | https://registry.npmjs.org/eslint-config-prettier/-/eslint-config-prettier-10.1.8.tgz          |
+| astrologo-frontend/package.json | eslint-plugin-react-hooks   | devDependencies | ^7.1.1   | MIT                                            | Não                                     | https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-7.1.1.tgz     |
+| astrologo-frontend/package.json | eslint-plugin-react-refresh | devDependencies | ^0.5.4   | MIT                                            | Não                                     | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.4.tgz |
+| astrologo-frontend/package.json | fast-check                  | devDependencies | 4.9.0    | MIT                                            | Não                                     | https://registry.npmjs.org/fast-check/-/fast-check-4.9.0.tgz                                   |
+| astrologo-frontend/package.json | globals                     | devDependencies | ^17.11.0 | MIT                                            | Não                                     | https://registry.npmjs.org/globals/-/globals-17.11.0.tgz                                       |
+| astrologo-frontend/package.json | typescript                  | devDependencies | ~6.0.3   | Apache-2.0                                     | Não                                     | https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz                                   |
+| astrologo-frontend/package.json | typescript-eslint           | devDependencies | ^8.67.0  | MIT                                            | Não                                     | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.67.0.tgz                    |
+| astrologo-frontend/package.json | vite                        | devDependencies | ^8.2.2   | MIT                                            | Não                                     | https://registry.npmjs.org/vite/-/vite-8.2.2.tgz                                               |
+| astrologo-frontend/package.json | vitest                      | devDependencies | ^4.1.11  | MIT                                            | Não                                     | https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz                                          |
+| astrologo-frontend/package.json | wrangler                    | devDependencies | 4.124.0  | MIT OR Apache-2.0                              | Não                                     | https://registry.npmjs.org/wrangler/-/wrangler-4.124.0.tgz                                     |
 
 <!-- direct-dependencies:end -->
 
 ## Dependências transitivas e artefatos incorporados
 
-| Componente | Versão | Licença Original | Modificado? | Link de Origem |
-|------------|--------|------------------|-------------|----------------|
-| d3-array (dependência transitiva de runtime de d3-geo) | 3.2.4 | ISC | Não | https://github.com/d3/d3-array/tree/v3.2.4 |
-| internmap (dependência transitiva de runtime de d3-array) | 2.0.3 | ISC | Não | https://github.com/mbostock/internmap/tree/v2.0.3 |
-| commander (dependência transitiva de runtime de topojson-client) | 2.20.3 | MIT | Não | https://github.com/tj/commander.js/tree/v2.20.3 |
-| jsbi (dependência transitiva de runtime de @js-temporal/polyfill) | 4.3.2 | Apache-2.0 | Não | https://github.com/GoogleChromeLabs/jsbi/tree/5382367c7e3199858d36bb620977e1f90605bcb9 |
-| Swiss Ephemeris incorporada no WASM | `swe_version() = 2.10.03`; fonte `5ae0bce00dbc66c6315c86da20518e3dd138255b` | AGPL-3.0-only, conforme a opção AGPL da licença dual | Não pelo projeto Astrologo | https://github.com/aloistr/swisseph/tree/5ae0bce00dbc66c6315c86da20518e3dd138255b |
+| Componente                                                        | Versão                                                                      | Licença Original                                     | Modificado?                | Link de Origem                                                                         |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------------- |
+| d3-array (dependência transitiva de runtime de d3-geo)            | 3.2.4                                                                       | ISC                                                  | Não                        | https://github.com/d3/d3-array/tree/v3.2.4                                             |
+| internmap (dependência transitiva de runtime de d3-array)         | 2.0.3                                                                       | ISC                                                  | Não                        | https://github.com/mbostock/internmap/tree/v2.0.3                                      |
+| commander (dependência transitiva de runtime de topojson-client)  | 2.20.3                                                                      | MIT                                                  | Não                        | https://github.com/tj/commander.js/tree/v2.20.3                                        |
+| jsbi (dependência transitiva de runtime de @js-temporal/polyfill) | 4.3.2                                                                       | Apache-2.0                                           | Não                        | https://github.com/GoogleChromeLabs/jsbi/tree/5382367c7e3199858d36bb620977e1f90605bcb9 |
+| Swiss Ephemeris incorporada no WASM                               | `swe_version() = 2.10.03`; fonte `5ae0bce00dbc66c6315c86da20518e3dd138255b` | AGPL-3.0-only, conforme a opção AGPL da licença dual | Não pelo projeto Astrologo | https://github.com/aloistr/swisseph/tree/5ae0bce00dbc66c6315c86da20518e3dd138255b      |
 
 ## Cartografia local e dados Natural Earth
 
@@ -62,22 +70,22 @@ A base é empacotada no aplicativo. A renderização não solicita tiles nem env
 
 As versões abaixo são exatas e estão fixadas no `package-lock.json`. Os hashes SRI foram recalculados sobre os tarballs servidos pelo registro npm e conferem com o lockfile.
 
-| Artefato | npm `gitHead` | SHA-512 SRI do tarball | SHA-256 do tarball |
-|----------|---------------|------------------------|--------------------|
-| astronomy-engine@2.1.19 | `61dc07020aaa6885d2c7f688a4d82beaf6edb9ef` | `sha512-8yWKNf7UeNbH458h3sAJ6ZgAjE5jTXp/mNNRFoC20j2SHwZIjAQeEsBB2Q3uCFRaTCCJRv33K2XhkhZQMXoX6w==` | `605e9e9ebd0a364f1c5b556f10c1f163e4b8aa63b97ada1ab72e960d73189cdd` |
-| @js-temporal/polyfill@0.5.1 | `f3c07e503632ddf7ff918066f2eb30a9dcfa06ff` | `sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ==` | `c99a4da5678a55a33dfd30c977852dfac9bbe7b8bac73999f1858c167be6b3e3` |
-| jsbi@4.3.2 | `5382367c7e3199858d36bb620977e1f90605bcb9` | `sha512-9fqMSQbhJykSeii05nxKl4m6Eqn2P6rOlYiS+C5Dr/HPIU/7yZxu5qzbs40tgaFORiw2Amd0mirjxatXYMkIew==` | `131d13488f0f400a0770eaca495749cddef34d315f7aeb248fc501f7538b378e` |
+| Artefato                       | npm `gitHead`                              | SHA-512 SRI do tarball                                                                            | SHA-256 do tarball                                                 |
+| ------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| astronomy-engine@2.1.19        | `61dc07020aaa6885d2c7f688a4d82beaf6edb9ef` | `sha512-8yWKNf7UeNbH458h3sAJ6ZgAjE5jTXp/mNNRFoC20j2SHwZIjAQeEsBB2Q3uCFRaTCCJRv33K2XhkhZQMXoX6w==` | `605e9e9ebd0a364f1c5b556f10c1f163e4b8aa63b97ada1ab72e960d73189cdd` |
+| @js-temporal/polyfill@0.5.1    | `f3c07e503632ddf7ff918066f2eb30a9dcfa06ff` | `sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ==` | `c99a4da5678a55a33dfd30c977852dfac9bbe7b8bac73999f1858c167be6b3e3` |
+| jsbi@4.3.2                     | `5382367c7e3199858d36bb620977e1f90605bcb9` | `sha512-9fqMSQbhJykSeii05nxKl4m6Eqn2P6rOlYiS+C5Dr/HPIU/7yZxu5qzbs40tgaFORiw2Amd0mirjxatXYMkIew==` | `131d13488f0f400a0770eaca495749cddef34d315f7aeb248fc501f7538b378e` |
 | @fusionstrings/swiss-eph@0.1.1 | `e7a7a9311d3058f337b73b72f45ea6d80cffa5f0` | `sha512-UGKCfVh5TUygShCNKnh7iauJ109QYgV+e3+8PACOsiIFyiX8z3PIw7etbYDqF0egsJfIArRdDjOwrliAOFGNgA==` | `ef90330d9ed41da5358b47c60b29ad8f3970a7d09c083fd176f8b9833ad9fcbd` |
 
 Arquivos de distribuição efetivamente usados:
 
-| Arquivo | Tamanho | SHA-256 | SHA-512 |
-|---------|---------|---------|---------|
-| `astronomy-engine/astronomy.js` (distribuição CommonJS de referência) | 421280 bytes | `729c0ce37cc1a8096034a689039a5f04585ee8184177c638e8c74dec4fa3185a` | `0b66b59b02759e68d10ddaf12ba273d6c81e24f22db218f897a5aa8882bc6be8d50ed48760aede3b0fe3e6e3aaec3f24385df18e5d5bbbfcfc33fb3cca071a81` |
-| `astronomy-engine/esm/astronomy.js` (entrypoint ESM importado e referenciado pelos metadados de cálculo) | 412025 bytes | `068f1445ed0c636c94818fe6d20d7d125120e605e0bab9fc4675c3d531be5ad7` | `a898baa9deb4c3ae8e80a961155126039ae3eac6a14a9dac9cd8a39a6cddd7adba5975fe0cbf58cfea40fe99dee8c7df5302ea69c3e1477d89c38a4be4caff65` |
-| `@js-temporal/polyfill/dist/index.esm.js` | 128868 bytes | `21f067c54fa5f532f20a8e85e3d2401a3ae1cf60d85fafea6502f621dc93b167` | `1805d1e0da3844a1972b0e14d45d65ebceefde523e056b7bb235f41a84eff442752b75ddd9e0c558e06ef962e8d26ecc8f2f486322f5a22739c4ce0d736fb501` |
-| `jsbi/dist/jsbi.mjs` | 29207 bytes | `c0d70fb47e0818e31bdf964805a530d9a0fb4ee5bdadb442a13f3691a5f15583` | `66327d5ea608de8dfb8d91125c5bed76d9c93fe865deebd957e97911cb1ff44e4fbaefa704340df2cd5c67f7a7684457f299c37e927d021840cb55c796a3b2d7` |
-| `@fusionstrings/swiss-eph/wasm/swiss-eph-wasi.wasm` (materializado localmente sob demanda) | 1275365 bytes | `31d3406560fd39b91bc9dbfdff6c9111f170fde2db62ebe92581ae14e878744c` | `f0929366006f037e45eb7085234623ec5fdc73f68cea7bf0c2696a038df979e3d346375a3b8123065863666801c234864a61d9042c6af961b7acdb455bad6de3` |
+| Arquivo                                                                                                  | Tamanho       | SHA-256                                                            | SHA-512                                                                                                                            |
+| -------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `astronomy-engine/astronomy.js` (distribuição CommonJS de referência)                                    | 421280 bytes  | `729c0ce37cc1a8096034a689039a5f04585ee8184177c638e8c74dec4fa3185a` | `0b66b59b02759e68d10ddaf12ba273d6c81e24f22db218f897a5aa8882bc6be8d50ed48760aede3b0fe3e6e3aaec3f24385df18e5d5bbbfcfc33fb3cca071a81` |
+| `astronomy-engine/esm/astronomy.js` (entrypoint ESM importado e referenciado pelos metadados de cálculo) | 412025 bytes  | `068f1445ed0c636c94818fe6d20d7d125120e605e0bab9fc4675c3d531be5ad7` | `a898baa9deb4c3ae8e80a961155126039ae3eac6a14a9dac9cd8a39a6cddd7adba5975fe0cbf58cfea40fe99dee8c7df5302ea69c3e1477d89c38a4be4caff65` |
+| `@js-temporal/polyfill/dist/index.esm.js`                                                                | 128868 bytes  | `21f067c54fa5f532f20a8e85e3d2401a3ae1cf60d85fafea6502f621dc93b167` | `1805d1e0da3844a1972b0e14d45d65ebceefde523e056b7bb235f41a84eff442752b75ddd9e0c558e06ef962e8d26ecc8f2f486322f5a22739c4ce0d736fb501` |
+| `jsbi/dist/jsbi.mjs`                                                                                     | 29207 bytes   | `c0d70fb47e0818e31bdf964805a530d9a0fb4ee5bdadb442a13f3691a5f15583` | `66327d5ea608de8dfb8d91125c5bed76d9c93fe865deebd957e97911cb1ff44e4fbaefa704340df2cd5c67f7a7684457f299c37e927d021840cb55c796a3b2d7` |
+| `@fusionstrings/swiss-eph/wasm/swiss-eph-wasi.wasm` (materializado localmente sob demanda)               | 1275365 bytes | `31d3406560fd39b91bc9dbfdff6c9111f170fde2db62ebe92581ae14e878744c` | `f0929366006f037e45eb7085234623ec5fdc73f68cea7bf0c2696a038df979e3d346375a3b8123065863666801c234864a61d9042c6af961b7acdb455bad6de3` |
 
 O repositório não rastreia o executável. `scripts/prepare-swiss-wasm.mjs` resolve o export público `./wasm-wasi` de `@fusionstrings/swiss-eph@0.1.1`, confere tamanho e SHA-256 antes e depois da gravação e materializa uma cópia ignorada somente sob demanda para desenvolvimento, testes ou empacotamento do Cloudflare Pages. Os arquivos `wasm/swiss-eph-wasi.wasm` e `wasm/swiss_eph.wasm` do tarball npm são byte a byte idênticos; a carga real retorna `2.10.03` em `swe_version()`.
 

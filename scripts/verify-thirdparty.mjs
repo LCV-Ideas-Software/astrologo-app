@@ -3,21 +3,80 @@ import { pathToFileURL } from "node:url";
 
 const START_MARKER = "<!-- direct-dependencies:start -->";
 const END_MARKER = "<!-- direct-dependencies:end -->";
+const PACKAGE_SETS = [
+  {
+    component: "package.json",
+    manifestUrl: new URL("../package.json", import.meta.url),
+    lockfileUrl: new URL("../package-lock.json", import.meta.url),
+  },
+  {
+    component: "astrologo-frontend/package.json",
+    manifestUrl: new URL("../astrologo-frontend/package.json", import.meta.url),
+    lockfileUrl: new URL(
+      "../astrologo-frontend/package-lock.json",
+      import.meta.url,
+    ),
+  },
+];
 const LICENSE_OVERRIDES = new Map([
-  ["d3-geo", "ISC; incorpora GeographicLib sob MIT"],
-  ["world-atlas", "ISC; dados Natural Earth em domínio público"],
+  [
+    "d3-geo",
+    { upstream: "ISC", display: "ISC; incorpora GeographicLib sob MIT" },
+  ],
+  [
+    "world-atlas",
+    {
+      upstream: "ISC",
+      display: "ISC; dados Natural Earth em domínio público",
+    },
+  ],
   [
     "@fusionstrings/swiss-eph",
-    "AGPL-3.0-only (manifesto upstream: `AGPL-3.0`)",
+    {
+      upstream: "AGPL-3.0",
+      display: "AGPL-3.0-only (manifesto upstream: `AGPL-3.0`)",
+    },
+  ],
+]);
+const MODIFICATION_OVERRIDES = new Map([
+  [
+    JSON.stringify([
+      "astrologo-frontend/package.json",
+      "@fusionstrings/swiss-eph",
+    ]),
+    "Não; o módulo é consumido sem alteração",
   ],
 ]);
 
-function manifestEntries(manifest) {
+function manifestEntries(component, manifest) {
+  const optionalNames = new Set(
+    Object.keys(manifest.optionalDependencies ?? {}),
+  );
+  const sectionEntries = (relation, dependencies) =>
+    Object.entries(dependencies ?? {}).map(([name, version]) => ({
+      component,
+      name,
+      relation,
+      version,
+    }));
+
   return [
-    ...Object.entries(manifest.dependencies ?? {}),
-    ...Object.entries(manifest.devDependencies ?? {}),
-    ...Object.entries(manifest.optionalDependencies ?? {}),
+    ...sectionEntries(
+      "dependencies",
+      Object.fromEntries(
+        Object.entries(manifest.dependencies ?? {}).filter(
+          ([name]) => !optionalNames.has(name),
+        ),
+      ),
+    ),
+    ...sectionEntries("devDependencies", manifest.devDependencies),
+    ...sectionEntries("optionalDependencies", manifest.optionalDependencies),
+    ...sectionEntries("peerDependencies", manifest.peerDependencies),
   ];
+}
+
+function entryKey({ component, name, relation }) {
+  return JSON.stringify([component, name, relation]);
 }
 
 function markerSection(markdown) {
@@ -52,37 +111,41 @@ export function parseDirectDependencies(markdown) {
       .split("|")
       .map((cell) => cell.trim());
 
-    if (
-      cells[0] === "Componente" ||
-      cells.every((cell) => /^-+$/u.test(cell))
-    ) {
+    if (cells[0] === "Manifesto" || cells.every((cell) => /^-+$/u.test(cell))) {
       continue;
     }
-    if (cells.length !== 5 || cells.some((cell) => cell.length === 0)) {
+    if (cells.length !== 7 || cells.some((cell) => cell.length === 0)) {
       throw new Error(`malformed direct-dependency row: ${line}`);
     }
 
-    const [name, version, license, modified, source] = cells;
-    if (seen.has(name)) {
-      throw new Error(`duplicate direct-dependency row: ${name}`);
+    const [component, name, relation, version, license, modified, source] =
+      cells;
+    const key = entryKey({ component, name, relation });
+    if (seen.has(key)) {
+      throw new Error(
+        `duplicate direct-dependency row: ${component} ${relation} ${name}`,
+      );
     }
     if (!source.startsWith("https://")) {
       throw new Error(`direct-dependency source must use HTTPS: ${name}`);
     }
 
-    seen.add(name);
-    rows.push({ name, version, license, modified, source });
+    seen.add(key);
+    rows.push({
+      component,
+      name,
+      relation,
+      version,
+      license,
+      modified,
+      source,
+    });
   }
 
   return rows;
 }
 
-export function verifyThirdParty({
-  manifest,
-  lockfile,
-  canonical,
-  publicCopy,
-}) {
+export function verifyThirdParty({ packageSets, canonical, publicCopy }) {
   const errors = [];
   if (canonical !== publicCopy) {
     errors.push(
@@ -97,23 +160,32 @@ export function verifyThirdParty({
     return [...errors, error.message];
   }
 
-  const expected = manifestEntries(manifest);
-  const observed = new Map(rows.map((row) => [row.name, row]));
+  const expected = packageSets.flatMap(({ component, manifest }) =>
+    manifestEntries(component, manifest),
+  );
+  const observed = new Map(rows.map((row) => [entryKey(row), row]));
+  const lockfiles = new Map(
+    packageSets.map(({ component, lockfile }) => [component, lockfile]),
+  );
 
-  for (const [name, version] of expected) {
-    if (!observed.has(name)) {
-      errors.push(`missing direct dependency: ${name}@${version}`);
+  for (const entry of expected) {
+    const { component, name, relation, version } = entry;
+    const key = entryKey(entry);
+    if (!observed.has(key)) {
+      errors.push(
+        `missing direct dependency: ${component} ${relation} ${name}@${version}`,
+      );
       continue;
     }
 
-    const row = observed.get(name);
+    const row = observed.get(key);
     if (row.version !== version) {
       errors.push(
         `version mismatch for ${name}: THIRDPARTY=${row.version} package.json=${version}`,
       );
     }
 
-    const locked = lockfile.packages?.[`node_modules/${name}`];
+    const locked = lockfiles.get(component)?.packages?.[`node_modules/${name}`];
     if (!locked?.version || !locked?.resolved || !locked?.license) {
       errors.push(`missing complete lockfile record: ${name}`);
       continue;
@@ -129,23 +201,38 @@ export function verifyThirdParty({
         `resolved source mismatch for ${name}: THIRDPARTY=${row.source} package-lock=${locked.resolved}`,
       );
     }
-    const expectedLicense = LICENSE_OVERRIDES.get(name) ?? locked.license;
+    const licenseOverride = LICENSE_OVERRIDES.get(name);
+    if (licenseOverride && locked.license !== licenseOverride.upstream) {
+      errors.push(
+        `upstream license changed for ${name}: expected=${licenseOverride.upstream} package-lock=${locked.license}`,
+      );
+    }
+    const expectedLicense = licenseOverride?.display ?? locked.license;
     if (row.license !== expectedLicense) {
       errors.push(
         `license mismatch for ${name}: THIRDPARTY=${row.license} package-lock=${expectedLicense}`,
       );
     }
-  }
-
-  const expectedNames = new Set(expected.map(([name]) => name));
-  for (const { name, version } of rows) {
-    if (!expectedNames.has(name)) {
-      errors.push(`extra direct dependency: ${name}@${version}`);
+    const expectedModified =
+      MODIFICATION_OVERRIDES.get(JSON.stringify([component, name])) ?? "Não";
+    if (row.modified !== expectedModified) {
+      errors.push(
+        `modification disclosure mismatch for ${name}: THIRDPARTY=${row.modified} expected=${expectedModified}`,
+      );
     }
   }
 
-  const expectedOrder = expected.map(([name]) => name);
-  const observedOrder = rows.map(({ name }) => name);
+  const expectedKeys = new Set(expected.map((entry) => entryKey(entry)));
+  for (const row of rows) {
+    if (!expectedKeys.has(entryKey(row))) {
+      errors.push(
+        `extra direct dependency: ${row.component} ${row.relation} ${row.name}@${row.version}`,
+      );
+    }
+  }
+
+  const expectedOrder = expected.map((entry) => entryKey(entry));
+  const observedOrder = rows.map((row) => entryKey(row));
   if (JSON.stringify(expectedOrder) !== JSON.stringify(observedOrder)) {
     errors.push(
       "direct-dependency rows must follow package.json dependency order",
@@ -156,29 +243,31 @@ export function verifyThirdParty({
 }
 
 async function main() {
-  const [manifestText, lockfileText, canonical, publicCopy] = await Promise.all(
-    [
-      readFile(
-        new URL("../astrologo-frontend/package.json", import.meta.url),
-        "utf8",
+  const [packageSets, canonical, publicCopy] = await Promise.all([
+    Promise.all(
+      PACKAGE_SETS.map(async ({ component, manifestUrl, lockfileUrl }) => {
+        const [manifestText, lockfileText] = await Promise.all([
+          readFile(manifestUrl, "utf8"),
+          readFile(lockfileUrl, "utf8"),
+        ]);
+        return {
+          component,
+          manifest: JSON.parse(manifestText),
+          lockfile: JSON.parse(lockfileText),
+        };
+      }),
+    ),
+    readFile(new URL("../THIRDPARTY.md", import.meta.url), "utf8"),
+    readFile(
+      new URL(
+        "../astrologo-frontend/public/legal/THIRDPARTY.md",
+        import.meta.url,
       ),
-      readFile(
-        new URL("../astrologo-frontend/package-lock.json", import.meta.url),
-        "utf8",
-      ),
-      readFile(new URL("../THIRDPARTY.md", import.meta.url), "utf8"),
-      readFile(
-        new URL(
-          "../astrologo-frontend/public/legal/THIRDPARTY.md",
-          import.meta.url,
-        ),
-        "utf8",
-      ),
-    ],
-  );
+      "utf8",
+    ),
+  ]);
   const errors = verifyThirdParty({
-    manifest: JSON.parse(manifestText),
-    lockfile: JSON.parse(lockfileText),
+    packageSets,
     canonical,
     publicCopy,
   });
@@ -189,8 +278,9 @@ async function main() {
     return;
   }
 
-  const manifest = JSON.parse(manifestText);
-  const count = manifestEntries(manifest).length;
+  const count = packageSets.flatMap(({ component, manifest }) =>
+    manifestEntries(component, manifest),
+  ).length;
   console.log(
     `THIRDPARTY válido: ${count} dependências diretas e cópias idênticas.`,
   );

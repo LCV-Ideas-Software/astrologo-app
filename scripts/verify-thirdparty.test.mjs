@@ -2,9 +2,21 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { verifyThirdParty } from "./verify-thirdparty.mjs";
+import {
+  parseDirectDependencies,
+  verifyThirdParty,
+} from "./verify-thirdparty.mjs";
 
-const [manifestText, lockfileText, canonical, publicCopy] = await Promise.all([
+const [
+  rootManifestText,
+  rootLockfileText,
+  frontendManifestText,
+  frontendLockfileText,
+  canonical,
+  publicCopy,
+] = await Promise.all([
+  readFile(new URL("../package.json", import.meta.url), "utf8"),
+  readFile(new URL("../package-lock.json", import.meta.url), "utf8"),
   readFile(
     new URL("../astrologo-frontend/package.json", import.meta.url),
     "utf8",
@@ -22,18 +34,54 @@ const [manifestText, lockfileText, canonical, publicCopy] = await Promise.all([
     "utf8",
   ),
 ]);
-const manifest = JSON.parse(manifestText);
-const lockfile = JSON.parse(lockfileText);
+const packageSets = [
+  {
+    component: "package.json",
+    manifest: JSON.parse(rootManifestText),
+    lockfile: JSON.parse(rootLockfileText),
+  },
+  {
+    component: "astrologo-frontend/package.json",
+    manifest: JSON.parse(frontendManifestText),
+    lockfile: JSON.parse(frontendLockfileText),
+  },
+];
+
+function packageSet(sets, component) {
+  const match = sets.find((candidate) => candidate.component === component);
+  assert.ok(match);
+  return match;
+}
+
+function directRowLine(markdown, { component, name, relation }) {
+  return markdown.split(/\r?\n/u).find((line) => {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) return false;
+    const cells = trimmed
+      .slice(1, -1)
+      .split("|")
+      .map((cell) => cell.trim());
+    return cells[0] === component && cells[1] === name && cells[2] === relation;
+  });
+}
+
+function replaceRowCell(line, index, value) {
+  const cells = line
+    .trim()
+    .slice(1, -1)
+    .split("|")
+    .map((cell) => cell.trim());
+  cells[index] = value;
+  return `| ${cells.join(" | ")} |`;
+}
 
 function errorsFor(
   markdown,
   publicMarkdown = markdown,
-  candidateLockfile = lockfile,
-  candidateManifest = manifest,
+  candidatePackageSets = packageSets,
 ) {
   return verifyThirdParty({
-    manifest: candidateManifest,
-    lockfile: candidateLockfile,
+    packageSets: candidatePackageSets,
     canonical: markdown,
     publicCopy: publicMarkdown,
   });
@@ -44,18 +92,29 @@ test("accepts the current complete inventory", () => {
 });
 
 test("rejects a stale direct version", () => {
-  const current = canonical.match(/^\| vite \| ([^|]+) \|/mu)?.[1].trim();
-  assert.ok(current);
+  const vite = parseDirectDependencies(canonical).find(
+    (row) =>
+      row.component === "astrologo-frontend/package.json" &&
+      row.name === "vite" &&
+      row.relation === "devDependencies",
+  );
+  assert.ok(vite);
+  const viteRow = directRowLine(canonical, vite);
+  assert.ok(viteRow);
   const stale = canonical.replace(
-    `| vite | ${current} |`,
-    `| vite | ${current}-stale |`,
+    viteRow,
+    replaceRowCell(viteRow, 3, `${vite.version}-stale`),
   );
   assert.match(errorsFor(stale).join("\n"), /version mismatch for vite/u);
 });
 
 test("rejects a lockfile-only resolved update", () => {
-  const changedLockfile = structuredClone(lockfile);
-  const record = changedLockfile.packages["node_modules/vite"];
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  const record = frontend.lockfile.packages["node_modules/vite"];
   assert.ok(record?.version && record.resolved);
   const current = record.version;
   const candidate = `${current}-fixture`;
@@ -63,18 +122,28 @@ test("rejects a lockfile-only resolved update", () => {
   record.resolved = record.resolved.replace(current, candidate);
   assert.notEqual(
     record.resolved,
-    lockfile.packages["node_modules/vite"].resolved,
+    packageSet(packageSets, "astrologo-frontend/package.json").lockfile
+      .packages["node_modules/vite"].resolved,
   );
   assert.match(
-    errorsFor(canonical, publicCopy, changedLockfile).join("\n"),
+    errorsFor(canonical, publicCopy, candidatePackageSets).join("\n"),
     /resolved source mismatch for vite/u,
   );
 });
 
 test("rejects an inaccurate direct license", () => {
+  const react = parseDirectDependencies(canonical).find(
+    (row) =>
+      row.component === "astrologo-frontend/package.json" &&
+      row.name === "react" &&
+      row.relation === "dependencies",
+  );
+  assert.ok(react);
+  const reactRow = directRowLine(canonical, react);
+  assert.ok(reactRow);
   const wrongLicense = canonical.replace(
-    "| react | ^19.2.8 | MIT |",
-    "| react | ^19.2.8 | GPL-3.0-only |",
+    reactRow,
+    replaceRowCell(reactRow, 4, "fixture-invalid-license"),
   );
   assert.match(
     errorsFor(wrongLicense).join("\n"),
@@ -82,50 +151,159 @@ test("rejects an inaccurate direct license", () => {
   );
 });
 
+test("rejects a changed upstream license behind a legal display override", () => {
+  const candidatePackageSets = structuredClone(packageSets);
+  packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  ).lockfile.packages["node_modules/d3-geo"].license = "MIT";
+  assert.match(
+    errorsFor(canonical, publicCopy, candidatePackageSets).join("\n"),
+    /upstream license changed for d3-geo/u,
+  );
+});
+
+test("rejects an inaccurate modification disclosure", () => {
+  const react = parseDirectDependencies(canonical).find(
+    (row) =>
+      row.component === "astrologo-frontend/package.json" &&
+      row.name === "react" &&
+      row.relation === "dependencies",
+  );
+  assert.ok(react);
+  const reactRow = directRowLine(canonical, react);
+  assert.ok(reactRow);
+  const inaccurate = canonical.replace(
+    reactRow,
+    replaceRowCell(reactRow, 5, "Sim"),
+  );
+  assert.match(
+    errorsFor(inaccurate).join("\n"),
+    /modification disclosure mismatch for react/u,
+  );
+});
+
 test("includes optional dependencies in the direct inventory", () => {
-  const candidateManifest = structuredClone(manifest);
-  candidateManifest.optionalDependencies = { "optional-test": "1.0.0" };
-  const candidateLockfile = structuredClone(lockfile);
-  candidateLockfile.packages["node_modules/optional-test"] = {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  frontend.manifest.optionalDependencies = { "optional-test": "1.0.0" };
+  frontend.lockfile.packages["node_modules/optional-test"] = {
     version: "1.0.0",
     resolved:
       "https://registry.npmjs.org/optional-test/-/optional-test-1.0.0.tgz",
     license: "MIT",
   };
   assert.match(
-    errorsFor(canonical, publicCopy, candidateLockfile, candidateManifest).join(
-      "\n",
-    ),
-    /missing direct dependency: optional-test/u,
+    errorsFor(canonical, publicCopy, candidatePackageSets).join("\n"),
+    /missing direct dependency: .* optionalDependencies optional-test/u,
   );
 });
 
+test("includes peer dependencies in the direct inventory", () => {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  frontend.manifest.peerDependencies = { "peer-test": "^1.0.0" };
+  frontend.lockfile.packages["node_modules/peer-test"] = {
+    version: "1.0.0",
+    resolved: "https://registry.npmjs.org/peer-test/-/peer-test-1.0.0.tgz",
+    license: "MIT",
+  };
+  assert.match(
+    errorsFor(canonical, publicCopy, candidatePackageSets).join("\n"),
+    /missing direct dependency: .* peerDependencies peer-test/u,
+  );
+});
+
+test("accepts the same package as both development and peer dependency", () => {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  frontend.manifest.peerDependencies = {
+    vite: frontend.manifest.devDependencies.vite,
+  };
+  const viteRow = directRowLine(canonical, {
+    component: "astrologo-frontend/package.json",
+    name: "vite",
+    relation: "devDependencies",
+  });
+  assert.ok(viteRow);
+  const peerRow = replaceRowCell(viteRow, 2, "peerDependencies");
+  const candidate = canonical.replace(
+    "<!-- direct-dependencies:end -->",
+    `${peerRow}\n\n<!-- direct-dependencies:end -->`,
+  );
+  assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
+});
+
+test("optionalDependencies overrides the same dependencies entry", () => {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  frontend.manifest.optionalDependencies = {
+    react: frontend.manifest.dependencies.react,
+  };
+  const reactRow = directRowLine(canonical, {
+    component: "astrologo-frontend/package.json",
+    name: "react",
+    relation: "dependencies",
+  });
+  assert.ok(reactRow);
+  const optionalRow = replaceRowCell(reactRow, 2, "optionalDependencies");
+  const candidate = canonical
+    .replace(`${reactRow}\n`, "")
+    .replace(
+      "<!-- direct-dependencies:end -->",
+      `${optionalRow}\n\n<!-- direct-dependencies:end -->`,
+    );
+  assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
+});
+
 test("rejects a missing direct dependency", () => {
-  const missing = canonical.replace(/^\| lucide-react .*\r?\n/mu, "");
+  const row = directRowLine(canonical, {
+    component: "astrologo-frontend/package.json",
+    name: "lucide-react",
+    relation: "dependencies",
+  });
+  assert.ok(row);
+  const missing = canonical.replace(`${row}\n`, "");
   assert.match(
     errorsFor(missing).join("\n"),
-    /missing direct dependency: lucide-react/u,
+    /missing direct dependency: .* lucide-react/u,
   );
 });
 
 test("rejects a duplicate direct dependency", () => {
-  const row = canonical.match(/^\| react \|.*$/mu)?.[0];
+  const row = directRowLine(canonical, {
+    component: "astrologo-frontend/package.json",
+    name: "react",
+    relation: "dependencies",
+  });
   assert.ok(row);
   const duplicate = canonical.replace(row, `${row}\n${row}`);
   assert.match(
     errorsFor(duplicate).join("\n"),
-    /duplicate direct-dependency row: react/u,
+    /duplicate direct-dependency row: .* dependencies react/u,
   );
 });
 
 test("rejects an extra direct dependency", () => {
   const extra = canonical.replace(
     "<!-- direct-dependencies:end -->",
-    "| invented-package | 1.0.0 | MIT | Não | https://example.invalid/invented.tgz |\n\n<!-- direct-dependencies:end -->",
+    "| astrologo-frontend/package.json | invented-package | dependencies | 1.0.0 | MIT | Não | https://example.invalid/invented.tgz |\n\n<!-- direct-dependencies:end -->",
   );
   assert.match(
     errorsFor(extra).join("\n"),
-    /extra direct dependency: invented-package/u,
+    /extra direct dependency: .* dependencies invented-package/u,
   );
 });
 
@@ -147,9 +325,15 @@ test("rejects a missing direct-dependency section", () => {
 });
 
 test("rejects a malformed direct-dependency row", () => {
+  const row = directRowLine(canonical, {
+    component: "astrologo-frontend/package.json",
+    name: "react",
+    relation: "dependencies",
+  });
+  assert.ok(row);
   const malformed = canonical.replace(
-    /^\| react \|.*$/mu,
-    "| react | ^19.2.8 | MIT |",
+    row,
+    "| astrologo-frontend/package.json | react | dependencies | version | MIT |",
   );
   assert.match(
     errorsFor(malformed).join("\n"),
