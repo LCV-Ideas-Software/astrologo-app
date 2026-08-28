@@ -636,6 +636,7 @@ async function main() {
       "--",
       ":(glob)**/package.json",
       ":(glob)**/package-lock.json",
+      ":(glob)**/npm-shrinkwrap.json",
     ],
     {
       cwd: new URL("..", import.meta.url),

@@ -418,6 +418,19 @@ test("rejects a newly tracked package manifest until it is classified", () => {
   );
 });
 
+test("rejects npm shrinkwrap until its effective resolutions are classified", () => {
+  const errors = verifyThirdParty({
+    packageSets,
+    trackedPackageFiles: [...trackedPackageFiles, "npm-shrinkwrap.json"],
+    canonical,
+    publicCopy,
+  });
+  assert.match(
+    errors.join("\n"),
+    /unclassified tracked package metadata: npm-shrinkwrap\.json/u,
+  );
+});
+
 test("rejects divergence between distributed copies", () => {
   assert.match(
     errorsFor(canonical, `${publicCopy}\n`).join("\n"),
