@@ -5,6 +5,41 @@ import { pathToFileURL } from "node:url";
 
 const START_MARKER = "<!-- direct-dependencies:start -->";
 const END_MARKER = "<!-- direct-dependencies:end -->";
+const DIRECT_HEADERS = [
+  "Manifesto",
+  "Componente",
+  "Relação",
+  "Versão",
+  "Licença Original",
+  "Modificado?",
+  "Link de Origem",
+];
+const RETAINED_MARKERS = [
+  "<!-- retained-components:start -->",
+  "<!-- retained-components:end -->",
+];
+const RETAINED_HEADERS = [
+  "Componente",
+  "Versão",
+  "Licença Original",
+  "Modificado?",
+  "Link de Origem",
+];
+const TARBALL_MARKERS = [
+  "<!-- audited-tarballs:start -->",
+  "<!-- audited-tarballs:end -->",
+];
+const TARBALL_HEADERS = [
+  "Artefato",
+  "npm `gitHead`",
+  "SHA-512 SRI do tarball",
+  "SHA-256 do tarball",
+];
+const FILE_MARKERS = [
+  "<!-- audited-files:start -->",
+  "<!-- audited-files:end -->",
+];
+const FILE_HEADERS = ["Arquivo", "Tamanho", "SHA-256", "SHA-512"];
 const PACKAGE_SETS = [
   {
     component: "package.json",
@@ -49,6 +84,80 @@ const MODIFICATION_OVERRIDES = new Map([
     "Não; o módulo é consumido sem alteração",
   ],
 ]);
+const AUDITED_TARBALLS = [
+  {
+    name: "astronomy-engine",
+    gitHead: "61dc07020aaa6885d2c7f688a4d82beaf6edb9ef",
+    sha256: "605e9e9ebd0a364f1c5b556f10c1f163e4b8aa63b97ada1ab72e960d73189cdd",
+  },
+  {
+    name: "@js-temporal/polyfill",
+    gitHead: "f3c07e503632ddf7ff918066f2eb30a9dcfa06ff",
+    sha256: "c99a4da5678a55a33dfd30c977852dfac9bbe7b8bac73999f1858c167be6b3e3",
+  },
+  {
+    name: "jsbi",
+    gitHead: "5382367c7e3199858d36bb620977e1f90605bcb9",
+    sha256: "131d13488f0f400a0770eaca495749cddef34d315f7aeb248fc501f7538b378e",
+  },
+  {
+    name: "@fusionstrings/swiss-eph",
+    gitHead: "e7a7a9311d3058f337b73b72f45ea6d80cffa5f0",
+    sha256: "ef90330d9ed41da5358b47c60b29ad8f3970a7d09c083fd176f8b9833ad9fcbd",
+  },
+];
+const AUDITED_FILES = [
+  {
+    packageName: "astronomy-engine",
+    packageVersion: "2.1.19",
+    row: [
+      "`astronomy-engine/astronomy.js` (distribuição CommonJS de referência)",
+      "421280 bytes",
+      "`729c0ce37cc1a8096034a689039a5f04585ee8184177c638e8c74dec4fa3185a`",
+      "`0b66b59b02759e68d10ddaf12ba273d6c81e24f22db218f897a5aa8882bc6be8d50ed48760aede3b0fe3e6e3aaec3f24385df18e5d5bbbfcfc33fb3cca071a81`",
+    ],
+  },
+  {
+    packageName: "astronomy-engine",
+    packageVersion: "2.1.19",
+    row: [
+      "`astronomy-engine/esm/astronomy.js` (entrypoint ESM importado e referenciado pelos metadados de cálculo)",
+      "412025 bytes",
+      "`068f1445ed0c636c94818fe6d20d7d125120e605e0bab9fc4675c3d531be5ad7`",
+      "`a898baa9deb4c3ae8e80a961155126039ae3eac6a14a9dac9cd8a39a6cddd7adba5975fe0cbf58cfea40fe99dee8c7df5302ea69c3e1477d89c38a4be4caff65`",
+    ],
+  },
+  {
+    packageName: "@js-temporal/polyfill",
+    packageVersion: "0.5.1",
+    row: [
+      "`@js-temporal/polyfill/dist/index.esm.js`",
+      "128868 bytes",
+      "`21f067c54fa5f532f20a8e85e3d2401a3ae1cf60d85fafea6502f621dc93b167`",
+      "`1805d1e0da3844a1972b0e14d45d65ebceefde523e056b7bb235f41a84eff442752b75ddd9e0c558e06ef962e8d26ecc8f2f486322f5a22739c4ce0d736fb501`",
+    ],
+  },
+  {
+    packageName: "jsbi",
+    packageVersion: "4.3.2",
+    row: [
+      "`jsbi/dist/jsbi.mjs`",
+      "29207 bytes",
+      "`c0d70fb47e0818e31bdf964805a530d9a0fb4ee5bdadb442a13f3691a5f15583`",
+      "`66327d5ea608de8dfb8d91125c5bed76d9c93fe865deebd957e97911cb1ff44e4fbaefa704340df2cd5c67f7a7684457f299c37e927d021840cb55c796a3b2d7`",
+    ],
+  },
+  {
+    packageName: "@fusionstrings/swiss-eph",
+    packageVersion: "0.1.1",
+    row: [
+      "`@fusionstrings/swiss-eph/wasm/swiss-eph-wasi.wasm` (materializado localmente sob demanda)",
+      "1275365 bytes",
+      "`31d3406560fd39b91bc9dbfdff6c9111f170fde2db62ebe92581ae14e878744c`",
+      "`f0929366006f037e45eb7085234623ec5fdc73f68cea7bf0c2696a038df979e3d346375a3b8123065863666801c234864a61d9042c6af961b7acdb455bad6de3`",
+    ],
+  },
+];
 
 function manifestEntries(component, manifest, lockfile) {
   const optionalNames = new Set(
@@ -129,30 +238,36 @@ export function verifyPackageTopology(packageSets, trackedPackageFiles) {
   return errors;
 }
 
-function markerSection(markdown) {
-  const starts = markdown.split(START_MARKER).length - 1;
-  const ends = markdown.split(END_MARKER).length - 1;
+function markerSection(markdown, startMarker, endMarker, label) {
+  const starts = markdown.split(startMarker).length - 1;
+  const ends = markdown.split(endMarker).length - 1;
 
   if (starts !== 1 || ends !== 1) {
     throw new Error(
-      `expected exactly one direct-dependency section, found start=${starts} end=${ends}`,
+      `expected exactly one ${label} section, found start=${starts} end=${ends}`,
     );
   }
 
-  const start = markdown.indexOf(START_MARKER) + START_MARKER.length;
-  const end = markdown.indexOf(END_MARKER);
+  const start = markdown.indexOf(startMarker) + startMarker.length;
+  const end = markdown.indexOf(endMarker);
   if (end <= start) {
-    throw new Error("direct-dependency section markers are out of order");
+    throw new Error(`${label} section markers are out of order`);
   }
 
   return markdown.slice(start, end);
 }
 
-export function parseDirectDependencies(markdown) {
+function parseStrictTable(markdown, startMarker, endMarker, headers, label) {
   const rows = [];
-  const seen = new Set();
+  let headerCount = 0;
+  let separatorCount = 0;
 
-  for (const line of markerSection(markdown).split(/\r?\n/u)) {
+  for (const line of markerSection(
+    markdown,
+    startMarker,
+    endMarker,
+    label,
+  ).split(/\r?\n/u)) {
     const trimmed = line.trim();
     if (!trimmed.startsWith("|")) continue;
 
@@ -161,13 +276,46 @@ export function parseDirectDependencies(markdown) {
       .split("|")
       .map((cell) => cell.trim());
 
-    if (cells[0] === "Manifesto" || cells.every((cell) => /^-+$/u.test(cell))) {
+    if (cells[0] === headers[0]) {
+      headerCount += 1;
+      if (JSON.stringify(cells) !== JSON.stringify(headers)) {
+        throw new Error(`${label} table header does not match the schema`);
+      }
       continue;
     }
-    if (cells.length !== 7 || cells.some((cell) => cell.length === 0)) {
-      throw new Error(`malformed direct-dependency row: ${line}`);
+    if (cells.every((cell) => /^:?-+:?$/u.test(cell))) {
+      separatorCount += 1;
+      continue;
     }
+    if (
+      cells.length !== headers.length ||
+      cells.some((cell) => cell.length === 0)
+    ) {
+      throw new Error(`malformed ${label} row: ${line}`);
+    }
+    rows.push(cells);
+  }
 
+  if (headerCount !== 1 || separatorCount !== 1) {
+    throw new Error(
+      `${label} table must contain exactly one header and separator; found header=${headerCount} separator=${separatorCount}`,
+    );
+  }
+
+  return rows;
+}
+
+export function parseDirectDependencies(markdown) {
+  const rows = [];
+  const seen = new Set();
+
+  for (const cells of parseStrictTable(
+    markdown,
+    START_MARKER,
+    END_MARKER,
+    DIRECT_HEADERS,
+    "direct-dependency",
+  )) {
     const [component, name, relation, version, license, modified, source] =
       cells;
     const key = entryKey({ component, name, relation });
@@ -193,6 +341,158 @@ export function parseDirectDependencies(markdown) {
   }
 
   return rows;
+}
+
+function compareExactRows(actual, expected, label) {
+  const errors = [];
+  if (actual.length !== expected.length) {
+    errors.push(
+      `${label} row count mismatch: THIRDPARTY=${actual.length} expected=${expected.length}`,
+    );
+  }
+  for (
+    let index = 0;
+    index < Math.max(actual.length, expected.length);
+    index += 1
+  ) {
+    if (JSON.stringify(actual[index]) !== JSON.stringify(expected[index])) {
+      errors.push(
+        `${label} row ${index + 1} mismatch: THIRDPARTY=${JSON.stringify(actual[index])} expected=${JSON.stringify(expected[index])}`,
+      );
+    }
+  }
+  return errors;
+}
+
+function verifyRetainedInventory(markdown, lockfile) {
+  const errors = [];
+  const record = (name, requiredFields) => {
+    const locked = lockfile.packages?.[`node_modules/${name}`];
+    if (!locked || requiredFields.some((field) => !locked[field])) {
+      errors.push(
+        `missing retained lockfile metadata for ${name}: ${requiredFields.join(",")}`,
+      );
+      return null;
+    }
+    return locked;
+  };
+
+  let retainedRows;
+  let tarballRows;
+  let fileRows;
+  try {
+    retainedRows = parseStrictTable(
+      markdown,
+      ...RETAINED_MARKERS,
+      RETAINED_HEADERS,
+      "retained-component",
+    );
+    tarballRows = parseStrictTable(
+      markdown,
+      ...TARBALL_MARKERS,
+      TARBALL_HEADERS,
+      "audited-tarball",
+    );
+    fileRows = parseStrictTable(
+      markdown,
+      ...FILE_MARKERS,
+      FILE_HEADERS,
+      "audited-file",
+    );
+  } catch (error) {
+    return [error.message];
+  }
+
+  const retainedDefinitions = [
+    {
+      name: "d3-array",
+      label: "d3-array (dependência transitiva de runtime de d3-geo)",
+      modified: "Não",
+      source: (locked) =>
+        `https://github.com/d3/d3-array/tree/v${locked.version}`,
+    },
+    {
+      name: "internmap",
+      label: "internmap (dependência transitiva de runtime de d3-array)",
+      modified: "Não",
+      source: (locked) =>
+        `https://github.com/mbostock/internmap/tree/v${locked.version}`,
+    },
+    {
+      name: "commander",
+      label: "commander (dependência transitiva de runtime de topojson-client)",
+      modified: "Não",
+      source: (locked) =>
+        `https://github.com/tj/commander.js/tree/v${locked.version}`,
+    },
+    {
+      name: "jsbi",
+      label:
+        "jsbi (dependência transitiva de runtime de @js-temporal/polyfill)",
+      modified: "Não",
+      source: () =>
+        `https://github.com/GoogleChromeLabs/jsbi/tree/${AUDITED_TARBALLS.find(({ name }) => name === "jsbi").gitHead}`,
+    },
+  ];
+  const expectedRetainedRows = [];
+  for (const definition of retainedDefinitions) {
+    const locked = record(definition.name, ["version", "license"]);
+    if (!locked) continue;
+    expectedRetainedRows.push([
+      definition.label,
+      locked.version,
+      locked.license,
+      definition.modified,
+      definition.source(locked),
+    ]);
+  }
+  expectedRetainedRows.push([
+    "Swiss Ephemeris incorporada no WASM",
+    "`swe_version() = 2.10.03`; fonte `5ae0bce00dbc66c6315c86da20518e3dd138255b`",
+    "AGPL-3.0-only, conforme a opção AGPL da licença dual",
+    "Não pelo projeto Astrologo",
+    "https://github.com/aloistr/swisseph/tree/5ae0bce00dbc66c6315c86da20518e3dd138255b",
+  ]);
+  errors.push(
+    ...compareExactRows(
+      retainedRows,
+      expectedRetainedRows,
+      "retained-component",
+    ),
+  );
+
+  const expectedTarballRows = [];
+  for (const audited of AUDITED_TARBALLS) {
+    const locked = record(audited.name, ["version", "integrity"]);
+    if (!locked) continue;
+    expectedTarballRows.push([
+      `${audited.name}@${locked.version}`,
+      `\`${audited.gitHead}\``,
+      `\`${locked.integrity}\``,
+      `\`${audited.sha256}\``,
+    ]);
+  }
+  errors.push(
+    ...compareExactRows(tarballRows, expectedTarballRows, "audited-tarball"),
+  );
+
+  for (const audited of AUDITED_FILES) {
+    const locked = record(audited.packageName, ["version"]);
+    if (locked && locked.version !== audited.packageVersion) {
+      errors.push(
+        `audited-file package version mismatch for ${audited.packageName}: package-lock=${locked.version} audited=${audited.packageVersion}`,
+      );
+    }
+  }
+  errors.push(
+    ...compareExactRows(
+      fileRows,
+      AUDITED_FILES.map(({ row }) => row),
+      "audited-file",
+    ),
+  );
+
+  return errors;
 }
 
 export function verifyThirdParty({
@@ -223,6 +523,12 @@ export function verifyThirdParty({
   const lockfiles = new Map(
     packageSets.map(({ component, lockfile }) => [component, lockfile]),
   );
+  const frontendLockfile = lockfiles.get("astrologo-frontend/package.json");
+  if (!frontendLockfile) {
+    errors.push("missing configured frontend lockfile");
+  } else {
+    errors.push(...verifyRetainedInventory(canonical, frontendLockfile));
+  }
 
   for (const entry of expected) {
     const { component, name, relation, version } = entry;

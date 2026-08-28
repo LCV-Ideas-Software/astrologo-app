@@ -333,11 +333,66 @@ test("rejects an extra direct dependency", () => {
 test("validates direct rows in a later table inside the bounded section", () => {
   const extra = canonical.replace(
     "<!-- direct-dependencies:end -->",
-    "## Continuação inválida\n\n| Manifesto | Componente | Relação | Versão | Licença Original | Modificado? | Link de Origem |\n| --- | --- | --- | --- | --- | --- | --- |\n| astrologo-frontend/package.json | late-table-package | dependencies | 1.0.0 | MIT | Não | https://example.invalid/late-table-package-1.0.0.tgz |\n\n<!-- direct-dependencies:end -->",
+    "## Continuação inválida\n\n| astrologo-frontend/package.json | late-table-package | dependencies | 1.0.0 | MIT | Não | https://example.invalid/late-table-package-1.0.0.tgz |\n\n<!-- direct-dependencies:end -->",
   );
   assert.match(
     errorsFor(extra).join("\n"),
     /extra direct dependency: .* late-table-package/u,
+  );
+});
+
+test("rejects a reordered direct-table header", () => {
+  const header = canonical
+    .split(/\r?\n/u)
+    .find(
+      (line) => line.includes("Manifesto") && line.includes("Licença Original"),
+    );
+  assert.ok(header);
+  const reorderedHeader = replaceRowCell(
+    replaceRowCell(header, 4, "Modificado?"),
+    5,
+    "Licença Original",
+  );
+  const candidate = canonical.replace(header, reorderedHeader);
+  assert.match(
+    errorsFor(candidate).join("\n"),
+    /direct-dependency table header does not match the schema/u,
+  );
+});
+
+test("rejects a stale retained transitive component", () => {
+  const jsbi = canonical
+    .split(/\r?\n/u)
+    .find((line) => line.includes("jsbi (dependência transitiva"));
+  assert.ok(jsbi);
+  const candidate = canonical.replace(jsbi, replaceRowCell(jsbi, 1, "0.0.0"));
+  assert.match(
+    errorsFor(candidate).join("\n"),
+    /retained-component row .* mismatch/u,
+  );
+});
+
+test("rejects stale audited artifact metadata", () => {
+  const jsbi = canonical
+    .split(/\r?\n/u)
+    .find((line) => line.includes("jsbi@4.3.2"));
+  assert.ok(jsbi);
+  const candidate = canonical.replace(
+    jsbi,
+    replaceRowCell(jsbi, 3, "`fixture-invalid-sha256`"),
+  );
+  assert.match(
+    errorsFor(candidate).join("\n"),
+    /audited-tarball row .* mismatch/u,
+  );
+});
+
+test("rejects deletion of the retained legal inventory", () => {
+  const end = "<!-- direct-dependencies:end -->";
+  const candidate = canonical.slice(0, canonical.indexOf(end) + end.length);
+  assert.match(
+    errorsFor(candidate).join("\n"),
+    /expected exactly one retained-component section/u,
   );
 });
 
