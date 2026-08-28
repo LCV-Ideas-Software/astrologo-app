@@ -297,8 +297,8 @@ test("accepts the same package as both development and peer dependency", () => {
   assert.ok(viteRow);
   const peerRow = replaceRowCell(viteRow, 2, "peerDependencies");
   const candidate = canonical.replace(
-    "\n\n<!-- direct-dependencies:end -->",
-    `\n${peerRow}\n\n<!-- direct-dependencies:end -->`,
+    "\n<!-- direct-dependencies:end -->",
+    `\n${peerRow}\n<!-- direct-dependencies:end -->`,
   );
   assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
 });
@@ -322,8 +322,8 @@ test("optionalDependencies overrides the same dependencies entry", () => {
   const candidate = canonical
     .replace(`${reactRow}\n`, "")
     .replace(
-      "\n\n<!-- direct-dependencies:end -->",
-      `\n${optionalRow}\n\n<!-- direct-dependencies:end -->`,
+      "\n<!-- direct-dependencies:end -->",
+      `\n${optionalRow}\n<!-- direct-dependencies:end -->`,
     );
   assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
 });
@@ -358,8 +358,8 @@ test("rejects a duplicate direct dependency", () => {
 
 test("rejects an extra direct dependency", () => {
   const extra = canonical.replace(
-    "\n\n<!-- direct-dependencies:end -->",
-    "\n| astrologo-frontend/package.json | invented-package | dependencies | 1.0.0 | MIT | Não | https://example.invalid/invented.tgz |\n\n<!-- direct-dependencies:end -->",
+    "\n<!-- direct-dependencies:end -->",
+    "\n| astrologo-frontend/package.json | invented-package | dependencies | 1.0.0 | MIT | Não | https://example.invalid/invented.tgz |\n<!-- direct-dependencies:end -->",
   );
   assert.match(
     errorsFor(extra).join("\n"),
@@ -428,6 +428,115 @@ test("rejects a reordered direct-table header", () => {
   assert.match(
     errorsFor(candidate).join("\n"),
     /direct-dependency table header does not match the schema/u,
+  );
+});
+
+test("rejects a separator placed before the direct-table header", () => {
+  const lines = canonical.split(/\r?\n/u);
+  const headerIndex = lines.findIndex(
+    (line) => line.includes("Manifesto") && line.includes("Licença Original"),
+  );
+  assert.ok(headerIndex >= 0);
+  const separatorIndex = headerIndex + 1;
+  assert.match(lines[separatorIndex], /^\|(?:\s*:?-+:?\s*\|)+$/u);
+  [lines[headerIndex], lines[separatorIndex]] = [
+    lines[separatorIndex],
+    lines[headerIndex],
+  ];
+  const candidate = lines.join("\n");
+
+  assert.match(
+    errorsFor(candidate).join("\n"),
+    /direct-dependency separator must immediately follow the header/u,
+  );
+});
+
+test("rejects a blank line inside the bounded direct table", () => {
+  const lines = canonical.split(/\r?\n/u);
+  const headerIndex = lines.findIndex(
+    (line) => line.includes("Manifesto") && line.includes("Licença Original"),
+  );
+  assert.ok(headerIndex >= 0);
+  lines.splice(headerIndex + 2, 0, "");
+
+  assert.match(
+    errorsFor(lines.join("\n")).join("\n"),
+    /direct-dependency section must contain one contiguous renderable table/u,
+  );
+});
+
+test("rejects a duplicate direct-table header", () => {
+  const header = canonical
+    .split(/\r?\n/u)
+    .find(
+      (line) => line.includes("Manifesto") && line.includes("Licença Original"),
+    );
+  assert.ok(header);
+  const candidate = canonical.replace(
+    "\n<!-- direct-dependencies:end -->",
+    `\n${header}\n<!-- direct-dependencies:end -->`,
+  );
+
+  assert.match(
+    errorsFor(candidate).join("\n"),
+    /direct-dependency table contains a duplicate structural row/u,
+  );
+});
+
+test("rejects a duplicate direct-table separator", () => {
+  const lines = canonical.split(/\r?\n/u);
+  const headerIndex = lines.findIndex(
+    (line) => line.includes("Manifesto") && line.includes("Licença Original"),
+  );
+  assert.ok(headerIndex >= 0);
+  const separator = lines[headerIndex + 1];
+  assert.match(separator, /^\|(?:\s*:?-+:?\s*\|)+$/u);
+  const candidate = canonical.replace(
+    "\n<!-- direct-dependencies:end -->",
+    `\n${separator}\n<!-- direct-dependencies:end -->`,
+  );
+
+  assert.match(
+    errorsFor(candidate).join("\n"),
+    /direct-dependency table contains a duplicate structural row/u,
+  );
+});
+
+test("rejects a direct-table separator with the wrong width", () => {
+  const lines = canonical.split(/\r?\n/u);
+  const headerIndex = lines.findIndex(
+    (line) => line.includes("Manifesto") && line.includes("Licença Original"),
+  );
+  assert.ok(headerIndex >= 0);
+  const separator = lines[headerIndex + 1];
+  const cells = separator
+    .trim()
+    .slice(1, -1)
+    .split("|")
+    .map((cell) => cell.trim());
+  cells.pop();
+  const candidate = canonical.replace(separator, `| ${cells.join(" | ")} |`);
+
+  assert.match(
+    errorsFor(candidate).join("\n"),
+    /direct-dependency separator must immediately follow the header/u,
+  );
+});
+
+test("rejects a direct table without data rows", () => {
+  const lines = canonical.split(/\r?\n/u);
+  const headerIndex = lines.findIndex(
+    (line) => line.includes("Manifesto") && line.includes("Licença Original"),
+  );
+  const endIndex = lines.findIndex(
+    (line) => line === "<!-- direct-dependencies:end -->",
+  );
+  assert.ok(headerIndex >= 0 && endIndex > headerIndex + 1);
+  lines.splice(headerIndex + 2, endIndex - (headerIndex + 2));
+
+  assert.match(
+    errorsFor(lines.join("\n")).join("\n"),
+    /direct-dependency table must contain at least one data row/u,
   );
 });
 

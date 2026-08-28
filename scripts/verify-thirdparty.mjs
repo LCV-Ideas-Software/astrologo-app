@@ -398,11 +398,16 @@ function markdownContextAt(markdown, offset) {
   return { inHtmlComment, inFence: fence !== null };
 }
 
-function assertRenderableMarker(markdown, offset, label) {
+function assertRenderableMarker(markdown, offset, marker, label) {
   const context = markdownContextAt(markdown, offset);
   const prefix = markdown.slice(0, offset);
   const linePrefix = prefix.slice(prefix.lastIndexOf("\n") + 1);
-  const standaloneWithRenderableIndent = /^ {0,3}$/u.test(linePrefix);
+  const suffix = markdown.slice(offset + marker.length);
+  const suffixLineEnd = suffix.search(/\r?\n/u);
+  const lineSuffix =
+    suffixLineEnd === -1 ? suffix : suffix.slice(0, suffixLineEnd);
+  const standaloneWithRenderableIndent =
+    /^ {0,3}$/u.test(linePrefix) && /^ *$/u.test(lineSuffix);
 
   if (
     context.inHtmlComment ||
@@ -427,8 +432,8 @@ function markerSection(markdown, startMarker, endMarker, label) {
 
   const startMarkerIndex = markdown.indexOf(startMarker);
   const end = markdown.indexOf(endMarker);
-  assertRenderableMarker(markdown, startMarkerIndex, label);
-  assertRenderableMarker(markdown, end, label);
+  assertRenderableMarker(markdown, startMarkerIndex, startMarker, label);
+  assertRenderableMarker(markdown, end, endMarker, label);
 
   const start = startMarkerIndex + startMarker.length;
   if (end <= start) {
@@ -440,50 +445,83 @@ function markerSection(markdown, startMarker, endMarker, label) {
 
 function parseStrictTable(markdown, startMarker, endMarker, headers, label) {
   const rows = [];
-  let headerCount = 0;
-  let separatorCount = 0;
-  let phase = "before";
-
-  for (const line of markerSection(
+  const section = markerSection(
     markdown,
     startMarker,
     endMarker,
     label,
-  ).split(/\r?\n/u)) {
-    const trimmed = line.trim();
-    if (trimmed.length === 0) {
-      if (phase === "table") phase = "after";
-      continue;
-    }
+  );
+  const leadingBreak = section.startsWith("\r\n")
+    ? "\r\n"
+    : section.startsWith("\n")
+      ? "\n"
+      : null;
+  const trailingBreak = section.endsWith("\r\n")
+    ? "\r\n"
+    : section.endsWith("\n")
+      ? "\n"
+      : null;
+  if (!leadingBreak || !trailingBreak) {
+    throw new Error(
+      `${label} section must contain one contiguous renderable table`,
+    );
+  }
 
+  const tableLines = section
+    .slice(leadingBreak.length, -trailingBreak.length)
+    .split(/\r?\n/u);
+  if (tableLines.some((line) => line.trim().length === 0)) {
+    throw new Error(
+      `${label} section must contain one contiguous renderable table`,
+    );
+  }
+
+  for (const [index, line] of tableLines.entries()) {
+    const trimmed = line.trim();
     const indentation = line.match(/^[ \t]*/u)?.[0] ?? "";
     const isRenderableTableLine =
       !indentation.includes("\t") &&
       indentation.length <= 3 &&
       trimmed.startsWith("|") &&
       trimmed.endsWith("|");
-    if (!isRenderableTableLine || phase === "after") {
+    if (!isRenderableTableLine) {
       throw new Error(
         `${label} section must contain one contiguous renderable table`,
       );
     }
-    phase = "table";
 
     const cells = trimmed
       .slice(1, -1)
       .split("|")
       .map((cell) => cell.trim());
+    const isHeader = JSON.stringify(cells) === JSON.stringify(headers);
+    const isSameWidthSeparator =
+      cells.length === headers.length &&
+      cells.every((cell) => /^:?-+:?$/u.test(cell));
 
-    if (cells[0] === headers[0]) {
-      headerCount += 1;
-      if (JSON.stringify(cells) !== JSON.stringify(headers)) {
+    if (index === 0) {
+      if (!isHeader) {
+        if (isSameWidthSeparator) {
+          throw new Error(
+            `${label} separator must immediately follow the header`,
+          );
+        }
         throw new Error(`${label} table header does not match the schema`);
       }
       continue;
     }
-    if (cells.every((cell) => /^:?-+:?$/u.test(cell))) {
-      separatorCount += 1;
+
+    if (index === 1) {
+      if (!isSameWidthSeparator) {
+        throw new Error(
+          `${label} separator must immediately follow the header`,
+        );
+      }
       continue;
+    }
+
+    if (isHeader || isSameWidthSeparator) {
+      throw new Error(`${label} table contains a duplicate structural row`);
     }
     if (
       cells.length !== headers.length ||
@@ -494,16 +532,8 @@ function parseStrictTable(markdown, startMarker, endMarker, headers, label) {
     rows.push(cells);
   }
 
-  if (headerCount !== 1 || separatorCount !== 1) {
-    throw new Error(
-      `${label} table must contain exactly one header and separator; found header=${headerCount} separator=${separatorCount}`,
-    );
-  }
-
-  if (phase === "before") {
-    throw new Error(
-      `${label} section must contain one contiguous renderable table`,
-    );
+  if (rows.length === 0) {
+    throw new Error(`${label} table must contain at least one data row`);
   }
 
   return rows;
