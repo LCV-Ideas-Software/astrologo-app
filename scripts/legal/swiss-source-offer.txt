@@ -1,0 +1,11 @@
+O código-fonte da versão do Astrologo oferecida pela interface de rede está
+disponível no repositório do projeto indicado abaixo. O Corresponding Source
+identificado e vinculado a esta distribuição, incluindo scripts de build e o
+submódulo C fixado, está disponível nas revisões exatas do wrapper e do upstream
+também indicadas abaixo.
+
+O projeto adota para esse componente a opção GNU AGPL v3 da licença dual. O
+texto integral da licença acompanha esta distribuição em LICENSE e é publicado
+na aplicação como public/legal/LICENSE.txt. A LCV Ideas & Software assume manter
+acesso equivalente ao Corresponding Source, gratuito e sem autenticação,
+enquanto o objeto WASM for oferecido ou distribuído.

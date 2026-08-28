@@ -4,6 +4,7 @@
 
 ### Alterado
 
+- O inventário `THIRDPARTY` passa a refletir integralmente as 42 relações diretas dos manifestos raiz e frontend. A arquitetura official-first combina o License Compliance e o Dependency Review nativos do GitHub, o `build.license` do Vite e o `--metafile` do Wrangler com validação local fail-closed de proveniência, lockfile, licenças e Swiss/WASM; os bundles do navegador e das Cloudflare Pages Functions publicam, respectivamente, `legal/BUNDLED-LICENSES.md` e `legal/FUNCTIONS-BUNDLED-LICENSES.md` (#346).
 - A criação de Linear Releases após deploy bem-sucedido passa a usar a action oficial `linear/linear-release-action` v0.16.0, pinada por SHA completo; o gatilho pós-Deploy, o SHA publicado, o histórico Git completo, o environment dedicado e as permissões mínimas permanecem inalterados.
 - CodeQL, Dependency Review, OpenSSF Scorecard e Zizmor passam a usar diretamente as implementacoes oficiais, sem gate SARIF, reusable workflow, manifesto, scanner ou validador proprio.
 - O deploy passa a usar `cloudflare/wrangler-action` oficial; o identificador da D1 compartilhada fica versionado no `wrangler.json`, enquanto tokens e credenciais permanecem secretos.

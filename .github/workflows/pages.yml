@@ -47,12 +47,15 @@ jobs:
       - name: Install public-page dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Check public page formatting
-        run: npm run format:public:check
-
       - name: Install frontend dependencies
         working-directory: astrologo-frontend
         run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify third-party inventory contract
+        run: npm run verify:thirdparty
+
+      - name: Check public page formatting
+        run: npm run format:public:check
 
       - name: Validate frontend
         working-directory: astrologo-frontend

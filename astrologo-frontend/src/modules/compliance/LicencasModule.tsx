@@ -10,6 +10,8 @@ const LEGAL_FILES = {
   LICENSE: `${LEGAL_PUBLIC_BASE}LICENSE.txt`,
   NOTICE: `${LEGAL_PUBLIC_BASE}NOTICE.txt`,
   THIRDPARTY: `${LEGAL_PUBLIC_BASE}THIRDPARTY.md`,
+  BUNDLED_LICENSES: `${LEGAL_PUBLIC_BASE}BUNDLED-LICENSES.md`,
+  FUNCTIONS_BUNDLED_LICENSES: `${LEGAL_PUBLIC_BASE}FUNCTIONS-BUNDLED-LICENSES.md`,
 } as const;
 
 type DocsState = {
@@ -113,29 +115,87 @@ export function LicencasModule() {
         Conformidade e Licenças (Open Source Compliance)
       </h1>
       <p style={{ color: '#5f6368', marginBottom: '32px' }}>
-        Este sistema opera sob a GNU Affero General Public License v3 (AGPLv3), com avisos e componentes de terceiros
-        sob Apache License 2.0 devidamente documentados em NOTICE e THIRDPARTY.md.
+        O código do aplicativo é disponibilizado sob a GNU Affero General Public License v3 ou posterior
+        (AGPL-3.0-or-later). Os componentes de terceiros preservam suas próprias licenças, incluindo MIT, ISC,
+        Apache-2.0, MPL-2.0 e AGPL-3.0, conforme documentado em NOTICE, THIRDPARTY.md e nos relatórios dos bundles do
+        navegador e das Cloudflare Pages Functions.
       </p>
 
       <section style={sectionStyle}>
-        <h2 style={{ color: '#1a73e8', borderBottom: '2px solid #e8eaed', paddingBottom: '8px', marginBottom: '16px' }}>
+        <h2
+          style={{
+            color: '#1a73e8',
+            borderBottom: '2px solid #e8eaed',
+            paddingBottom: '8px',
+            marginBottom: '16px',
+          }}
+        >
           GNU AGPLv3 (LICENSE)
         </h2>
         {renderJustifiedParagraphs(content.LICENSE)}
       </section>
 
       <section style={sectionStyle}>
-        <h2 style={{ color: '#1a73e8', borderBottom: '2px solid #e8eaed', paddingBottom: '8px', marginBottom: '16px' }}>
-          Avisos de Autoria e Patentes (NOTICE / Apache 2.0)
+        <h2
+          style={{
+            color: '#1a73e8',
+            borderBottom: '2px solid #e8eaed',
+            paddingBottom: '8px',
+            marginBottom: '16px',
+          }}
+        >
+          Avisos de Autoria, Licenciamento e Patentes (NOTICE)
         </h2>
         {renderJustifiedParagraphs(content.NOTICE)}
       </section>
 
       <section style={sectionStyle}>
-        <h2 style={{ color: '#1a73e8', borderBottom: '2px solid #e8eaed', paddingBottom: '8px', marginBottom: '16px' }}>
+        <h2
+          style={{
+            color: '#1a73e8',
+            borderBottom: '2px solid #e8eaed',
+            paddingBottom: '8px',
+            marginBottom: '16px',
+          }}
+        >
           Componentes de Terceiros (THIRDPARTY)
         </h2>
         <pre style={preStyle}>{content.THIRDPARTY}</pre>
+      </section>
+
+      <section style={sectionStyle}>
+        <h2
+          style={{
+            color: '#1a73e8',
+            borderBottom: '2px solid #e8eaed',
+            paddingBottom: '8px',
+            marginBottom: '16px',
+          }}
+        >
+          Licenças das Dependências Empacotadas
+        </h2>
+        <p style={{ ...paragraphStyle, textIndent: 0 }}>
+          O Vite oficial gera o relatório integral do bundle do navegador. O relatório das Cloudflare Pages Functions
+          deriva do metafile oficial do Wrangler, conferido contra o lockfile npm e os textos de licença dos pacotes
+          efetivamente incorporados.{' '}
+          {import.meta.env.PROD ? (
+            <>
+              <a href={LEGAL_FILES.BUNDLED_LICENSES} target="_blank" rel="noopener noreferrer">
+                Abrir BUNDLED-LICENSES.md
+              </a>
+              {' e '}
+              <a href={LEGAL_FILES.FUNCTIONS_BUNDLED_LICENSES} target="_blank" rel="noopener noreferrer">
+                abrir FUNCTIONS-BUNDLED-LICENSES.md
+              </a>
+              .
+            </>
+          ) : (
+            <>
+              Os relatórios ficam disponíveis após o pipeline de publicação executar os builds do navegador e das
+              Functions.
+            </>
+          )}
+        </p>
       </section>
     </div>
   );

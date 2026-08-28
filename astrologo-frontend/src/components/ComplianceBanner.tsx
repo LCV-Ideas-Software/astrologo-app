@@ -44,7 +44,7 @@ export const ComplianceBanner: React.FC<ComplianceBannerProps> = ({ onViewLicens
         }}
         style={linkStyle}
       >
-        Licenças (GNU AGPLv3 + Apache 2.0)
+        Licenças (GNU AGPLv3 + componentes de terceiros)
       </a>
       <span aria-hidden="true">|</span>
       <a

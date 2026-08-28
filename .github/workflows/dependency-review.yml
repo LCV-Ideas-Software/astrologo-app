@@ -29,6 +29,28 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          check-latest: true
+          package-manager-cache: false
+
+      - name: Install inventory verifier dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install frontend dependencies
+        working-directory: astrologo-frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify live third-party inventory contract
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run verify:thirdparty:upstream
+
+      - name: Test third-party inventory contract
+        run: npm run test:thirdparty
+
       - name: Review pull request dependencies
         if: ${{ github.event_name == 'pull_request' }}
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
