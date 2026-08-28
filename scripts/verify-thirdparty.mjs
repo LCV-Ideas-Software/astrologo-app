@@ -323,14 +323,7 @@ export function verifyPackageTopology(packageSets, trackedPackageFiles) {
     ]),
   );
   const tracked = new Set(
-    trackedPackageFiles
-      .map((file) => file.replaceAll("\\", "/"))
-      .filter((file) => {
-        const segments = file.split("/");
-        return !segments.some((segment) =>
-          ["node_modules", "build", "dist"].includes(segment),
-        );
-      }),
+    trackedPackageFiles.map((file) => file.replaceAll("\\", "/")),
   );
   const errors = [];
 
@@ -351,6 +344,7 @@ export function verifyPackageTopology(packageSets, trackedPackageFiles) {
 function markdownContextAt(markdown, offset) {
   let inHtmlComment = false;
   let fence = null;
+  const visibleOutsideFences = [];
 
   for (const line of markdown.slice(0, offset).split(/\r?\n/u)) {
     if (fence) {
@@ -392,10 +386,47 @@ function markdownContextAt(markdown, offset) {
         character: openingFence[1][0],
         length: openingFence[1].length,
       };
+      continue;
+    }
+    visibleOutsideFences.push(visible);
+  }
+
+  const htmlContainers = [];
+  const voidElements = new Set([
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
+  ]);
+  const htmlTag =
+    /<\s*(\/?)\s*([A-Za-z][A-Za-z0-9-]*)(?=\s|\/?>)[^<>]*?>/gu;
+  for (const match of visibleOutsideFences.join("\n").matchAll(htmlTag)) {
+    const closing = match[1] === "/";
+    const name = match[2].toLowerCase();
+    const selfClosing = /\/\s*>$/u.test(match[0]);
+    if (closing) {
+      const openIndex = htmlContainers.lastIndexOf(name);
+      if (openIndex !== -1) htmlContainers.splice(openIndex);
+    } else if (!selfClosing && !voidElements.has(name)) {
+      htmlContainers.push(name);
     }
   }
 
-  return { inHtmlComment, inFence: fence !== null };
+  return {
+    inHtmlComment,
+    inFence: fence !== null,
+    inHtmlContainer: htmlContainers.length > 0,
+  };
 }
 
 function assertRenderableMarker(markdown, offset, marker, label) {
@@ -412,12 +443,146 @@ function assertRenderableMarker(markdown, offset, marker, label) {
   if (
     context.inHtmlComment ||
     context.inFence ||
+    context.inHtmlContainer ||
     !standaloneWithRenderableIndent
   ) {
     throw new Error(
       `${label} section must contain one contiguous renderable table`,
     );
   }
+}
+
+const ASCII_PUNCTUATION = new Set(
+  Array.from('!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
+);
+const MARKDOWN_ENTITIES = new Map([
+  ["amp", "&"],
+  ["apos", "'"],
+  ["gt", ">"],
+  ["lt", "<"],
+  ["quot", '"'],
+  ["verbar", "|"],
+  ["vert", "|"],
+  ["VerticalLine", "|"],
+]);
+
+function decodeEntityAt(value, offset, label) {
+  const candidate = value.slice(offset).match(
+    /^&(?:#([0-9]+)|#[xX]([0-9A-Fa-f]+)|([A-Za-z][A-Za-z0-9]+));/u,
+  );
+  if (!candidate) return null;
+
+  let decoded;
+  if (candidate[1] !== undefined || candidate[2] !== undefined) {
+    const codePoint = Number.parseInt(
+      candidate[1] ?? candidate[2],
+      candidate[1] === undefined ? 16 : 10,
+    );
+    if (
+      !Number.isSafeInteger(codePoint) ||
+      codePoint === 0 ||
+      codePoint > 0x10ffff ||
+      (codePoint >= 0xd800 && codePoint <= 0xdfff)
+    ) {
+      throw new Error(`invalid numeric entity in ${label} cell`);
+    }
+    decoded = String.fromCodePoint(codePoint);
+  } else {
+    decoded = MARKDOWN_ENTITIES.get(candidate[3]);
+    if (decoded === undefined) {
+      throw new Error(
+        `unsupported named entity &${candidate[3]}; in ${label} cell`,
+      );
+    }
+  }
+
+  return { decoded, length: candidate[0].length };
+}
+
+function decodeMarkdownCell(value, label) {
+  let decoded = "";
+  let codeSpanLength = 0;
+
+  for (let index = 0; index < value.length; ) {
+    const character = value[index];
+    if (character === "`") {
+      let runLength = 1;
+      while (value[index + runLength] === "`") runLength += 1;
+      decoded += "`".repeat(runLength);
+      if (codeSpanLength === 0) codeSpanLength = runLength;
+      else if (codeSpanLength === runLength) codeSpanLength = 0;
+      index += runLength;
+      continue;
+    }
+
+    if (codeSpanLength > 0) {
+      if (character === "\\" && value[index + 1] === "|") {
+        decoded += "|";
+        index += 2;
+      } else {
+        decoded += character;
+        index += 1;
+      }
+      continue;
+    }
+
+    if (
+      character === "\\" &&
+      value[index + 1] !== undefined &&
+      ASCII_PUNCTUATION.has(value[index + 1])
+    ) {
+      decoded += value[index + 1];
+      index += 2;
+      continue;
+    }
+
+    if (character === "&") {
+      const entity = decodeEntityAt(value, index, label);
+      if (entity) {
+        decoded += entity.decoded;
+        index += entity.length;
+        continue;
+      }
+    }
+
+    decoded += character;
+    index += 1;
+  }
+
+  if (codeSpanLength !== 0) {
+    throw new Error(`unclosed inline code span in ${label} cell`);
+  }
+  return decoded;
+}
+
+function isEscapedPipe(value, offset) {
+  let backslashes = 0;
+  for (let index = offset - 1; index >= 0 && value[index] === "\\"; index -= 1)
+    backslashes += 1;
+  return backslashes % 2 === 1;
+}
+
+function parseMarkdownTableCells(line, label) {
+  const trimmed = line.trim();
+  if (
+    !trimmed.startsWith("|") ||
+    !trimmed.endsWith("|") ||
+    isEscapedPipe(trimmed, trimmed.length - 1)
+  ) {
+    throw new Error(`malformed ${label} row: ${line}`);
+  }
+
+  const cells = [];
+  let cellStart = 1;
+  for (let index = 1; index < trimmed.length - 1; index += 1) {
+    if (trimmed[index] === "|" && !isEscapedPipe(trimmed, index)) {
+      cells.push(trimmed.slice(cellStart, index));
+      cellStart = index + 1;
+    }
+  }
+  cells.push(trimmed.slice(cellStart, -1));
+
+  return cells.map((cell) => decodeMarkdownCell(cell.trim(), label));
 }
 
 function markerSection(markdown, startMarker, endMarker, label) {
@@ -490,10 +655,7 @@ function parseStrictTable(markdown, startMarker, endMarker, headers, label) {
       );
     }
 
-    const cells = trimmed
-      .slice(1, -1)
-      .split("|")
-      .map((cell) => cell.trim());
+    const cells = parseMarkdownTableCells(line, label);
     const isHeader = JSON.stringify(cells) === JSON.stringify(headers);
     const isSameWidthSeparator =
       cells.length === headers.length &&

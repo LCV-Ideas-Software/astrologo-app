@@ -85,13 +85,34 @@ function errorsFor(
   markdown,
   publicMarkdown = markdown,
   candidatePackageSets = packageSets,
+  candidateTrackedPackageFiles = trackedPackageFiles,
 ) {
   return verifyThirdParty({
     packageSets: candidatePackageSets,
-    trackedPackageFiles,
+    trackedPackageFiles: candidateTrackedPackageFiles,
     canonical: markdown,
     publicCopy: publicMarkdown,
   });
+}
+
+function withViteManifestSpec(manifestSpec, markdownSpec) {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  frontend.manifest.devDependencies.vite = manifestSpec;
+  const viteRow = directRowLine(canonical, {
+    component: "astrologo-frontend/package.json",
+    name: "vite",
+    relation: "devDependencies",
+  });
+  assert.ok(viteRow);
+  const candidate = canonical.replace(
+    viteRow,
+    replaceRowCell(viteRow, 3, markdownSpec),
+  );
+  return { candidate, candidatePackageSets };
 }
 
 test("accepts the current complete inventory", () => {
@@ -410,6 +431,66 @@ test("rejects a direct-dependency table hidden in a fenced code block", () => {
     errorsFor(hidden).join("\n"),
     /direct-dependency section must contain one contiguous renderable table/u,
   );
+});
+
+test("rejects legal tables wrapped in raw HTML containers", () => {
+  for (const [opening, closing] of [
+    ["<div hidden>", "</div>"],
+    ["<details>", "</details>"],
+    ['<section aria-hidden="true">', "</section>"],
+  ]) {
+    const hidden = canonical
+      .replace(
+        "<!-- direct-dependencies:start -->",
+        `${opening}\n<!-- direct-dependencies:start -->`,
+      )
+      .replace(
+        "<!-- direct-dependencies:end -->",
+        `<!-- direct-dependencies:end -->\n${closing}`,
+      );
+    assert.match(
+      errorsFor(hidden).join("\n"),
+      /direct-dependency section must contain one contiguous renderable table/u,
+    );
+  }
+});
+
+test("decodes escaped pipes in direct dependency cells", () => {
+  const { candidate, candidatePackageSets } = withViteManifestSpec(
+    "^8 || ^9",
+    String.raw`^8 \|\| ^9`,
+  );
+  assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
+});
+
+test("decodes named and numeric pipe entities in direct dependency cells", () => {
+  const { candidate, candidatePackageSets } = withViteManifestSpec(
+    "^8 || ^9",
+    "^8 &vert;&#x7c; ^9",
+  );
+  assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
+});
+
+test("decodes escaped backslashes without losing table boundaries", () => {
+  const { candidate, candidatePackageSets } = withViteManifestSpec(
+    "file:..\\fixture",
+    String.raw`file:..\\fixture`,
+  );
+  assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
+});
+
+test("tokenizes escaped pipes inside inline code spans", () => {
+  const { candidate } = withViteManifestSpec(
+    "unused-by-parser-fixture",
+    String.raw`\`^8 \|\| ^9\``,
+  );
+  const vite = parseDirectDependencies(candidate).find(
+    (row) =>
+      row.component === "astrologo-frontend/package.json" &&
+      row.name === "vite" &&
+      row.relation === "devDependencies",
+  );
+  assert.equal(vite?.version, "`^8 || ^9`");
 });
 
 test("rejects a reordered direct-table header", () => {
@@ -734,6 +815,29 @@ test("rejects a newly tracked package manifest until it is classified", () => {
     errors.join("\n"),
     /unclassified tracked package metadata: future\/package-lock\.json/u,
   );
+});
+
+test("does not exempt tracked package metadata by directory name", () => {
+  for (const directory of ["build", "dist", "node_modules"]) {
+    const candidateTrackedFiles = [
+      ...trackedPackageFiles,
+      `${directory}/package.json`,
+      `${directory}/package-lock.json`,
+    ];
+    const errors = errorsFor(
+      canonical,
+      publicCopy,
+      packageSets,
+      candidateTrackedFiles,
+    );
+    assert.match(
+      errors.join("\n"),
+      new RegExp(
+        `unclassified tracked package metadata: ${directory}/package\\.json`,
+        "u",
+      ),
+    );
+  }
 });
 
 test("rejects npm shrinkwrap until its effective resolutions are classified", () => {
