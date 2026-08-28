@@ -176,10 +176,16 @@ export function LicencasModule() {
         <p style={{ ...paragraphStyle, textIndent: 0 }}>
           O build oficial do Vite gera o relatório integral das licenças efetivamente incorporadas ao bundle do
           navegador.{' '}
-          <a href={LEGAL_FILES.BUNDLED_LICENSES} target="_blank" rel="noopener noreferrer">
-            Abrir BUNDLED-LICENSES.md
-          </a>
-          .
+          {import.meta.env.PROD ? (
+            <>
+              <a href={LEGAL_FILES.BUNDLED_LICENSES} target="_blank" rel="noopener noreferrer">
+                Abrir BUNDLED-LICENSES.md
+              </a>
+              .
+            </>
+          ) : (
+            <>O relatório fica disponível após o build de produção.</>
+          )}
         </p>
       </section>
     </div>
