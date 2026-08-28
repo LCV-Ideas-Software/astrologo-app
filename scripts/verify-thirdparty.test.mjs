@@ -158,6 +158,43 @@ test("rejects an inaccurate direct license", () => {
   );
 });
 
+test("rejects npm aliases that obscure the locked package identity", () => {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  const aliasSpec = "npm:preact@10.28.0";
+  frontend.manifest.dependencies.react = aliasSpec;
+  frontend.lockfile.packages["node_modules/react"] = {
+    name: "preact",
+    version: "10.28.0",
+    resolved: "https://registry.npmjs.org/preact/-/preact-10.28.0.tgz",
+    license: "MIT",
+  };
+  const reactRow = directRowLine(canonical, {
+    component: "astrologo-frontend/package.json",
+    name: "react",
+    relation: "dependencies",
+  });
+  assert.ok(reactRow);
+  const aliasRow = replaceRowCell(
+    replaceRowCell(
+      replaceRowCell(reactRow, 3, aliasSpec),
+      4,
+      "MIT",
+    ),
+    6,
+    "https://registry.npmjs.org/preact/-/preact-10.28.0.tgz",
+  );
+  const candidate = canonical.replace(reactRow, aliasRow);
+
+  assert.match(
+    errorsFor(candidate, candidate, candidatePackageSets).join("\n"),
+    /npm package aliases are not supported.*react resolves to preact/u,
+  );
+});
+
 test("rejects a changed upstream license behind a legal display override", () => {
   const candidatePackageSets = structuredClone(packageSets);
   packageSet(
@@ -372,6 +409,30 @@ test("rejects a stale retained transitive component", () => {
   );
 });
 
+test("resolves a retained dependency through its documented parent", () => {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  const parentPath = "node_modules/@js-temporal/polyfill";
+  const nestedPath = `${parentPath}/node_modules/jsbi`;
+  const topLevel = frontend.lockfile.packages["node_modules/jsbi"];
+  assert.ok(topLevel?.version && topLevel.license && topLevel.integrity);
+  frontend.lockfile.packages[parentPath].dependencies.jsbi = "5.0.0";
+  frontend.lockfile.packages[nestedPath] = {
+    ...structuredClone(topLevel),
+    version: "5.0.0",
+    resolved: "https://registry.npmjs.org/jsbi/-/jsbi-5.0.0.tgz",
+    integrity: "sha512-nested-jsbi-fixture",
+  };
+
+  assert.match(
+    errorsFor(canonical, publicCopy, candidatePackageSets).join("\n"),
+    /retained-component row .* mismatch/u,
+  );
+});
+
 test("rejects stale audited artifact metadata", () => {
   const jsbi = canonical
     .split(/\r?\n/u)
@@ -384,6 +445,31 @@ test("rejects stale audited artifact metadata", () => {
   assert.match(
     errorsFor(candidate).join("\n"),
     /audited-tarball row .* mismatch/u,
+  );
+});
+
+test("binds audited hashes to the exact lockfile integrity", () => {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  const record = frontend.lockfile.packages["node_modules/astronomy-engine"];
+  assert.ok(record?.integrity);
+  const changedIntegrity = "sha512-different-tarball-fixture";
+  record.integrity = changedIntegrity;
+  const auditedRow = canonical
+    .split(/\r?\n/u)
+    .find((line) => line.includes("astronomy-engine@2.1.19"));
+  assert.ok(auditedRow);
+  const candidate = canonical.replace(
+    auditedRow,
+    replaceRowCell(auditedRow, 2, `\`${changedIntegrity}\``),
+  );
+
+  assert.match(
+    errorsFor(candidate, candidate, candidatePackageSets).join("\n"),
+    /audited package integrity mismatch for astronomy-engine/u,
   );
 });
 

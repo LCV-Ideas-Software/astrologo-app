@@ -88,21 +88,29 @@ const AUDITED_TARBALLS = [
   {
     name: "astronomy-engine",
     gitHead: "61dc07020aaa6885d2c7f688a4d82beaf6edb9ef",
+    integrity:
+      "sha512-8yWKNf7UeNbH458h3sAJ6ZgAjE5jTXp/mNNRFoC20j2SHwZIjAQeEsBB2Q3uCFRaTCCJRv33K2XhkhZQMXoX6w==",
     sha256: "605e9e9ebd0a364f1c5b556f10c1f163e4b8aa63b97ada1ab72e960d73189cdd",
   },
   {
     name: "@js-temporal/polyfill",
     gitHead: "f3c07e503632ddf7ff918066f2eb30a9dcfa06ff",
+    integrity:
+      "sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ==",
     sha256: "c99a4da5678a55a33dfd30c977852dfac9bbe7b8bac73999f1858c167be6b3e3",
   },
   {
     name: "jsbi",
     gitHead: "5382367c7e3199858d36bb620977e1f90605bcb9",
+    integrity:
+      "sha512-9fqMSQbhJykSeii05nxKl4m6Eqn2P6rOlYiS+C5Dr/HPIU/7yZxu5qzbs40tgaFORiw2Amd0mirjxatXYMkIew==",
     sha256: "131d13488f0f400a0770eaca495749cddef34d315f7aeb248fc501f7538b378e",
   },
   {
     name: "@fusionstrings/swiss-eph",
     gitHead: "e7a7a9311d3058f337b73b72f45ea6d80cffa5f0",
+    integrity:
+      "sha512-UGKCfVh5TUygShCNKnh7iauJ109QYgV+e3+8PACOsiIFyiX8z3PIw7etbYDqF0egsJfIArRdDjOwrliAOFGNgA==",
     sha256: "ef90330d9ed41da5358b47c60b29ad8f3970a7d09c083fd176f8b9833ad9fcbd",
   },
 ];
@@ -364,13 +372,54 @@ function compareExactRows(actual, expected, label) {
   return errors;
 }
 
+function dependencyCandidatePaths(parentPath, name) {
+  const candidates = [`${parentPath}/node_modules/${name}`];
+  let ancestor = parentPath;
+
+  while (ancestor.includes("/node_modules/")) {
+    ancestor = ancestor.slice(0, ancestor.lastIndexOf("/node_modules/"));
+    candidates.push(`${ancestor}/node_modules/${name}`);
+  }
+  candidates.push(`node_modules/${name}`);
+
+  return [...new Set(candidates)];
+}
+
+function resolveDependencyRecord(lockfile, parentPath, name, errors) {
+  const parent = lockfile.packages?.[parentPath];
+  if (!parent) {
+    errors.push(`missing retained parent lockfile record: ${parentPath}`);
+    return null;
+  }
+  const declared = {
+    ...(parent.dependencies ?? {}),
+    ...(parent.optionalDependencies ?? {}),
+  };
+  if (!Object.hasOwn(declared, name)) {
+    errors.push(
+      `retained parent ${parentPath} does not declare dependency ${name}`,
+    );
+    return null;
+  }
+
+  for (const path of dependencyCandidatePaths(parentPath, name)) {
+    const locked = lockfile.packages?.[path];
+    if (locked) return { path, locked };
+  }
+
+  errors.push(
+    `missing retained dependency resolution for ${name} from ${parentPath}`,
+  );
+  return null;
+}
+
 function verifyRetainedInventory(markdown, lockfile) {
   const errors = [];
-  const record = (name, requiredFields) => {
-    const locked = lockfile.packages?.[`node_modules/${name}`];
+  const record = (name, path, requiredFields) => {
+    const locked = lockfile.packages?.[path];
     if (!locked || requiredFields.some((field) => !locked[field])) {
       errors.push(
-        `missing retained lockfile metadata for ${name}: ${requiredFields.join(",")}`,
+        `missing retained lockfile metadata for ${name} at ${path}: ${requiredFields.join(",")}`,
       );
       return null;
     }
@@ -406,6 +455,7 @@ function verifyRetainedInventory(markdown, lockfile) {
   const retainedDefinitions = [
     {
       name: "d3-array",
+      parent: "d3-geo",
       label: "d3-array (dependência transitiva de runtime de d3-geo)",
       modified: "Não",
       source: (locked) =>
@@ -413,6 +463,7 @@ function verifyRetainedInventory(markdown, lockfile) {
     },
     {
       name: "internmap",
+      parent: "d3-array",
       label: "internmap (dependência transitiva de runtime de d3-array)",
       modified: "Não",
       source: (locked) =>
@@ -420,6 +471,7 @@ function verifyRetainedInventory(markdown, lockfile) {
     },
     {
       name: "commander",
+      parent: "topojson-client",
       label: "commander (dependência transitiva de runtime de topojson-client)",
       modified: "Não",
       source: (locked) =>
@@ -427,6 +479,7 @@ function verifyRetainedInventory(markdown, lockfile) {
     },
     {
       name: "jsbi",
+      parent: "@js-temporal/polyfill",
       label:
         "jsbi (dependência transitiva de runtime de @js-temporal/polyfill)",
       modified: "Não",
@@ -435,9 +488,25 @@ function verifyRetainedInventory(markdown, lockfile) {
     },
   ];
   const expectedRetainedRows = [];
+  const retainedRecords = new Map();
   for (const definition of retainedDefinitions) {
-    const locked = record(definition.name, ["version", "license"]);
+    const retainedParent = retainedRecords.get(definition.parent);
+    const parentPath =
+      retainedParent?.path ?? `node_modules/${definition.parent}`;
+    const resolved = resolveDependencyRecord(
+      lockfile,
+      parentPath,
+      definition.name,
+      errors,
+    );
+    if (!resolved) continue;
+    const locked = record(
+      definition.name,
+      resolved.path,
+      ["version", "license"],
+    );
     if (!locked) continue;
+    retainedRecords.set(definition.name, resolved);
     expectedRetainedRows.push([
       definition.label,
       locked.version,
@@ -463,12 +532,19 @@ function verifyRetainedInventory(markdown, lockfile) {
 
   const expectedTarballRows = [];
   for (const audited of AUDITED_TARBALLS) {
-    const locked = record(audited.name, ["version", "integrity"]);
+    const path =
+      retainedRecords.get(audited.name)?.path ?? `node_modules/${audited.name}`;
+    const locked = record(audited.name, path, ["version", "integrity"]);
     if (!locked) continue;
+    if (locked.integrity !== audited.integrity) {
+      errors.push(
+        `audited package integrity mismatch for ${audited.name}: package-lock=${locked.integrity} expected=${audited.integrity}`,
+      );
+    }
     expectedTarballRows.push([
       `${audited.name}@${locked.version}`,
       `\`${audited.gitHead}\``,
-      `\`${locked.integrity}\``,
+      `\`${audited.integrity}\``,
       `\`${audited.sha256}\``,
     ]);
   }
@@ -477,7 +553,22 @@ function verifyRetainedInventory(markdown, lockfile) {
   );
 
   for (const audited of AUDITED_FILES) {
-    const locked = record(audited.packageName, ["version"]);
+    const path =
+      retainedRecords.get(audited.packageName)?.path ??
+      `node_modules/${audited.packageName}`;
+    const locked = record(audited.packageName, path, ["version", "integrity"]);
+    const packageAudit = AUDITED_TARBALLS.find(
+      ({ name }) => name === audited.packageName,
+    );
+    if (!packageAudit) {
+      errors.push(
+        `audited-file package lacks an audited tarball: ${audited.packageName}`,
+      );
+    } else if (locked && locked.integrity !== packageAudit.integrity) {
+      errors.push(
+        `audited-file package integrity mismatch for ${audited.packageName}: package-lock=${locked.integrity} expected=${packageAudit.integrity}`,
+      );
+    }
     if (locked && locked.version !== audited.packageVersion) {
       errors.push(
         `audited-file package version mismatch for ${audited.packageName}: package-lock=${locked.version} audited=${audited.packageVersion}`,
@@ -550,6 +641,16 @@ export function verifyThirdParty({
     const locked = lockfiles.get(component)?.packages?.[`node_modules/${name}`];
     if (!locked?.version || !locked?.resolved || !locked?.license) {
       errors.push(`missing complete lockfile record: ${name}`);
+      continue;
+    }
+
+    if (
+      version.startsWith("npm:") ||
+      (locked.name !== undefined && locked.name !== name)
+    ) {
+      errors.push(
+        `npm package aliases are not supported in THIRDPARTY inventory: ${name} resolves to ${locked.name ?? version}`,
+      );
       continue;
     }
 

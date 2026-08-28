@@ -29,7 +29,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Verify third-party inventory contract
+      - name: Verify live third-party inventory contract
+        run: npm run verify:thirdparty
+
+      - name: Test third-party inventory contract
         run: npm run test:thirdparty
 
       - name: Review pull request dependencies

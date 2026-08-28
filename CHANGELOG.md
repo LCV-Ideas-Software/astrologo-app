@@ -4,7 +4,7 @@
 
 ### Alterado
 
-- O inventário `THIRDPARTY` passa a refletir integralmente as 41 relações diretas dos manifestos raiz e frontend, suas resoluções exatas, licenças, declarações de modificação e relações npm nas duas cópias distribuídas; um contrato local fail-closed no Dependency Review e nos dois caminhos de publicação impede drift, divergência entre as cópias e manifestos novos ainda não classificados (#346).
+- O inventário `THIRDPARTY` passa a refletir integralmente as 41 relações diretas dos manifestos raiz e frontend, suas resoluções exatas, licenças, declarações de modificação e relações npm nas duas cópias distribuídas; um contrato local fail-closed no Dependency Review e nos dois caminhos de publicação impede drift, aliases npm não declarados, resolução transitiva dissociada do pacote-pai, divergência criptográfica dos artefatos, cópias divergentes e manifestos novos ainda não classificados (#346).
 - A criação de Linear Releases após deploy bem-sucedido passa a usar a action oficial `linear/linear-release-action` v0.16.0, pinada por SHA completo; o gatilho pós-Deploy, o SHA publicado, o histórico Git completo, o environment dedicado e as permissões mínimas permanecem inalterados.
 - CodeQL, Dependency Review, OpenSSF Scorecard e Zizmor passam a usar diretamente as implementacoes oficiais, sem gate SARIF, reusable workflow, manifesto, scanner ou validador proprio.
 - O deploy passa a usar `cloudflare/wrangler-action` oficial; o identificador da D1 compartilhada fica versionado no `wrangler.json`, enquanto tokens e credenciais permanecem secretos.
