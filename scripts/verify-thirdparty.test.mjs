@@ -297,8 +297,8 @@ test("accepts the same package as both development and peer dependency", () => {
   assert.ok(viteRow);
   const peerRow = replaceRowCell(viteRow, 2, "peerDependencies");
   const candidate = canonical.replace(
-    "<!-- direct-dependencies:end -->",
-    `${peerRow}\n\n<!-- direct-dependencies:end -->`,
+    "\n\n<!-- direct-dependencies:end -->",
+    `\n${peerRow}\n\n<!-- direct-dependencies:end -->`,
   );
   assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
 });
@@ -322,8 +322,8 @@ test("optionalDependencies overrides the same dependencies entry", () => {
   const candidate = canonical
     .replace(`${reactRow}\n`, "")
     .replace(
-      "<!-- direct-dependencies:end -->",
-      `${optionalRow}\n\n<!-- direct-dependencies:end -->`,
+      "\n\n<!-- direct-dependencies:end -->",
+      `\n${optionalRow}\n\n<!-- direct-dependencies:end -->`,
     );
   assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
 });
@@ -358,8 +358,8 @@ test("rejects a duplicate direct dependency", () => {
 
 test("rejects an extra direct dependency", () => {
   const extra = canonical.replace(
-    "<!-- direct-dependencies:end -->",
-    "| astrologo-frontend/package.json | invented-package | dependencies | 1.0.0 | MIT | Não | https://example.invalid/invented.tgz |\n\n<!-- direct-dependencies:end -->",
+    "\n\n<!-- direct-dependencies:end -->",
+    "\n| astrologo-frontend/package.json | invented-package | dependencies | 1.0.0 | MIT | Não | https://example.invalid/invented.tgz |\n\n<!-- direct-dependencies:end -->",
   );
   assert.match(
     errorsFor(extra).join("\n"),
@@ -374,7 +374,41 @@ test("validates direct rows in a later table inside the bounded section", () => 
   );
   assert.match(
     errorsFor(extra).join("\n"),
-    /extra direct dependency: .* late-table-package/u,
+    /direct-dependency section must contain one contiguous renderable table/u,
+  );
+});
+
+test("rejects a direct-dependency table hidden in an HTML comment", () => {
+  const hidden = canonical
+    .replace(
+      "<!-- direct-dependencies:start -->",
+      "<!--\n<!-- direct-dependencies:start -->",
+    )
+    .replace(
+      "<!-- direct-dependencies:end -->",
+      "<!-- direct-dependencies:end -->\n-->",
+    );
+
+  assert.match(
+    errorsFor(hidden).join("\n"),
+    /direct-dependency section must contain one contiguous renderable table/u,
+  );
+});
+
+test("rejects a direct-dependency table hidden in a fenced code block", () => {
+  const hidden = canonical
+    .replace(
+      "<!-- direct-dependencies:start -->",
+      "```markdown\n<!-- direct-dependencies:start -->",
+    )
+    .replace(
+      "<!-- direct-dependencies:end -->",
+      "<!-- direct-dependencies:end -->\n```",
+    );
+
+  assert.match(
+    errorsFor(hidden).join("\n"),
+    /direct-dependency section must contain one contiguous renderable table/u,
   );
 });
 

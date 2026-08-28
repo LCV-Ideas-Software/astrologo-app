@@ -348,6 +348,73 @@ export function verifyPackageTopology(packageSets, trackedPackageFiles) {
   return errors;
 }
 
+function markdownContextAt(markdown, offset) {
+  let inHtmlComment = false;
+  let fence = null;
+
+  for (const line of markdown.slice(0, offset).split(/\r?\n/u)) {
+    if (fence) {
+      const closingFence = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/u);
+      if (
+        closingFence &&
+        closingFence[1][0] === fence.character &&
+        closingFence[1].length >= fence.length
+      ) {
+        fence = null;
+      }
+      continue;
+    }
+
+    let visible = "";
+    let cursor = 0;
+    while (cursor < line.length) {
+      if (inHtmlComment) {
+        const close = line.indexOf("-->", cursor);
+        if (close === -1) break;
+        inHtmlComment = false;
+        cursor = close + 3;
+        continue;
+      }
+
+      const open = line.indexOf("<!--", cursor);
+      if (open === -1) {
+        visible += line.slice(cursor);
+        break;
+      }
+      visible += line.slice(cursor, open);
+      inHtmlComment = true;
+      cursor = open + 4;
+    }
+
+    const openingFence = visible.match(/^ {0,3}(`{3,}|~{3,})/u);
+    if (openingFence) {
+      fence = {
+        character: openingFence[1][0],
+        length: openingFence[1].length,
+      };
+    }
+  }
+
+  return { inHtmlComment, inFence: fence !== null };
+}
+
+function assertRenderableMarker(markdown, offset, label) {
+  const context = markdownContextAt(markdown, offset);
+  const prefix = markdown.slice(0, offset);
+  const linePrefix = prefix.slice(prefix.lastIndexOf("\n") + 1);
+  const standaloneWithRenderableIndent = /^ {0,3}$/u.test(linePrefix);
+
+  if (
+    context.inHtmlComment ||
+    context.inFence ||
+    !standaloneWithRenderableIndent
+  ) {
+    throw new Error(
+      `${label} section must contain one contiguous renderable table`,
+    );
+  }
+}
+
 function markerSection(markdown, startMarker, endMarker, label) {
   const starts = markdown.split(startMarker).length - 1;
   const ends = markdown.split(endMarker).length - 1;
@@ -358,8 +425,12 @@ function markerSection(markdown, startMarker, endMarker, label) {
     );
   }
 
-  const start = markdown.indexOf(startMarker) + startMarker.length;
+  const startMarkerIndex = markdown.indexOf(startMarker);
   const end = markdown.indexOf(endMarker);
+  assertRenderableMarker(markdown, startMarkerIndex, label);
+  assertRenderableMarker(markdown, end, label);
+
+  const start = startMarkerIndex + startMarker.length;
   if (end <= start) {
     throw new Error(`${label} section markers are out of order`);
   }
@@ -371,6 +442,7 @@ function parseStrictTable(markdown, startMarker, endMarker, headers, label) {
   const rows = [];
   let headerCount = 0;
   let separatorCount = 0;
+  let phase = "before";
 
   for (const line of markerSection(
     markdown,
@@ -379,7 +451,23 @@ function parseStrictTable(markdown, startMarker, endMarker, headers, label) {
     label,
   ).split(/\r?\n/u)) {
     const trimmed = line.trim();
-    if (!trimmed.startsWith("|")) continue;
+    if (trimmed.length === 0) {
+      if (phase === "table") phase = "after";
+      continue;
+    }
+
+    const indentation = line.match(/^[ \t]*/u)?.[0] ?? "";
+    const isRenderableTableLine =
+      !indentation.includes("\t") &&
+      indentation.length <= 3 &&
+      trimmed.startsWith("|") &&
+      trimmed.endsWith("|");
+    if (!isRenderableTableLine || phase === "after") {
+      throw new Error(
+        `${label} section must contain one contiguous renderable table`,
+      );
+    }
+    phase = "table";
 
     const cells = trimmed
       .slice(1, -1)
@@ -409,6 +497,12 @@ function parseStrictTable(markdown, startMarker, endMarker, headers, label) {
   if (headerCount !== 1 || separatorCount !== 1) {
     throw new Error(
       `${label} table must contain exactly one header and separator; found header=${headerCount} separator=${separatorCount}`,
+    );
+  }
+
+  if (phase === "before") {
+    throw new Error(
+      `${label} section must contain one contiguous renderable table`,
     );
   }
 
