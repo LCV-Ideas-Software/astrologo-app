@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { dirname, posix } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -164,6 +165,71 @@ const AUDITED_FILES = [
       "`31d3406560fd39b91bc9dbfdff6c9111f170fde2db62ebe92581ae14e878744c`",
       "`f0929366006f037e45eb7085234623ec5fdc73f68cea7bf0c2696a038df979e3d346375a3b8123065863666801c234864a61d9042c6af961b7acdb455bad6de3`",
     ],
+  },
+];
+const LICENSE_NOTICES = [
+  {
+    name: "d3-geo",
+    marker: "d3-geo",
+    version: "3.1.1",
+    license: "ISC",
+    sha256: "844b6a5c76e57c5ac48b5f31593592cfd0a18d336301196b9a88180a9e654bac",
+  },
+  {
+    name: "topojson-client",
+    marker: "topojson-client",
+    version: "3.1.0",
+    license: "ISC",
+    sha256: "0db495888f6f3a264a6f7ebb770aea036eabfcdf20ac18a41048ae44773193fe",
+  },
+  {
+    name: "d3-array",
+    marker: "d3-array",
+    version: "3.2.4",
+    license: "ISC",
+    sha256: "8315057c0e6e9771e7faf93c0d83b637621f29a8c09cde898c01dd5cb3f7bd92",
+  },
+  {
+    name: "internmap",
+    marker: "internmap",
+    version: "2.0.3",
+    license: "ISC",
+    sha256: "ccd03c0c11d8e54de99d019f237392fcdf398b531bd6283c0225de52a363eea1",
+  },
+  {
+    name: "commander",
+    marker: "commander",
+    version: "2.20.3",
+    license: "MIT",
+    sha256: "08b73f3f363d69b2d0486531e24c8cfcc1b85b9bb9136974f0da0ca8a6a396b4",
+  },
+  {
+    name: "world-atlas",
+    marker: "world-atlas",
+    version: "2.0.2",
+    license: "ISC",
+    sha256: "5499a3e2e7d8e979ffda30214572d04c9eb2c5a5cef7a1e8a86022cc3df7ecc0",
+  },
+  {
+    name: "astronomy-engine",
+    marker: "astronomy-engine",
+    version: "2.1.19",
+    license: "MIT",
+    sha256: "58ef4adaa4cd3b473ac615044b54a04612f28b09bc58987eff2e0b12d849a93c",
+  },
+  {
+    name: "@js-temporal/polyfill",
+    marker: "js-temporal-polyfill",
+    version: "0.5.1",
+    license: "ISC",
+    sha256: "8cd6658f27d69560bba47ffacbd4e6d9d38f79f080070db30123d4c795ef7e8f",
+  },
+  {
+    name: "jsbi",
+    marker: "jsbi",
+    version: "4.3.2",
+    license: "Apache-2.0",
+    sha256: "7acf39dce16943e3539bf254894485bb4a5b7041014a6ef67531761cae0ec078",
   },
 ];
 
@@ -630,6 +696,51 @@ function verifyRetainedInventory(markdown, lockfile) {
       "audited-file",
     ),
   );
+
+  const noticeSection = markdown.slice(
+    markdown.indexOf("## Avisos de licenças permissivas"),
+  );
+  const noticeHeadings = noticeSection.match(/^### .+$/gmu) ?? [];
+  if (noticeHeadings.length !== LICENSE_NOTICES.length) {
+    errors.push(
+      `license-notice heading count mismatch: THIRDPARTY=${noticeHeadings.length} expected=${LICENSE_NOTICES.length}`,
+    );
+  }
+  for (const notice of LICENSE_NOTICES) {
+    const path =
+      retainedRecords.get(notice.name)?.path ?? `node_modules/${notice.name}`;
+    const locked = record(notice.name, path, ["version", "license"]);
+    if (!locked) continue;
+    if (locked.version !== notice.version) {
+      errors.push(
+        `license-notice version mismatch for ${notice.name}: package-lock=${locked.version} audited=${notice.version}`,
+      );
+    }
+    if (locked.license !== notice.license) {
+      errors.push(
+        `license-notice upstream license mismatch for ${notice.name}: package-lock=${locked.license} audited=${notice.license}`,
+      );
+    }
+
+    let section;
+    try {
+      section = markerSection(
+        markdown,
+        `<!-- license-notice:${notice.marker}:start -->`,
+        `<!-- license-notice:${notice.marker}:end -->`,
+        `license-notice ${notice.name}`,
+      );
+    } catch (error) {
+      errors.push(error.message);
+      continue;
+    }
+    const actualHash = createHash("sha256").update(section).digest("hex");
+    if (actualHash !== notice.sha256) {
+      errors.push(
+        `license-notice content mismatch for ${notice.name}: sha256=${actualHash} audited=${notice.sha256}`,
+      );
+    }
+  }
 
   return errors;
 }

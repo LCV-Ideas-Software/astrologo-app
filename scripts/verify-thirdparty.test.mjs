@@ -471,6 +471,57 @@ test("rejects an unrelated source for a retained package identity", () => {
   );
 });
 
+test("binds a retained license notice to the resolved package version", () => {
+  const candidatePackageSets = structuredClone(packageSets);
+  const frontend = packageSet(
+    candidatePackageSets,
+    "astrologo-frontend/package.json",
+  );
+  const retained = frontend.lockfile.packages["node_modules/d3-array"];
+  assert.ok(retained?.version && retained.resolved);
+  const nextVersion = "3.2.5";
+  retained.version = nextVersion;
+  retained.resolved =
+    `https://registry.npmjs.org/d3-array/-/d3-array-${nextVersion}.tgz`;
+  const row = canonical
+    .split(/\r?\n/u)
+    .find((line) => line.includes("d3-array (dependência transitiva"));
+  assert.ok(row);
+  const updatedRow = replaceRowCell(
+    replaceRowCell(row, 1, nextVersion),
+    4,
+    `https://github.com/d3/d3-array/tree/v${nextVersion}`,
+  );
+  const candidate = canonical.replace(row, updatedRow);
+
+  assert.match(
+    errorsFor(candidate, candidate, candidatePackageSets).join("\n"),
+    /license-notice version mismatch for d3-array/u,
+  );
+});
+
+test("rejects a changed retained license notice body", () => {
+  const candidate = canonical.replace(
+    "Copyright 2010-2023 Mike Bostock",
+    "Copyright fixture-stale Mike Bostock",
+  );
+  assert.match(
+    errorsFor(candidate, candidate).join("\n"),
+    /license-notice content mismatch for d3-array/u,
+  );
+});
+
+test("rejects an unclassified additional license notice", () => {
+  const candidate = canonical.replace(
+    "<!-- license-notice:jsbi:end -->",
+    "<!-- license-notice:jsbi:end -->\n\n### future-package 1.0.0 — MIT",
+  );
+  assert.match(
+    errorsFor(candidate, candidate).join("\n"),
+    /license-notice heading count mismatch/u,
+  );
+});
+
 test("rejects stale audited artifact metadata", () => {
   const jsbi = canonical
     .split(/\r?\n/u)

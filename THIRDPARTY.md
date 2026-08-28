@@ -119,6 +119,8 @@ O aviso especial da Swiss Ephemeris deve ser preservado integralmente; ele está
 
 ## Avisos de licenças permissivas
 
+<!-- license-notice:d3-geo:start -->
+
 ### d3-geo 3.1.1 — ISC e GeographicLib — MIT
 
 ```text
@@ -158,6 +160,10 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
+<!-- license-notice:d3-geo:end -->
+
+<!-- license-notice:topojson-client:start -->
+
 ### topojson-client 3.1.0 — ISC
 
 ```text
@@ -175,6 +181,10 @@ OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ```
+
+<!-- license-notice:topojson-client:end -->
+
+<!-- license-notice:d3-array:start -->
 
 ### d3-array 3.2.4 — ISC
 
@@ -194,6 +204,10 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ```
 
+<!-- license-notice:d3-array:end -->
+
+<!-- license-notice:internmap:start -->
+
 ### internmap 2.0.3 — ISC
 
 ```text
@@ -211,6 +225,10 @@ OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ```
+
+<!-- license-notice:internmap:end -->
+
+<!-- license-notice:commander:start -->
 
 ### commander 2.20.3 — MIT
 
@@ -235,6 +253,10 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
+<!-- license-notice:commander:end -->
+
+<!-- license-notice:world-atlas:start -->
+
 ### world-atlas 2.0.2 — ISC
 
 ```text
@@ -252,6 +274,10 @@ OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ```
+
+<!-- license-notice:world-atlas:end -->
+
+<!-- license-notice:astronomy-engine:start -->
 
 ### Astronomy Engine 2.1.19 — MIT
 
@@ -279,6 +305,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+<!-- license-notice:astronomy-engine:end -->
+
+<!-- license-notice:js-temporal-polyfill:start -->
+
 ### @js-temporal/polyfill 0.5.1 — ISC
 
 ```text
@@ -296,6 +326,10 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ```
+
+<!-- license-notice:js-temporal-polyfill:end -->
+
+<!-- license-notice:jsbi:start -->
 
 ### jsbi 4.3.2 — Apache License 2.0
 
@@ -479,3 +513,5 @@ A distribuição upstream não contém arquivo `NOTICE`. A cópia exigida da lic
 
    END OF TERMS AND CONDITIONS
 ```
+
+<!-- license-notice:jsbi:end -->
