@@ -42,13 +42,13 @@ jobs:
         working-directory: .
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Verify third-party inventory contract
-        working-directory: .
-        run: npm run verify:thirdparty
-
       - name: Install frontend dependencies
         working-directory: astrologo-frontend
         run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify third-party inventory contract
+        working-directory: .
+        run: npm run verify:thirdparty
 
       - name: Validate application
         working-directory: astrologo-frontend

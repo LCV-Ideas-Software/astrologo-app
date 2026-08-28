@@ -6,7 +6,8 @@
     "format:public": "prettier --write \"**/index.html\"",
     "format:public:check": "prettier --check \"**/index.html\"",
     "lint": "eslint .",
-    "verify:thirdparty": "node scripts/verify-thirdparty.mjs",
+    "generate:thirdparty": "node scripts/verify-thirdparty.mjs --write",
+    "verify:thirdparty": "node scripts/verify-thirdparty.mjs --check",
     "test:thirdparty": "node --test scripts/verify-thirdparty.test.mjs"
   },
   "devDependencies": {
@@ -17,7 +18,6 @@
     "eslint-plugin-react-refresh": "^0.5.4",
     "globals": "^17.11.0",
     "prettier": "^3.9.6",
-    "semver": "^7.8.5",
     "typescript-eslint": "^8.67.0"
   },
   "overrides": {

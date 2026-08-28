@@ -10,6 +10,7 @@ const LEGAL_FILES = {
   LICENSE: `${LEGAL_PUBLIC_BASE}LICENSE.txt`,
   NOTICE: `${LEGAL_PUBLIC_BASE}NOTICE.txt`,
   THIRDPARTY: `${LEGAL_PUBLIC_BASE}THIRDPARTY.md`,
+  BUNDLED_LICENSES: `${LEGAL_PUBLIC_BASE}BUNDLED-LICENSES.md`,
 } as const;
 
 type DocsState = {
@@ -113,29 +114,73 @@ export function LicencasModule() {
         Conformidade e Licenças (Open Source Compliance)
       </h1>
       <p style={{ color: '#5f6368', marginBottom: '32px' }}>
-        Este sistema opera sob a GNU Affero General Public License v3 (AGPLv3), com avisos e componentes de terceiros
-        sob Apache License 2.0 devidamente documentados em NOTICE e THIRDPARTY.md.
+        O código do aplicativo é disponibilizado sob a GNU Affero General Public License v3 ou posterior
+        (AGPL-3.0-or-later). Os componentes de terceiros preservam suas próprias licenças, incluindo MIT, ISC,
+        Apache-2.0, MPL-2.0 e AGPL-3.0, conforme documentado em NOTICE, THIRDPARTY.md e no relatório do bundle do
+        navegador.
       </p>
 
       <section style={sectionStyle}>
-        <h2 style={{ color: '#1a73e8', borderBottom: '2px solid #e8eaed', paddingBottom: '8px', marginBottom: '16px' }}>
+        <h2
+          style={{
+            color: '#1a73e8',
+            borderBottom: '2px solid #e8eaed',
+            paddingBottom: '8px',
+            marginBottom: '16px',
+          }}
+        >
           GNU AGPLv3 (LICENSE)
         </h2>
         {renderJustifiedParagraphs(content.LICENSE)}
       </section>
 
       <section style={sectionStyle}>
-        <h2 style={{ color: '#1a73e8', borderBottom: '2px solid #e8eaed', paddingBottom: '8px', marginBottom: '16px' }}>
-          Avisos de Autoria e Patentes (NOTICE / Apache 2.0)
+        <h2
+          style={{
+            color: '#1a73e8',
+            borderBottom: '2px solid #e8eaed',
+            paddingBottom: '8px',
+            marginBottom: '16px',
+          }}
+        >
+          Avisos de Autoria, Licenciamento e Patentes (NOTICE)
         </h2>
         {renderJustifiedParagraphs(content.NOTICE)}
       </section>
 
       <section style={sectionStyle}>
-        <h2 style={{ color: '#1a73e8', borderBottom: '2px solid #e8eaed', paddingBottom: '8px', marginBottom: '16px' }}>
+        <h2
+          style={{
+            color: '#1a73e8',
+            borderBottom: '2px solid #e8eaed',
+            paddingBottom: '8px',
+            marginBottom: '16px',
+          }}
+        >
           Componentes de Terceiros (THIRDPARTY)
         </h2>
         <pre style={preStyle}>{content.THIRDPARTY}</pre>
+      </section>
+
+      <section style={sectionStyle}>
+        <h2
+          style={{
+            color: '#1a73e8',
+            borderBottom: '2px solid #e8eaed',
+            paddingBottom: '8px',
+            marginBottom: '16px',
+          }}
+        >
+          Licenças das Dependências Empacotadas
+        </h2>
+        <p style={{ ...paragraphStyle, textIndent: 0 }}>
+          O build oficial do Vite gera o relatório integral das licenças efetivamente incorporadas ao bundle do
+          navegador.{' '}
+          <a href={LEGAL_FILES.BUNDLED_LICENSES} target="_blank" rel="noopener noreferrer">
+            Abrir BUNDLED-LICENSES.md
+          </a>
+          .
+        </p>
       </section>
     </div>
   );
