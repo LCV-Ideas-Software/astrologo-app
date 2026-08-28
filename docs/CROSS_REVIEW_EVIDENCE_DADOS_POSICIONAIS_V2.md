@@ -113,7 +113,7 @@ Duration 2.00s
 - `functions/api/_shared/swissRuntime.test.ts:19`: fixture real do WASM Placidus.
 - `admin-app/src/lib/astrological-position-v2.ts:490`: vínculo `calculationId`/mapa.
 - `admin-app/src/modules/astrologo/AstrologoModule.tsx:326`, `:340` e `:385`: ownership do relatório.
-- `functions/api/_shared/requestSecurity.ts:38` e `:55`: allowlist de origem HTTPS LCV.
+- `functions/api/_shared/requestSecurity.ts:38` e `:55`: allowlist de origem HTTPS da LCV Ideas & Software.
 - `THIRDPARTY.md:27` a `:61` e `NOTICE:11` a `:81`: hashes, commits, licenças e oferta de fonte.
 
 ## Evidência numérica e catálogos
