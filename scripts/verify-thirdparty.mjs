@@ -328,10 +328,23 @@ function validateLockedSource({ name, requested, locked, context, errors }) {
   if (isGitSpec(requested)) {
     const requestedIdentity = gitRepositoryIdentity(requested);
     const resolvedIdentity = gitRepositoryIdentity(locked.resolved);
+    const requestedFragment = requested.includes("#")
+      ? requested.slice(requested.lastIndexOf("#") + 1)
+      : null;
+    const resolvedFragment = locked.resolved.includes("#")
+      ? locked.resolved.slice(locked.resolved.lastIndexOf("#") + 1)
+      : null;
+    const requestedCommit = /^[0-9a-f]{40}$/iu.test(requestedFragment ?? "")
+      ? requestedFragment.toLowerCase()
+      : null;
+    const resolvedCommit = /^[0-9a-f]{40}$/iu.test(resolvedFragment ?? "")
+      ? resolvedFragment.toLowerCase()
+      : null;
     if (
       !requestedIdentity ||
       requestedIdentity !== resolvedIdentity ||
-      !/#[0-9a-f]{40}$/iu.test(locked.resolved)
+      !resolvedCommit ||
+      (requestedCommit !== null && requestedCommit !== resolvedCommit)
     ) {
       errors.push(
         `locked Git source mismatch for ${context} ${name}: requested=${requested} package-lock=${locked.resolved}`,

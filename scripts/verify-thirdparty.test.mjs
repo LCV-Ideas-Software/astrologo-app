@@ -324,6 +324,19 @@ test("rejects a Git lock resolved from another repository", () => {
   );
 });
 
+test("binds an exact requested Git commit to the resolved commit", () => {
+  const { candidate, candidatePackageSets } = withReactSource({
+    requested:
+      "git+https://github.com/facebook/react.git#aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    resolved:
+      "git+https://github.com/facebook/react.git#bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  });
+  assert.match(
+    errorsFor(candidate, candidate, candidatePackageSets).join("\n"),
+    /locked Git source mismatch .* react/u,
+  );
+});
+
 test("rejects a changed upstream license behind a legal display override", () => {
   const candidatePackageSets = structuredClone(packageSets);
   packageSet(
