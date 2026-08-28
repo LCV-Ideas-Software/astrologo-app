@@ -14,6 +14,8 @@ const [
   frontendLockfileText,
   canonical,
   publicCopy,
+  canonicalNotice,
+  publicNotice,
 ] = await Promise.all([
   readFile(new URL("../package.json", import.meta.url), "utf8"),
   readFile(new URL("../package-lock.json", import.meta.url), "utf8"),
@@ -31,6 +33,11 @@ const [
       "../astrologo-frontend/public/legal/THIRDPARTY.md",
       import.meta.url,
     ),
+    "utf8",
+  ),
+  readFile(new URL("../NOTICE", import.meta.url), "utf8"),
+  readFile(
+    new URL("../astrologo-frontend/public/legal/NOTICE.txt", import.meta.url),
     "utf8",
   ),
 ]);
@@ -86,22 +93,33 @@ function errorsFor(
   publicMarkdown = markdown,
   candidatePackageSets = packageSets,
   candidateTrackedPackageFiles = trackedPackageFiles,
+  candidateNotice = canonicalNotice,
+  candidatePublicNotice = candidateNotice,
 ) {
   return verifyThirdParty({
     packageSets: candidatePackageSets,
     trackedPackageFiles: candidateTrackedPackageFiles,
     canonical: markdown,
     publicCopy: publicMarkdown,
+    canonicalNotice: candidateNotice,
+    publicNotice: candidatePublicNotice,
   });
 }
 
-function withViteManifestSpec(manifestSpec, markdownSpec) {
+function withViteManifestSpec(
+  manifestSpec,
+  markdownSpec,
+  { syncLockSpec = true } = {},
+) {
   const candidatePackageSets = structuredClone(packageSets);
   const frontend = packageSet(
     candidatePackageSets,
     "astrologo-frontend/package.json",
   );
   frontend.manifest.devDependencies.vite = manifestSpec;
+  if (syncLockSpec) {
+    frontend.lockfile.packages[""].devDependencies.vite = manifestSpec;
+  }
   const viteRow = directRowLine(canonical, {
     component: "astrologo-frontend/package.json",
     name: "vite",
@@ -159,6 +177,18 @@ test("rejects a lockfile-only resolved update", () => {
   );
 });
 
+test("rejects a manifest range that is incompatible with locked metadata", () => {
+  const { candidate, candidatePackageSets } = withViteManifestSpec(
+    "^99.0.0",
+    "^99.0.0",
+    { syncLockSpec: false },
+  );
+  assert.match(
+    errorsFor(candidate, candidate, candidatePackageSets).join("\n"),
+    /locked manifest spec mismatch .* vite/u,
+  );
+});
+
 test("rejects an inaccurate direct license", () => {
   const react = parseDirectDependencies(canonical).find(
     (row) =>
@@ -187,6 +217,7 @@ test("rejects npm aliases that obscure the locked package identity", () => {
   );
   const aliasSpec = "npm:preact@10.28.0";
   frontend.manifest.dependencies.react = aliasSpec;
+  frontend.lockfile.packages[""].dependencies.react = aliasSpec;
   frontend.lockfile.packages["node_modules/react"] = {
     name: "preact",
     version: "10.28.0",
@@ -200,11 +231,7 @@ test("rejects npm aliases that obscure the locked package identity", () => {
   });
   assert.ok(reactRow);
   const aliasRow = replaceRowCell(
-    replaceRowCell(
-      replaceRowCell(reactRow, 3, aliasSpec),
-      4,
-      "MIT",
-    ),
+    replaceRowCell(replaceRowCell(reactRow, 3, aliasSpec), 4, "MIT"),
     6,
     "https://registry.npmjs.org/preact/-/preact-10.28.0.tgz",
   );
@@ -255,6 +282,9 @@ test("includes optional dependencies in the direct inventory", () => {
     "astrologo-frontend/package.json",
   );
   frontend.manifest.optionalDependencies = { "optional-test": "1.0.0" };
+  frontend.lockfile.packages[""].optionalDependencies = {
+    "optional-test": "1.0.0",
+  };
   frontend.lockfile.packages["node_modules/optional-test"] = {
     version: "1.0.0",
     resolved:
@@ -277,6 +307,9 @@ test("includes installed optional peer dependencies in the direct inventory", ()
   frontend.manifest.peerDependenciesMeta = {
     "peer-test": { optional: true },
   };
+  frontend.lockfile.packages[""].peerDependencies = {
+    "peer-test": "^1.0.0",
+  };
   frontend.lockfile.packages["node_modules/peer-test"] = {
     version: "1.0.0",
     resolved: "https://registry.npmjs.org/peer-test/-/peer-test-1.0.0.tgz",
@@ -298,6 +331,9 @@ test("omits an optional peer dependency that is not installed", () => {
   frontend.manifest.peerDependenciesMeta = {
     "optional-peer-test": { optional: true },
   };
+  frontend.lockfile.packages[""].peerDependencies = {
+    "optional-peer-test": "^1.0.0",
+  };
   assert.deepEqual(errorsFor(canonical, publicCopy, candidatePackageSets), []);
 });
 
@@ -308,6 +344,9 @@ test("accepts the same package as both development and peer dependency", () => {
     "astrologo-frontend/package.json",
   );
   frontend.manifest.peerDependencies = {
+    vite: frontend.manifest.devDependencies.vite,
+  };
+  frontend.lockfile.packages[""].peerDependencies = {
     vite: frontend.manifest.devDependencies.vite,
   };
   const viteRow = directRowLine(canonical, {
@@ -331,6 +370,9 @@ test("optionalDependencies overrides the same dependencies entry", () => {
     "astrologo-frontend/package.json",
   );
   frontend.manifest.optionalDependencies = {
+    react: frontend.manifest.dependencies.react,
+  };
+  frontend.lockfile.packages[""].optionalDependencies = {
     react: frontend.manifest.dependencies.react,
   };
   const reactRow = directRowLine(canonical, {
@@ -453,6 +495,30 @@ test("rejects legal tables wrapped in raw HTML containers", () => {
       /direct-dependency section must contain one contiguous renderable table/u,
     );
   }
+});
+
+test("treats a slash on a non-void raw HTML tag as an open container", () => {
+  const hidden = canonical
+    .replace(
+      "<!-- direct-dependencies:start -->",
+      "<div hidden />\n<!-- direct-dependencies:start -->",
+    )
+    .replace(
+      "<!-- direct-dependencies:end -->",
+      "<!-- direct-dependencies:end -->\n</div>",
+    );
+  assert.match(
+    errorsFor(hidden).join("\n"),
+    /direct-dependency section must contain one contiguous renderable table/u,
+  );
+});
+
+test("accepts a void HTML element before a legal table marker", () => {
+  const visible = canonical.replace(
+    "<!-- direct-dependencies:start -->",
+    "<br />\n<!-- direct-dependencies:start -->",
+  );
+  assert.deepEqual(errorsFor(visible, visible), []);
 });
 
 test("decodes escaped pipes in direct dependency cells", () => {
@@ -666,11 +732,9 @@ test("rejects aliases in retained dependency resolution", () => {
   const parent = frontend.lockfile.packages["node_modules/d3-geo"];
   const retained = frontend.lockfile.packages["node_modules/d3-array"];
   assert.ok(parent?.dependencies?.["d3-array"] && retained?.version);
-  parent.dependencies["d3-array"] =
-    `npm:other-package@${retained.version}`;
+  parent.dependencies["d3-array"] = `npm:other-package@${retained.version}`;
   retained.name = "other-package";
-  retained.resolved =
-    `https://registry.npmjs.org/other-package/-/other-package-${retained.version}.tgz`;
+  retained.resolved = `https://registry.npmjs.org/other-package/-/other-package-${retained.version}.tgz`;
 
   assert.match(
     errorsFor(canonical, publicCopy, candidatePackageSets).join("\n"),
@@ -686,8 +750,7 @@ test("rejects an unrelated source for a retained package identity", () => {
   );
   const retained = frontend.lockfile.packages["node_modules/d3-array"];
   assert.ok(retained?.version && retained.resolved);
-  retained.resolved =
-    `https://registry.npmjs.org/other-package/-/other-package-${retained.version}.tgz`;
+  retained.resolved = `https://registry.npmjs.org/other-package/-/other-package-${retained.version}.tgz`;
 
   assert.match(
     errorsFor(canonical, publicCopy, candidatePackageSets).join("\n"),
@@ -705,8 +768,7 @@ test("binds a retained license notice to the resolved package version", () => {
   assert.ok(retained?.version && retained.resolved);
   const nextVersion = "3.2.5";
   retained.version = nextVersion;
-  retained.resolved =
-    `https://registry.npmjs.org/d3-array/-/d3-array-${nextVersion}.tgz`;
+  retained.resolved = `https://registry.npmjs.org/d3-array/-/d3-array-${nextVersion}.tgz`;
   const row = canonical
     .split(/\r?\n/u)
     .find((line) => line.includes("d3-array (dependência transitiva"));
@@ -858,6 +920,61 @@ test("rejects divergence between distributed copies", () => {
     errorsFor(canonical, `${publicCopy}\n`).join("\n"),
     /THIRDPARTY\.md.*differ/u,
   );
+});
+
+test("rejects divergence between distributed NOTICE copies", () => {
+  assert.match(
+    errorsFor(
+      canonical,
+      publicCopy,
+      packageSets,
+      trackedPackageFiles,
+      canonicalNotice,
+      `${publicNotice}\n`,
+    ).join("\n"),
+    /NOTICE and astrologo-frontend\/public\/legal\/NOTICE\.txt differ/u,
+  );
+});
+
+test("binds every duplicated NOTICE datum to the audited inventory", () => {
+  const astronomy = packageSet(packageSets, "astrologo-frontend/package.json")
+    .lockfile.packages["node_modules/astronomy-engine"];
+  assert.ok(astronomy?.version);
+  const replaceLastCharacter = (value) =>
+    `${value.slice(0, -1)}${value.endsWith("0") ? "1" : "0"}`;
+  const metadata = [
+    `astronomy-engine ${astronomy.version}`,
+    canonicalNotice.match(/^SHA-256: (\S+)$/mu)?.[1],
+    canonicalNotice.match(/^SHA-512: (\S+)$/mu)?.[1],
+    canonicalNotice.match(/^Tamanho: (\d+) bytes$/mu)?.[1],
+    canonicalNotice.match(
+      /^Versão retornada por swe_version\(\): (\S+)$/mu,
+    )?.[1],
+    canonicalNotice.match(
+      /https:\/\/github\.com\/fusionstrings\/swiss-eph\/tree\/(\w+)/u,
+    )?.[1],
+    canonicalNotice.match(
+      /https:\/\/github\.com\/aloistr\/swisseph\/tree\/(\w+)/u,
+    )?.[1],
+  ];
+  for (const value of metadata) {
+    assert.ok(value);
+    const staleNotice = canonicalNotice.replace(
+      value,
+      replaceLastCharacter(value),
+    );
+    assert.match(
+      errorsFor(
+        canonical,
+        publicCopy,
+        packageSets,
+        trackedPackageFiles,
+        staleNotice,
+        staleNotice,
+      ).join("\n"),
+      /NOTICE audited metadata mismatch/u,
+    );
+  }
 });
 
 test("rejects a missing direct-dependency section", () => {

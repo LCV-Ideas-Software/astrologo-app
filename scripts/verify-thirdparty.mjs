@@ -85,6 +85,10 @@ const MODIFICATION_OVERRIDES = new Map([
     "Não; o módulo é consumido sem alteração",
   ],
 ]);
+const SWISS_EPHEMERIS = {
+  version: "2.10.03",
+  sourceRevision: "5ae0bce00dbc66c6315c86da20518e3dd138255b",
+};
 const AUDITED_TARBALLS = [
   {
     name: "astronomy-engine",
@@ -277,13 +281,7 @@ function expectedRegistrySource(name, version) {
   return `https://registry.npmjs.org/${name}/-/${tarballName}-${version}.tgz`;
 }
 
-function validateLockedIdentity({
-  name,
-  requested,
-  locked,
-  context,
-  errors,
-}) {
+function validateLockedIdentity({ name, requested, locked, context, errors }) {
   if (!locked.version || !locked.resolved) {
     errors.push(`missing locked identity metadata for ${context} ${name}`);
     return false;
@@ -302,6 +300,24 @@ function validateLockedIdentity({
   if (locked.resolved !== expectedSource) {
     errors.push(
       `locked source mismatch for ${context} ${name}: package-lock=${locked.resolved} expected=${expectedSource}`,
+    );
+    return false;
+  }
+  return true;
+}
+
+function validateLockedManifestSpec({
+  name,
+  requested,
+  relation,
+  lockfile,
+  context,
+  errors,
+}) {
+  const lockedRequested = lockfile.packages?.[""]?.[relation]?.[name];
+  if (lockedRequested !== requested) {
+    errors.push(
+      `locked manifest spec mismatch for ${context} ${relation} ${name}: package.json=${requested} package-lock=${lockedRequested ?? "missing"}`,
     );
     return false;
   }
@@ -408,16 +424,14 @@ function markdownContextAt(markdown, offset) {
     "track",
     "wbr",
   ]);
-  const htmlTag =
-    /<\s*(\/?)\s*([A-Za-z][A-Za-z0-9-]*)(?=\s|\/?>)[^<>]*?>/gu;
+  const htmlTag = /<\s*(\/?)\s*([A-Za-z][A-Za-z0-9-]*)(?=\s|\/?>)[^<>]*?>/gu;
   for (const match of visibleOutsideFences.join("\n").matchAll(htmlTag)) {
     const closing = match[1] === "/";
     const name = match[2].toLowerCase();
-    const selfClosing = /\/\s*>$/u.test(match[0]);
     if (closing) {
       const openIndex = htmlContainers.lastIndexOf(name);
       if (openIndex !== -1) htmlContainers.splice(openIndex);
-    } else if (!selfClosing && !voidElements.has(name)) {
+    } else if (!voidElements.has(name)) {
       htmlContainers.push(name);
     }
   }
@@ -453,7 +467,7 @@ function assertRenderableMarker(markdown, offset, marker, label) {
 }
 
 const ASCII_PUNCTUATION = new Set(
-  Array.from('!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'),
+  Array.from("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"),
 );
 const MARKDOWN_ENTITIES = new Map([
   ["amp", "&"],
@@ -467,9 +481,9 @@ const MARKDOWN_ENTITIES = new Map([
 ]);
 
 function decodeEntityAt(value, offset, label) {
-  const candidate = value.slice(offset).match(
-    /^&(?:#([0-9]+)|#[xX]([0-9A-Fa-f]+)|([A-Za-z][A-Za-z0-9]+));/u,
-  );
+  const candidate = value
+    .slice(offset)
+    .match(/^&(?:#([0-9]+)|#[xX]([0-9A-Fa-f]+)|([A-Za-z][A-Za-z0-9]+));/u);
   if (!candidate) return null;
 
   let decoded;
@@ -610,12 +624,7 @@ function markerSection(markdown, startMarker, endMarker, label) {
 
 function parseStrictTable(markdown, startMarker, endMarker, headers, label) {
   const rows = [];
-  const section = markerSection(
-    markdown,
-    startMarker,
-    endMarker,
-    label,
-  );
+  const section = markerSection(markdown, startMarker, endMarker, label);
   const leadingBreak = section.startsWith("\r\n")
     ? "\r\n"
     : section.startsWith("\n")
@@ -900,11 +909,10 @@ function verifyRetainedInventory(markdown, lockfile) {
       errors,
     );
     if (!resolved) continue;
-    const locked = record(
-      definition.name,
-      resolved.path,
-      ["version", "license"],
-    );
+    const locked = record(definition.name, resolved.path, [
+      "version",
+      "license",
+    ]);
     if (!locked) continue;
     retainedRecords.set(definition.name, resolved);
     expectedRetainedRows.push([
@@ -917,10 +925,10 @@ function verifyRetainedInventory(markdown, lockfile) {
   }
   expectedRetainedRows.push([
     "Swiss Ephemeris incorporada no WASM",
-    "`swe_version() = 2.10.03`; fonte `5ae0bce00dbc66c6315c86da20518e3dd138255b`",
+    `\`swe_version() = ${SWISS_EPHEMERIS.version}\`; fonte \`${SWISS_EPHEMERIS.sourceRevision}\``,
     "AGPL-3.0-only, conforme a opção AGPL da licença dual",
     "Não pelo projeto Astrologo",
-    "https://github.com/aloistr/swisseph/tree/5ae0bce00dbc66c6315c86da20518e3dd138255b",
+    `https://github.com/aloistr/swisseph/tree/${SWISS_EPHEMERIS.sourceRevision}`,
   ]);
   errors.push(
     ...compareExactRows(
@@ -1031,11 +1039,76 @@ function verifyRetainedInventory(markdown, lockfile) {
   return errors;
 }
 
+function verifyDistributedNotice(canonicalNotice, publicNotice, lockfile) {
+  const errors = [];
+  if (typeof canonicalNotice !== "string" || typeof publicNotice !== "string") {
+    errors.push("missing canonical or distributed NOTICE input");
+    return errors;
+  }
+  if (canonicalNotice !== publicNotice) {
+    errors.push("NOTICE and astrologo-frontend/public/legal/NOTICE.txt differ");
+  }
+
+  const record = (name) => lockfile.packages?.[`node_modules/${name}`];
+  const astronomy = record("astronomy-engine");
+  const temporal = record("@js-temporal/polyfill");
+  const jsbi = resolveDependencyRecord(
+    lockfile,
+    "node_modules/@js-temporal/polyfill",
+    "jsbi",
+    errors,
+  )?.locked;
+  const swiss = record("@fusionstrings/swiss-eph");
+  const swissArtifact = AUDITED_FILES.find(
+    ({ packageName, row }) =>
+      packageName === "@fusionstrings/swiss-eph" &&
+      row[0].includes("swiss-eph-wasi.wasm"),
+  );
+  const swissTarball = AUDITED_TARBALLS.find(
+    ({ name }) => name === "@fusionstrings/swiss-eph",
+  );
+  if (
+    !astronomy?.version ||
+    !astronomy.license ||
+    !temporal?.version ||
+    !temporal.license ||
+    !jsbi?.version ||
+    !jsbi.license ||
+    !swiss?.version ||
+    !swissArtifact ||
+    !swissTarball
+  ) {
+    errors.push("missing locked or audited metadata required by NOTICE");
+    return errors;
+  }
+
+  const normalized = canonicalNotice.replace(/\s+/gu, " ").trim();
+  const unquote = (value) => value.replace(/^`|`$/gu, "");
+  const requiredMetadata = [
+    `Esta distribuição incorpora astronomy-engine ${astronomy.version} (${astronomy.license}), @js-temporal/polyfill ${temporal.version} (${temporal.license}), sua dependência transitiva jsbi ${jsbi.version} (${jsbi.license}) e um binário WebAssembly derivado da Swiss Ephemeris.`,
+    `resolve o export \`./wasm-wasi\` publicado em @fusionstrings/swiss-eph@${swiss.version}`,
+    `SHA-256: ${unquote(swissArtifact.row[2])}`,
+    `SHA-512: ${unquote(swissArtifact.row[3])}`,
+    `Tamanho: ${swissArtifact.row[1]}`,
+    `Versão retornada por swe_version(): ${SWISS_EPHEMERIS.version}`,
+    `https://github.com/fusionstrings/swiss-eph/tree/${swissTarball.gitHead}`,
+    `https://github.com/aloistr/swisseph/tree/${SWISS_EPHEMERIS.sourceRevision}`,
+  ];
+  for (const metadata of requiredMetadata) {
+    if (!normalized.includes(metadata)) {
+      errors.push(`NOTICE audited metadata mismatch: ${metadata}`);
+    }
+  }
+  return errors;
+}
+
 export function verifyThirdParty({
   packageSets,
   trackedPackageFiles,
   canonical,
   publicCopy,
+  canonicalNotice,
+  publicNotice,
 }) {
   const errors = [];
   errors.push(...verifyPackageTopology(packageSets, trackedPackageFiles));
@@ -1064,6 +1137,13 @@ export function verifyThirdParty({
     errors.push("missing configured frontend lockfile");
   } else {
     errors.push(...verifyRetainedInventory(canonical, frontendLockfile));
+    errors.push(
+      ...verifyDistributedNotice(
+        canonicalNotice,
+        publicNotice,
+        frontendLockfile,
+      ),
+    );
   }
 
   for (const entry of expected) {
@@ -1088,6 +1168,18 @@ export function verifyThirdParty({
       errors.push(`missing complete lockfile record: ${name}`);
       continue;
     }
+
+    if (
+      !validateLockedManifestSpec({
+        name,
+        requested: version,
+        relation,
+        lockfile: lockfiles.get(component),
+        context: component,
+        errors,
+      })
+    )
+      continue;
 
     if (
       !validateLockedIdentity({
@@ -1146,29 +1238,38 @@ export function verifyThirdParty({
 }
 
 async function main() {
-  const [packageSets, canonical, publicCopy] = await Promise.all([
-    Promise.all(
-      PACKAGE_SETS.map(async ({ component, manifestUrl, lockfileUrl }) => {
-        const [manifestText, lockfileText] = await Promise.all([
-          readFile(manifestUrl, "utf8"),
-          readFile(lockfileUrl, "utf8"),
-        ]);
-        return {
-          component,
-          manifest: JSON.parse(manifestText),
-          lockfile: JSON.parse(lockfileText),
-        };
-      }),
-    ),
-    readFile(new URL("../THIRDPARTY.md", import.meta.url), "utf8"),
-    readFile(
-      new URL(
-        "../astrologo-frontend/public/legal/THIRDPARTY.md",
-        import.meta.url,
+  const [packageSets, canonical, publicCopy, canonicalNotice, publicNotice] =
+    await Promise.all([
+      Promise.all(
+        PACKAGE_SETS.map(async ({ component, manifestUrl, lockfileUrl }) => {
+          const [manifestText, lockfileText] = await Promise.all([
+            readFile(manifestUrl, "utf8"),
+            readFile(lockfileUrl, "utf8"),
+          ]);
+          return {
+            component,
+            manifest: JSON.parse(manifestText),
+            lockfile: JSON.parse(lockfileText),
+          };
+        }),
       ),
-      "utf8",
-    ),
-  ]);
+      readFile(new URL("../THIRDPARTY.md", import.meta.url), "utf8"),
+      readFile(
+        new URL(
+          "../astrologo-frontend/public/legal/THIRDPARTY.md",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+      readFile(new URL("../NOTICE", import.meta.url), "utf8"),
+      readFile(
+        new URL(
+          "../astrologo-frontend/public/legal/NOTICE.txt",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ]);
   const trackedPackageFiles = execFileSync(
     "git",
     [
@@ -1191,6 +1292,8 @@ async function main() {
     trackedPackageFiles,
     canonical,
     publicCopy,
+    canonicalNotice,
+    publicNotice,
   });
 
   if (errors.length > 0) {
