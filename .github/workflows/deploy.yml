@@ -38,7 +38,12 @@ jobs:
           check-latest: true
           package-manager-cache: false
 
+      - name: Install inventory verifier dependencies
+        working-directory: .
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       - name: Verify third-party inventory contract
+        working-directory: .
         run: npm run verify:thirdparty
 
       - name: Install frontend dependencies

@@ -16,6 +16,7 @@ const [
   publicCopy,
   canonicalNotice,
   publicNotice,
+  deployWorkflow,
 ] = await Promise.all([
   readFile(new URL("../package.json", import.meta.url), "utf8"),
   readFile(new URL("../package-lock.json", import.meta.url), "utf8"),
@@ -40,6 +41,7 @@ const [
     new URL("../astrologo-frontend/public/legal/NOTICE.txt", import.meta.url),
     "utf8",
   ),
+  readFile(new URL("../.github/workflows/deploy.yml", import.meta.url), "utf8"),
 ]);
 const packageSets = [
   {
@@ -592,12 +594,41 @@ test("treats a slash on a non-void raw HTML tag as an open container", () => {
   );
 });
 
-test("accepts a void HTML element before a legal table marker", () => {
+test("rejects a closed raw HTML block without a terminating blank line", () => {
+  for (const raw of ["<div hidden>\n</div>", "<br />"]) {
+    const hidden = canonical.replace(
+      "<!-- direct-dependencies:start -->",
+      `${raw}\n<!-- direct-dependencies:start -->`,
+    );
+    assert.match(
+      errorsFor(hidden).join("\n"),
+      /direct-dependency section must contain one contiguous renderable table/u,
+    );
+  }
+});
+
+test("accepts a raw HTML block terminated by a blank line", () => {
   const visible = canonical.replace(
     "<!-- direct-dependencies:start -->",
-    "<br />\n<!-- direct-dependencies:start -->",
+    "<div hidden>\n</div>\n\n<!-- direct-dependencies:start -->",
   );
   assert.deepEqual(errorsFor(visible, visible), []);
+});
+
+test("installs root verifier dependencies before the deployment gate", () => {
+  const install = deployWorkflow.indexOf(
+    "- name: Install inventory verifier dependencies",
+  );
+  const verify = deployWorkflow.indexOf(
+    "- name: Verify third-party inventory contract",
+  );
+  assert.notEqual(install, -1);
+  assert.notEqual(verify, -1);
+  assert.ok(install < verify);
+  assert.match(
+    deployWorkflow.slice(install, verify),
+    /working-directory: \.\s+run: npm ci --ignore-scripts --no-audit --no-fund/u,
+  );
 });
 
 test("decodes escaped pipes in direct dependency cells", () => {

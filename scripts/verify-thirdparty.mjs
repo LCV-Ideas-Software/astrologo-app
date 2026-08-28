@@ -461,9 +461,66 @@ export function verifyPackageTopology(packageSets, trackedPackageFiles) {
 function markdownContextAt(markdown, offset) {
   let inHtmlComment = false;
   let fence = null;
-  const visibleOutsideFences = [];
+  let htmlBlock = null;
+  const prefix = markdown.slice(0, offset);
+  const currentLineStart = prefix.lastIndexOf("\n") + 1;
+  const completePrefix = prefix
+    .slice(0, currentLineStart)
+    .replace(/\r?\n$/u, "");
+  const lines = completePrefix === "" ? [] : completePrefix.split(/\r?\n/u);
 
-  for (const line of markdown.slice(0, offset).split(/\r?\n/u)) {
+  const blockTags =
+    "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul";
+  const typeSixStart = new RegExp(
+    `^ {0,3}</?(?:${blockTags})(?=[ \\t/>]|$)`,
+    "iu",
+  );
+  const attributeName = "[A-Za-z_:][A-Za-z0-9_.:-]*";
+  const unquotedValue = "[^ \\t\\n\\f\\r\"'=<>`]+";
+  const attributeValue = `(?:${unquotedValue}|'[^']*'|\"[^\"]*\")`;
+  const attribute = `(?:[ \\t]+${attributeName}(?:[ \\t]*=[ \\t]*${attributeValue})?)`;
+  const openTag = `<[A-Za-z][A-Za-z0-9-]*(?:${attribute})*[ \\t]*/?>`;
+  const closingTag = `</[A-Za-z][A-Za-z0-9-]*[ \\t]*>`;
+  const typeSevenStart = new RegExp(
+    `^ {0,3}(?:${openTag}|${closingTag})[ \\t]*$`,
+    "u",
+  );
+
+  const startHtmlBlock = (line) => {
+    const indented = line.replace(/^ {0,3}/u, "");
+    const rawTag = indented.match(
+      /^<(pre|script|style|textarea)(?=[ \\t>]|$)/iu,
+    );
+    if (rawTag) {
+      return {
+        untilBlank: false,
+        end: new RegExp(`</${rawTag[1]}>`, "iu"),
+      };
+    }
+    if (/^<!--/u.test(indented)) return { untilBlank: false, end: /-->/u };
+    if (/^<\?/u.test(indented)) return { untilBlank: false, end: /\?>/u };
+    if (/^<![A-Za-z]/u.test(indented)) {
+      return { untilBlank: false, end: />/u };
+    }
+    if (/^<!\[CDATA\[/iu.test(indented)) {
+      return { untilBlank: false, end: /\]\]>/u };
+    }
+    if (typeSixStart.test(line) || typeSevenStart.test(line)) {
+      return { untilBlank: true, end: null };
+    }
+    return null;
+  };
+
+  for (const line of lines) {
+    if (htmlBlock) {
+      if (htmlBlock.untilBlank) {
+        if (/^[ \\t]*$/u.test(line)) htmlBlock = null;
+      } else if (htmlBlock.end.test(line)) {
+        htmlBlock = null;
+      }
+      continue;
+    }
+
     if (fence) {
       const closingFence = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/u);
       if (
@@ -505,42 +562,20 @@ function markdownContextAt(markdown, offset) {
       };
       continue;
     }
-    visibleOutsideFences.push(visible);
-  }
 
-  const htmlContainers = [];
-  const voidElements = new Set([
-    "area",
-    "base",
-    "br",
-    "col",
-    "embed",
-    "hr",
-    "img",
-    "input",
-    "link",
-    "meta",
-    "param",
-    "source",
-    "track",
-    "wbr",
-  ]);
-  const htmlTag = /<\s*(\/?)\s*([A-Za-z][A-Za-z0-9-]*)(?=\s|\/?>)[^<>]*?>/gu;
-  for (const match of visibleOutsideFences.join("\n").matchAll(htmlTag)) {
-    const closing = match[1] === "/";
-    const name = match[2].toLowerCase();
-    if (closing) {
-      const openIndex = htmlContainers.lastIndexOf(name);
-      if (openIndex !== -1) htmlContainers.splice(openIndex);
-    } else if (!voidElements.has(name)) {
-      htmlContainers.push(name);
+    const candidate = startHtmlBlock(visible);
+    if (candidate) {
+      htmlBlock = candidate;
+      if (!candidate.untilBlank && candidate.end.test(visible)) {
+        htmlBlock = null;
+      }
     }
   }
 
   return {
     inHtmlComment,
     inFence: fence !== null,
-    inHtmlContainer: htmlContainers.length > 0,
+    inHtmlContainer: htmlBlock !== null,
   };
 }
 
