@@ -195,19 +195,36 @@ test("rejects a lockfile-only resolved update", () => {
   );
   assert.match(
     errorsFor(canonical, publicCopy, candidatePackageSets).join("\n"),
-    /resolved source mismatch for vite/u,
+    /resolved version does not satisfy requested registry spec .* vite/u,
   );
 });
 
 test("rejects a manifest range that is incompatible with locked metadata", () => {
+  const viteVersion = packageSet(packageSets, "astrologo-frontend/package.json")
+    .lockfile.packages["node_modules/vite"].version;
+  const incompatibleRange = `^${Number(viteVersion.split(".")[0]) + 1}.0.0`;
   const { candidate, candidatePackageSets } = withViteManifestSpec(
-    "^99.0.0",
-    "^99.0.0",
+    incompatibleRange,
+    incompatibleRange,
     { syncLockSpec: false },
   );
   assert.match(
     errorsFor(candidate, candidate, candidatePackageSets).join("\n"),
     /locked manifest spec mismatch .* vite/u,
+  );
+});
+
+test("rejects a resolved version outside the synchronized requested range", () => {
+  const viteVersion = packageSet(packageSets, "astrologo-frontend/package.json")
+    .lockfile.packages["node_modules/vite"].version;
+  const incompatibleRange = `^${Number(viteVersion.split(".")[0]) + 1}.0.0`;
+  const { candidate, candidatePackageSets } = withViteManifestSpec(
+    incompatibleRange,
+    incompatibleRange,
+  );
+  assert.match(
+    errorsFor(candidate, candidate, candidatePackageSets).join("\n"),
+    /resolved version does not satisfy requested registry spec .* vite/u,
   );
 });
 
@@ -600,11 +617,17 @@ test("decodes named and numeric pipe entities in direct dependency cells", () =>
 });
 
 test("decodes escaped backslashes without losing table boundaries", () => {
-  const { candidate, candidatePackageSets } = withViteManifestSpec(
+  const { candidate } = withViteManifestSpec(
     "file:..\\fixture",
     String.raw`file:..\\fixture`,
   );
-  assert.deepEqual(errorsFor(candidate, candidate, candidatePackageSets), []);
+  const vite = parseDirectDependencies(candidate).find(
+    (row) =>
+      row.component === "astrologo-frontend/package.json" &&
+      row.name === "vite" &&
+      row.relation === "devDependencies",
+  );
+  assert.equal(vite?.version, "file:..\\fixture");
 });
 
 test("tokenizes escaped pipes inside inline code spans", () => {
@@ -1015,6 +1038,23 @@ test("preserves the complete audited Swiss Ephemeris notice block", () => {
       truncated,
     ).join("\n"),
     /Swiss Ephemeris special NOTICE block is missing/u,
+  );
+});
+
+test("preserves the complete Corresponding Source offer", () => {
+  const heading = "OFERTA DE CÓDIGO-FONTE — GNU AGPL v3, SEÇÕES 6 E 13";
+  assert.ok(canonicalNotice.includes(heading));
+  const truncated = canonicalNotice.replace(heading, "OFERTA");
+  assert.match(
+    errorsFor(
+      canonical,
+      publicCopy,
+      packageSets,
+      trackedPackageFiles,
+      truncated,
+      truncated,
+    ).join("\n"),
+    /Swiss Ephemeris source-offer section is missing/u,
   );
 });
 

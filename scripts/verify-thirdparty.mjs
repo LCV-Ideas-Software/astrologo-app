@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { dirname, posix } from "node:path";
 import { pathToFileURL } from "node:url";
+import semver from "semver";
 
 const START_MARKER = "<!-- direct-dependencies:start -->";
 const END_MARKER = "<!-- direct-dependencies:end -->";
@@ -90,6 +91,8 @@ const SWISS_EPHEMERIS = {
   sourceRevision: "5ae0bce00dbc66c6315c86da20518e3dd138255b",
   noticeSha256:
     "408f30c432942c931be83a68c59b70e4465ae6c36e88fa0e58c8e000d79536b8",
+  sourceOfferSha256:
+    "e9397d48b61abf1e6373a9695b155b4d9a6817eed811769b1e86deb16091fee0",
 };
 const AUDITED_TARBALLS = [
   {
@@ -372,6 +375,17 @@ function validateLockedSource({ name, requested, locked, context, errors }) {
     );
     return false;
   }
+  const requestedRange = semver.validRange(requested);
+  const isDistTag = /^[A-Za-z][A-Za-z0-9._-]*$/u.test(requested);
+  if (
+    (!requestedRange && !isDistTag) ||
+    (requestedRange && !semver.satisfies(locked.version, requestedRange))
+  ) {
+    errors.push(
+      `resolved version does not satisfy requested registry spec for ${context} ${name}: requested=${requested} resolved=${locked.version}`,
+    );
+    return false;
+  }
   return true;
 }
 
@@ -604,7 +618,7 @@ function decodeMarkdownCell(value, label) {
   let decoded = "";
   let codeSpanLength = 0;
 
-  for (let index = 0; index < value.length; ) {
+  for (let index = 0; index < value.length;) {
     const character = value[index];
     if (character === "`") {
       let runLength = 1;
@@ -1206,6 +1220,22 @@ function verifyDistributedNotice(canonicalNotice, publicNotice, lockfile) {
     if (actualHash !== SWISS_EPHEMERIS.noticeSha256) {
       errors.push(
         `Swiss Ephemeris special NOTICE block mismatch: sha256=${actualHash} audited=${SWISS_EPHEMERIS.noticeSha256}`,
+      );
+    }
+  }
+
+  const sourceOfferStart =
+    "OFERTA DE CÓDIGO-FONTE — GNU AGPL v3, SEÇÕES 6 E 13";
+  const offerStarts = canonicalNotice.split(sourceOfferStart).length - 1;
+  const offerStart = canonicalNotice.indexOf(sourceOfferStart);
+  if (offerStarts !== 1 || offerStart === -1) {
+    errors.push("Swiss Ephemeris source-offer section is missing or ambiguous");
+  } else {
+    const sourceOffer = canonicalNotice.slice(offerStart).trimEnd();
+    const actualHash = createHash("sha256").update(sourceOffer).digest("hex");
+    if (actualHash !== SWISS_EPHEMERIS.sourceOfferSha256) {
+      errors.push(
+        `Swiss Ephemeris source-offer section mismatch: sha256=${actualHash} audited=${SWISS_EPHEMERIS.sourceOfferSha256}`,
       );
     }
   }
