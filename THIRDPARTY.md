@@ -9,7 +9,7 @@ A tabela deriva exclusivamente dos manifestos npm rastreados, dos respectivos `p
 | Manifesto | Componente | Relação | Versão declarada | Versão resolvida | Licença do artefato | Origem |
 | --- | --- | --- | --- | --- | --- | --- |
 | package.json | @eslint/js | devDependencies | ^10.0.1 | 10.0.1 | MIT | https://registry.npmjs.org/@eslint/js/-/js-10.0.1.tgz |
-| package.json | eslint | devDependencies | ^10.9.0 | 10.9.0 | MIT | https://registry.npmjs.org/eslint/-/eslint-10.9.0.tgz |
+| package.json | eslint | devDependencies | ^10.9.1 | 10.9.1 | MIT | https://registry.npmjs.org/eslint/-/eslint-10.9.1.tgz |
 | package.json | eslint-config-prettier | devDependencies | ^10.1.8 | 10.1.8 | MIT | https://registry.npmjs.org/eslint-config-prettier/-/eslint-config-prettier-10.1.8.tgz |
 | package.json | eslint-plugin-react-hooks | devDependencies | ^7.1.1 | 7.1.1 | MIT | https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-7.1.1.tgz |
 | package.json | eslint-plugin-react-refresh | devDependencies | ^0.5.4 | 0.5.4 | MIT | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.4.tgz |
