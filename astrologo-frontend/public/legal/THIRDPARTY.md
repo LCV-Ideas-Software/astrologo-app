@@ -46,7 +46,7 @@ A tabela deriva exclusivamente dos manifestos npm rastreados, dos respectivos `p
 | astrologo-frontend/package.json | fast-check | devDependencies | 4.9.0 | 4.9.0 | MIT | https://registry.npmjs.org/fast-check/-/fast-check-4.9.0.tgz |
 | astrologo-frontend/package.json | globals | devDependencies | ^17.11.0 | 17.11.0 | MIT | https://registry.npmjs.org/globals/-/globals-17.11.0.tgz |
 | astrologo-frontend/package.json | typescript | devDependencies | ~6.0.3 | 6.0.3 | Apache-2.0 | https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz |
-| astrologo-frontend/package.json | typescript-eslint | devDependencies | ^8.67.0 | 8.67.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.67.0.tgz |
+| astrologo-frontend/package.json | typescript-eslint | devDependencies | ^8.68.0 | 8.68.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.68.0.tgz |
 | astrologo-frontend/package.json | vite | devDependencies | ^8.2.2 | 8.2.2 | MIT | https://registry.npmjs.org/vite/-/vite-8.2.2.tgz |
 | astrologo-frontend/package.json | vitest | devDependencies | ^4.1.11 | 4.1.11 | MIT | https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz |
 | astrologo-frontend/package.json | wrangler | devDependencies | 4.125.0 | 4.125.0 | MIT OR Apache-2.0 | https://registry.npmjs.org/wrangler/-/wrangler-4.125.0.tgz |
