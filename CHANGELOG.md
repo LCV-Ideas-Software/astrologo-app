@@ -14,6 +14,7 @@
 
 ### Removido
 
+- O `actions.lock` inválido que impedia o início dos workflows e seus comentários de gerenciamento; as actions continuam fixadas por SHA completo, com jobs e permissões inalterados (#362).
 - Native Auto-merge, Auto-release, Releases/tags do web app, validadores customizados de Dependency Review/Scorecard/Projects e o verificador proprio de binarios rastreados.
 - O versionamento GitHub externo deixa de ser produzido; a versao interna `APP v02.25.05`, exibida no rodape e validada pelos testes normais do aplicativo, permanece inalterada.
 
