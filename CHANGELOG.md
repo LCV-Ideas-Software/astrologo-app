@@ -4,6 +4,7 @@
 
 ### Alterado
 
+- A expectativa do teste do inventário acompanha o `lucide-react` 1.38.0 já fixado no lockfile, preservando as verificações de licença e proveniência (#365).
 - O inventário `THIRDPARTY` passa a refletir integralmente as 42 relações diretas dos manifestos raiz e frontend. A arquitetura official-first combina o License Compliance e o Dependency Review nativos do GitHub, o `build.license` do Vite e o `--metafile` do Wrangler com validação local fail-closed de proveniência, lockfile, licenças e Swiss/WASM; os bundles do navegador e das Cloudflare Pages Functions publicam, respectivamente, `legal/BUNDLED-LICENSES.md` e `legal/FUNCTIONS-BUNDLED-LICENSES.md` (#346).
 - A criação de Linear Releases após deploy bem-sucedido passa a usar a action oficial `linear/linear-release-action` v0.16.0, pinada por SHA completo; o gatilho pós-Deploy, o SHA publicado, o histórico Git completo, o environment dedicado e as permissões mínimas permanecem inalterados.
 - CodeQL, Dependency Review, OpenSSF Scorecard e Zizmor passam a usar diretamente as implementacoes oficiais, sem gate SARIF, reusable workflow, manifesto, scanner ou validador proprio.
@@ -14,6 +15,7 @@
 
 ### Removido
 
+- O `actions.lock` inválido que impedia o início dos workflows e seus comentários de gerenciamento; as actions continuam fixadas por SHA completo, com jobs e permissões inalterados (#362).
 - Native Auto-merge, Auto-release, Releases/tags do web app, validadores customizados de Dependency Review/Scorecard/Projects e o verificador proprio de binarios rastreados.
 - O versionamento GitHub externo deixa de ser produzido; a versao interna `APP v02.25.05`, exibida no rodape e validada pelos testes normais do aplicativo, permanece inalterada.
 
