@@ -16,13 +16,13 @@ A tabela deriva exclusivamente dos manifestos npm rastreados, dos respectivos `p
 | package.json | globals | devDependencies | ^17.11.0 | 17.11.0 | MIT | https://registry.npmjs.org/globals/-/globals-17.11.0.tgz |
 | package.json | prettier | devDependencies | ^3.9.6 | 3.9.6 | MIT | https://registry.npmjs.org/prettier/-/prettier-3.9.6.tgz |
 | package.json | semver | devDependencies | ^7.8.5 | 7.8.5 | ISC | https://registry.npmjs.org/semver/-/semver-7.8.5.tgz |
-| package.json | typescript-eslint | devDependencies | ^8.68.0 | 8.68.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.68.0.tgz |
+| package.json | typescript-eslint | devDependencies | ^8.69.0 | 8.69.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.69.0.tgz |
 | astrologo-frontend/package.json | @js-temporal/polyfill | dependencies | 0.5.1 | 0.5.1 | ISC | https://registry.npmjs.org/@js-temporal/polyfill/-/polyfill-0.5.1.tgz |
 | astrologo-frontend/package.json | @tailwindcss/vite | dependencies | ^4.3.3 | 4.3.3 | MIT | https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.3.tgz |
 | astrologo-frontend/package.json | astronomy-engine | dependencies | 2.1.19 | 2.1.19 | MIT | https://registry.npmjs.org/astronomy-engine/-/astronomy-engine-2.1.19.tgz |
 | astrologo-frontend/package.json | d3-geo | dependencies | 3.1.1 | 3.1.1 | ISC | https://registry.npmjs.org/d3-geo/-/d3-geo-3.1.1.tgz |
 | astrologo-frontend/package.json | dompurify | dependencies | ^3.4.14 | 3.4.14 | (MPL-2.0 OR Apache-2.0) | https://registry.npmjs.org/dompurify/-/dompurify-3.4.14.tgz |
-| astrologo-frontend/package.json | lucide-react | dependencies | ^1.34.0 | 1.34.0 | ISC | https://registry.npmjs.org/lucide-react/-/lucide-react-1.34.0.tgz |
+| astrologo-frontend/package.json | lucide-react | dependencies | ^1.38.0 | 1.38.0 | ISC | https://registry.npmjs.org/lucide-react/-/lucide-react-1.38.0.tgz |
 | astrologo-frontend/package.json | react | dependencies | ^19.2.8 | 19.2.8 | MIT | https://registry.npmjs.org/react/-/react-19.2.8.tgz |
 | astrologo-frontend/package.json | react-dom | dependencies | ^19.2.8 | 19.2.8 | MIT | https://registry.npmjs.org/react-dom/-/react-dom-19.2.8.tgz |
 | astrologo-frontend/package.json | sanitize-html | dependencies | ^2.17.7 | 2.17.7 | MIT | https://registry.npmjs.org/sanitize-html/-/sanitize-html-2.17.7.tgz |
