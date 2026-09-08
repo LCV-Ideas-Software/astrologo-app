@@ -189,7 +189,7 @@ test("estado canônico produz todas as relações e duas cópias byte a byte", a
   );
   assert.match(
     documents.thirdparty,
-    /lucide-react \| dependencies \| \^1\.34\.0 \| 1\.34\.0 \| ISC/,
+    /lucide-react \| dependencies \| \^1\.38\.0 \| 1\.38\.0 \| ISC/,
   );
   assert.match(
     documents.thirdparty,
