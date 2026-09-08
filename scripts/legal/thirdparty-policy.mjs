@@ -157,13 +157,13 @@ export const POLICY = Object.freeze({
           "O tarball e o tag oficial não incluem LICENSE; texto MIT canônico com atribuição do package.json instalado.",
       }),
       wrangler: Object.freeze({
-        version: "4.125.0",
+        version: "4.127.1",
         license: "MIT OR Apache-2.0",
         fragments: Object.freeze(["wranglerMit", "wranglerApache"]),
         source:
-          "https://github.com/cloudflare/workers-sdk/tree/wrangler%404.125.0",
+          "https://github.com/cloudflare/workers-sdk/tree/wrangler%404.127.1",
         sourceRepository: "https://github.com/cloudflare/workers-sdk",
-        revision: "38b46238c57f0d85dc1334ce374ba709eab13749",
+        revision: "f8085545bcaa2c639f171c25e4424685036a0e10",
         licensePaths: Object.freeze(["LICENSE-MIT", "LICENSE-APACHE"]),
         rationale:
           "O tarball npm não inclui os textos; cópias pinadas de LICENSE-MIT e LICENSE-APACHE do tag oficial.",

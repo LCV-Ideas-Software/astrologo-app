@@ -4,6 +4,7 @@
 
 ### Alterado
 
+- O inventário acompanha as quatro atualizações de ferramentas do frontend; a referência jurídica do Wrangler 4.127.1 usa seu tag oficial, com textos MIT e Apache-2.0 idênticos aos já preservados (#364).
 - As cópias canônicas do inventário acompanham o `typescript-eslint` 8.69.0 do frontend, sem alterar as obrigações de licença (#370).
 - As cópias canônicas do inventário acompanham o `typescript-eslint` 8.69.0 do pacote raiz, sem alterar as obrigações de licença (#369).
 - A expectativa do teste do inventário acompanha o `lucide-react` 1.38.0 já fixado no lockfile, preservando as verificações de licença e proveniência (#365).
