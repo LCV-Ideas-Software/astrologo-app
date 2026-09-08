@@ -193,7 +193,7 @@ test("estado canônico produz todas as relações e duas cópias byte a byte", a
   );
   assert.match(
     documents.thirdparty,
-    /@vitejs\/plugin-react \| devDependencies \| \^6\.1\.0 \| 6\.1\.0 \| MIT/,
+    /@vitejs\/plugin-react \| devDependencies \| \^6\.1\.1 \| 6\.1\.1 \| MIT/,
   );
   assert.match(
     documents.thirdparty,
