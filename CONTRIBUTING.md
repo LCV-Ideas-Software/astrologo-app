@@ -24,21 +24,36 @@ Thanks for your interest. Quick guide for filing issues and opening pull request
 
 ### Local gates
 
-The actual app lives under `astrologo-frontend/`. Run gates from there:
+Install and validate the repository-level tooling from the root:
 
-```bash
-cd astrologo-frontend
+```powershell
 npm ci
-npm run lint    # biome check
-npm run build   # tsc + vite build
-npm test        # vitest
+npm run lint
+npm run format:public:check
 ```
 
-All gates must be GREEN. CI will re-run these on push.
+The actual app lives under `astrologo-frontend/`. Then run its existing gates:
+
+```powershell
+cd astrologo-frontend
+npm ci
+npm run lint              # ESLint
+npm run biome             # Biome
+npm test                  # Swiss WASM preparation + Vitest
+npm run build             # Swiss WASM preparation + TypeScript + Vite
+npm run build:functions   # Swiss WASM preparation + Wrangler Pages Functions build
+```
+
+All gates must be GREEN. CI repeats them on PRs to `main`; the production Deploy
+workflow repeats them on a push to `main` before publication.
 
 ### PR description
 
 Include what changed, why, how you tested. Public surface changes (UI, API response shape, D1 schema) need careful review.
+
+Agents working on the fleet reform must present the complete local change report
+and obtain the operator's approval before committing, pushing or opening a PR.
+GitHub configuration changes require separate explicit approval.
 
 ### Action pinning
 
@@ -49,6 +64,11 @@ This repo enforces SHA-pinned GitHub Actions. Don't downgrade pinned actions to 
 ## License
 
 By contributing, you agree your contribution is licensed under [AGPL-3.0-or-later](./LICENSE). AGPL §13 applies to network-service operators of forks.
+
+Admission also follows [INBOUND.md](./INBOUND.md): copyrightable material not
+demonstrably owned by LCV Ideas & Software requires a separate written inbound
+license or copyright assignment, executed and verified before merge. Opening an
+issue or PR alone does not transfer copyright or replace that written instrument.
 
 ---
 

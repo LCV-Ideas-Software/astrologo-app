@@ -2,7 +2,7 @@ Copyright © 2026 LCV Ideas & Software
 
 AVISOS DE TERCEIROS (THIRD-PARTY NOTICES)
 -----------------------------------------
-Esta distribuição incorpora componentes sob MIT, ISC, Apache-2.0, MPL-2.0 e GNU AGPL v3. O inventário exato está em THIRDPARTY.md; o bundle do navegador publica os textos integrais aplicáveis em legal/BUNDLED-LICENSES.md, e o bundle Cloudflare Pages Functions publica seu inventário efetivo e textos integrais em legal/FUNCTIONS-BUNDLED-LICENSES.md.
+Esta distribuição incorpora componentes sob MIT, ISC, Apache-2.0, MPL-2.0 e GNU AGPL v3. O inventário direto mantido está em THIRDPARTY.md; o Vite publica os textos integrais do bundle do navegador em legal/BUNDLED-LICENSES.md. O documento legal/FUNCTIONS-BUNDLED-LICENSES.md preserva integralmente o relatório histórico das Cloudflare Pages Functions consultado em 08/09/2026; ele não é regenerado no build atual e deve ser revisado quando os componentes distribuídos mudarem.
 
 ASTRONOMY ENGINE 2.1.19 — MIT
 -----------------------------

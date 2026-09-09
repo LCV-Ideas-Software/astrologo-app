@@ -175,9 +175,9 @@ export function LicencasModule() {
           Licenças das Dependências Empacotadas
         </h2>
         <p style={{ ...paragraphStyle, textIndent: 0 }}>
-          O Vite oficial gera o relatório integral do bundle do navegador. O relatório das Cloudflare Pages Functions
-          deriva do metafile oficial do Wrangler, conferido contra o lockfile npm e os textos de licença dos pacotes
-          efetivamente incorporados.{' '}
+          O Vite oficial gera o relatório integral do bundle do navegador. O documento das Cloudflare Pages Functions
+          preserva o relatório histórico consultado em 08/09/2026; ele é mantido no repositório, não é regenerado pelo
+          build atual e exige revisão quando os componentes distribuídos mudarem.{' '}
           {import.meta.env.PROD ? (
             <>
               <a href={LEGAL_FILES.BUNDLED_LICENSES} target="_blank" rel="noopener noreferrer">
@@ -191,8 +191,8 @@ export function LicencasModule() {
             </>
           ) : (
             <>
-              Os relatórios ficam disponíveis após o pipeline de publicação executar os builds do navegador e das
-              Functions.
+              Os documentos ficam disponíveis após o build de produção: o Vite gera o relatório do navegador e publica
+              junto a cópia mantida do relatório histórico das Functions.
             </>
           )}
         </p>

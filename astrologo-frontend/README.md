@@ -2,19 +2,18 @@
   <img src="../.github/assets/lcv-ideas-software-logo.svg" alt="LCV Ideas &amp; Software" width="520" />
 </p>
 
-# React + TypeScript + Vite
+# Astrologo frontend and Pages Functions
 
 [![Deploy](https://github.com/LCV-Ideas-Software/astrologo-app/actions/workflows/deploy.yml/badge.svg)](https://github.com/LCV-Ideas-Software/astrologo-app/actions/workflows/deploy.yml)
-[![CodeQL](https://github.com/LCV-Ideas-Software/astrologo-app/actions/workflows/codeql.yml/badge.svg)](https://github.com/LCV-Ideas-Software/astrologo-app/actions/workflows/codeql.yml)
+[![CodeQL: Default setup](https://img.shields.io/badge/CodeQL-Default%20setup-2ea44f)](https://github.com/LCV-Ideas-Software/astrologo-app/security/code-scanning)
 [![framework: React 19 + Vite 8](https://img.shields.io/badge/framework-React%2019%20%2B%20Vite%208-61dafb.svg)](https://react.dev/)
 [![license: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](../LICENSE)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+This package contains the React/Vite application and Cloudflare Pages Functions
+for Astrologo. It is a private npm package used to build a web application, not
+an npm or Windows distribution. D1 persistence, Vertex AI analysis and Swiss
+Ephemeris WASM remain part of the existing product. See the repository
+[architecture and deployment guide](../README.md#architecture).
 
 ## Change History
 
@@ -54,70 +53,39 @@ O [guia de leitura dos dados posicionais](../docs/GUIA_LEITURA_DADOS_POSICIONAIS
 
 A [metodologia dos mapas avançados](../docs/METODOLOGIA_MAPAS_AVANCADOS.md) documenta os contratos de aspectos, trânsitos, sinastria e localidade, a reidratação autenticada, a análise de IA em partes, os referenciais astronômicos, a pesquisa comparativa e os limites interpretativos.
 
-## React Compiler
+## Local validation and delivery
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+From the repository root, run `npm ci`, `npm run lint` and
+`npm run format:public:check`. Then, from this directory:
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```powershell
+npm ci
+npm run lint
+npm run biome
+npm test
+npm run build
+npm run build:functions
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The existing `prepare:swiss-wasm` step runs as part of dev, test and build
+commands. It materializes the required imported WASM asset from the pinned
+dependency with size/hash verification; do not remove it as governance cleanup.
+`build` generates the browser bundle; `build:functions` checks the server bundle
+with the official Wrangler CLI.
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+The repository's native CI repeats these validations for PRs to `main`; Deploy
+validates and publishes production from `main`. GitHub Pages is a separate
+documentation site. CodeQL uses Default setup, and successful production Deploy
+runs are recorded through the official Linear Release action at the deployed
+SHA. See [native governance](../README.md#ci-and-native-governance) for Dependabot,
+official checks and the operator's pre-publication approval boundary.
 
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
-```
+Vite generates the complete browser license report at
+`dist/legal/BUNDLED-LICENSES.md`. The complete Functions notices in
+`public/legal/FUNCTIONS-BUNDLED-LICENSES.md` are a maintained snapshot copied to
+the deployed site, not an automatically regenerated server report. Relevant
+server dependency/distribution changes require its review and update, including
+full license texts and provenance. Browser reporting does not cover Functions.
 
 ## Repository conventions
 
@@ -127,6 +95,7 @@ export default defineConfig([
 - **Code of conduct**: see [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md).
 - **Changelog**: [CHANGELOG.md](../CHANGELOG.md).
 - **Contributing**: see [CONTRIBUTING.md](../CONTRIBUTING.md).
+- **Inbound rights**: see [INBOUND.md](../INBOUND.md).
 - **Sponsorship**: see the repo's `Sponsor` button or [central sponsor page](https://www.lcv.dev/sponsor).
 - **Action pinning**: all GitHub Actions are pinned by full SHA per supply-chain hardening baseline.
 - **Code owners**: [.github/CODEOWNERS](../.github/CODEOWNERS).

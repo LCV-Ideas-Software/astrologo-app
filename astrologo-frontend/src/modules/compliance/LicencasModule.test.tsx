@@ -10,6 +10,8 @@ describe('relatório de licenças do bundle', () => {
 
     expect(html).not.toContain('href="/legal/BUNDLED-LICENSES.md"');
     expect(html).not.toContain('href="/legal/FUNCTIONS-BUNDLED-LICENSES.md"');
-    expect(html).toContain('disponíveis após o pipeline de publicação');
+    expect(html).toContain('disponíveis após o build de produção');
+    expect(html).toContain('não é regenerado pelo');
+    expect(html).toContain('relatório histórico das Functions');
   });
 });

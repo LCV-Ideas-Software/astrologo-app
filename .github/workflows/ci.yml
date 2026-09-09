@@ -1,24 +1,31 @@
-name: Deploy
+name: CI
 
 on:
-  push:
+  pull_request:
     branches:
       - main
+    # Include pull requests retargeted to main, even without a new commit.
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - edited
+  workflow_dispatch:
 
 permissions: {}
 
 concurrency:
-  group: deploy-main
-  cancel-in-progress: false
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: Validate and deploy application
+  ci:
+    name: CI
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: cloudflare-production
     permissions:
-      contents: read # Read the exact source revision being deployed.
+      contents: read
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -52,13 +59,3 @@ jobs:
           npm test
           npm run build
           npm run build:functions
-
-      - name: Deploy Pages application with Wrangler
-        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          packageManager: npm
-          workingDirectory: astrologo-frontend
-          wranglerVersion: "4.127.1"
-          command: pages deploy dist --project-name=astrologo-frontend --branch=main --commit-dirty=true
