@@ -1,10 +1,10 @@
 # Third-Party Components
 
-Este arquivo é gerado por `npm run generate:thirdparty`. Não o edite manualmente.
+Inventário mantido no repositório. Revise este documento e sua cópia pública quando os manifestos, os lockfiles ou os componentes distribuídos mudarem; ele não é regenerado nem validado por um script customizado.
 
-A tabela deriva exclusivamente dos manifestos npm rastreados, dos respectivos `package-lock.json` e dos `package.json` instalados por `npm ci`. O Vite oficial gera os textos integrais do bundle do navegador em `/legal/BUNDLED-LICENSES.md`; o Wrangler oficial produz o metafile que alimenta o relatório fail-closed do bundle Cloudflare Pages Functions em `/legal/FUNCTIONS-BUNDLED-LICENSES.md`. O inventário direto permanece neste documento e as exceções permanecem no NOTICE canônico.
+A tabela registra as dependências diretas dos manifestos npm e dos respectivos `package-lock.json`. O Vite oficial continua gerando os textos integrais do bundle do navegador em `/legal/BUNDLED-LICENSES.md`. O documento integral das Cloudflare Pages Functions é preservado em `/legal/FUNCTIONS-BUNDLED-LICENSES.md` como snapshot histórico mantido no repositório, sem alegação de geração ou cobertura automática de versões futuras. O inventário direto permanece neste documento e os avisos integrais e a oferta de fonte permanecem no NOTICE canônico.
 
-## Dependências diretas (42 relações)
+## Dependências diretas (41 relações)
 
 | Manifesto | Componente | Relação | Versão declarada | Versão resolvida | Licença do artefato | Origem |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -15,7 +15,6 @@ A tabela deriva exclusivamente dos manifestos npm rastreados, dos respectivos `p
 | package.json | eslint-plugin-react-refresh | devDependencies | ^0.5.5 | 0.5.5 | MIT | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.5.tgz |
 | package.json | globals | devDependencies | ^17.11.0 | 17.11.0 | MIT | https://registry.npmjs.org/globals/-/globals-17.11.0.tgz |
 | package.json | prettier | devDependencies | ^3.9.6 | 3.9.6 | MIT | https://registry.npmjs.org/prettier/-/prettier-3.9.6.tgz |
-| package.json | semver | devDependencies | ^7.8.5 | 7.8.5 | ISC | https://registry.npmjs.org/semver/-/semver-7.8.5.tgz |
 | package.json | typescript-eslint | devDependencies | ^8.69.0 | 8.69.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.69.0.tgz |
 | astrologo-frontend/package.json | @js-temporal/polyfill | dependencies | 0.5.1 | 0.5.1 | ISC | https://registry.npmjs.org/@js-temporal/polyfill/-/polyfill-0.5.1.tgz |
 | astrologo-frontend/package.json | @tailwindcss/vite | dependencies | ^4.3.3 | 4.3.3 | MIT | https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.3.tgz |
@@ -53,11 +52,11 @@ A tabela deriva exclusivamente dos manifestos npm rastreados, dos respectivos `p
 
 ## Textos das licenças dos bundles publicados
 
-O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos módulos efetivamente incluídos no bundle do navegador. O build oficial do Wrangler publica um metafile integral, validado contra o `package-lock.json`, os pacotes instalados e as licenças correspondentes para gerar `legal/FUNCTIONS-BUNDLED-LICENSES.md`. Ambos complementam — e não substituem — este inventário, o NOTICE, a GNU AGPL e a oferta de Corresponding Source.
+O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos módulos efetivamente incluídos no bundle do navegador. `legal/FUNCTIONS-BUNDLED-LICENSES.md` preserva integralmente o relatório das Functions consultado em 08/09/2026, com sua origem e hash, mas não é regenerado pelo Wrangler. Alterações no bundle das Functions exigem revisão desse snapshot. O relatório do Vite não cobre dependências do servidor. Ambos complementam — e não substituem — este inventário, o NOTICE, a GNU AGPL e a oferta de Corresponding Source.
 
 ## Cartografia e Natural Earth
 
-A cartografia usa `d3-geo`, `topojson-client`, `world-atlas`. O asset efetivamente importado `world-atlas/countries-110m.json`, proveniente de `world-atlas@2.0.2`, deriva de Natural Earth 4.1.0, escala 1:110m. O pacote resolvido, seu README de proveniência e os bytes do asset são vinculados por versão, tamanho e SHA-256 pela política jurídica. Os dados Natural Earth são de domínio público segundo os termos oficiais: https://www.naturalearthdata.com/about/terms-of-use/. “Natural Earth” identifica apenas a proveniência e não constitui endosso.
+A cartografia usa `d3-geo`, `topojson-client`, `world-atlas`. O asset efetivamente importado `world-atlas/countries-110m.json`, proveniente de `world-atlas@2.0.2`, deriva de Natural Earth 4.1.0, escala 1:110m. Preserve a versão e a proveniência do asset ao atualizar essas dependências. Os dados Natural Earth são de domínio público segundo os termos oficiais: https://www.naturalearthdata.com/about/terms-of-use/. “Natural Earth” identifica apenas a proveniência e não constitui endosso.
 
 ## Astronomy Engine
 

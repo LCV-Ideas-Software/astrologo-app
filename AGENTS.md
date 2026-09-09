@@ -11,51 +11,103 @@ Pointer for AI agents working in this repository.
 
 ## Runtime Shape
 
-Aplicacao servida por Cloudflare. Deploy exclusivamente via GitHub Actions.
+React 19 + Vite 8 browser application and Cloudflare Pages Functions live in
+`astrologo-frontend/`. The root npm package provides repository validation.
+Production deploys run from `main` through GitHub Actions and the official
+Cloudflare Wrangler Action. The separate GitHub Pages site comes from `site/`.
+This repository does not publish npm packages, Windows packages, GitHub Releases
+or version tags.
 
 ## Mandatory Gates
 
-```bash
+From the repository root, install dependencies with `npm ci`, then run:
+
+```powershell
 npm run lint
 npm run format:public:check
-# no pacote do monorepo, com npm ci antes:
-#   astrologo-frontend/ -> npm run lint && npm run biome && npm test && npm run build && npm run build:functions
+```
+
+From `astrologo-frontend/`, install dependencies with `npm ci`, then run:
+
+```powershell
+npm run lint
+npm run biome
+npm test
+npm run build
+npm run build:functions
 ```
 
 ## Workspace Policy
 
-Follow the workspace-root `AGENTS.md` directives of the private workspace that
-hosts this checkout (not versioned in this public repository). In
-particular: no self-review in cross-review gates, `ultrabrain` plus
-`cross-review-v2` before substantive closure, `cross-review-v1` only as fallback
-for v2, `main` as the deployment branch, and Commit & Sync only after final
-audit when requested.
+The current Enterprise/Organization reform standard supersedes obsolete local
+governance instructions. Follow the workspace-root `AGENTS.md` directives of
+the private workspace hosting this checkout: prefer official native GitHub
+capabilities, then official approved third-party tools; keep repositories
+operationally independent. Do not introduce custom gates or central controllers.
+Any customization requires the operator's explicit prior decision.
+
+Use Ultrabrain for substantive reasoning and cross-review only when complexity
+justifies independent review. Supply complete raw/verbatim evidence, not a
+summary presented as evidence. Conduct internal agent communication in English;
+preserve external evidence in its original language. Do not require human or AI
+review of Dependabot PRs, manually invoke review bots or treat provider quota
+exhaustion as a code defect.
+
+Prepare changes locally and present the complete report for operator approval
+before committing, pushing or opening a PR. GitHub configuration changes require
+separate explicit approval. After an approved push, read the automatic reviews
+and checks at the exact PR head before claiming completion. Never change Git or
+signing configuration to work around a failure; report it and await the operator.
+Do not run local `cargo` or `rustc`, or use Codespaces. Clean up only this
+execution's no-longer-needed branches/worktrees after confirming preservation.
+
+CI validates PRs to `main` and manual dispatches. Deploy repeats the root and
+frontend checks before publishing the application. GitHub Pages builds its
+separate artifact on PRs and deploys only from `main`. CodeQL uses Default setup;
+Dependency Review, Zizmor and Scorecard use their official implementations.
+Dependabot uses native auto-merge subject to the effective required checks;
+minor/patch grouping does not exclude major PRs from auto-merge. Keep the two
+TypeScript `>=6.1.0` ignores until the upstream peer range supports that version.
+Linear Release records successful push-triggered production Deploy runs at the
+exact deployed SHA, using the official Linear action and CLI.
+
+Do not restore retired `actions.lock` mechanisms, merge queue, advanced CodeQL
+workflows or custom legal inventory/Functions-report gates. Dependency-manager
+lockfiles are distinct: preserve them and regenerate with the official tool
+when their dependency graph changes. The official Prettier HTML check remains
+part of normal CI and Deploy.
+
+Preserve the existing D1 bindings/schema ownership, Vertex authentication and
+model-selection behavior, application version, astronomical calculations and
+product tests. `astrologo-frontend/scripts/prepare-swiss-wasm.mjs` materializes a
+required imported product asset; it is not a governance controller to retire.
+The native Vite license report covers the browser build only. Keep the complete
+Functions notices in `astrologo-frontend/public/legal/FUNCTIONS-BUNDLED-LICENSES.md`
+as a maintained snapshot, updating component versions, full license texts and
+provenance when its distribution changes. Do not claim that Vite covers server
+dependencies or that a static snapshot proves future bundle coverage. Follow
+`INBOUND.md` for written inbound rights and `SECURITY.md` for private disclosure.
 
 ## Registro de trabalho (GitHub Projects, Issues e Discussions)
 
-A equipe e composta por tres membros: o **operador** (humano), **Claude Code** e **ChatGPT-Codex**.
-Quase todo trabalho acontece em par (operador+Claude ou operador+Codex). O que fica so no
-transcript da sessao se perde para o outro membro. Por isso o registro abaixo e **obrigatorio**.
+Existe um unico **operador humano**, assistido por **Claude Code** e **ChatGPT-Codex**.
+Os agentes nao formam uma equipe de aprovadores humanos. O que fica so no transcript
+se perde para a proxima execucao; por isso o registro abaixo e **obrigatorio**.
+Mantenha Issues, Projects e Discussions GitHub vinculados aos Issues, Projects,
+Teams, Initiatives e Cycles Linear pertinentes, com conteudo e status coerentes.
+Preserve historico, titularidade, prioridade e estado dos conteineres; aplique
+o label `Codex` ao trabalho executado pelo Codex. Uma tarefa Em Andamento nao
+autoriza mudar o estado ou a saude do projeto que a contem.
 
 Quadro deste repositorio: `https://github.com/orgs/LCV-Ideas-Software/projects/11`
 Quadro consolidado da organizacao: `https://github.com/orgs/LCV-Ideas-Software/projects/17`
 
 ### Os quatro gatilhos
 
-**G1 — fim de bloco de trabalho.** Publique um _status update_ no quadro deste repositorio,
-dizendo o que foi feito, o que ficou pendente e o que o proximo agente precisa saber:
-
-```bash
-gh api graphql -f query='
-  mutation($id:ID!, $body:String!) {
-    createProjectV2StatusUpdate(input:{projectId:$id, status:ON_TRACK, body:$body}) {
-      statusUpdate { id }
-    }
-  }' -f id="$PROJECT_ID" -f body="..."
-```
-
-Use `AT_RISK` ou `OFF_TRACK` quando for o caso. O `PROJECT_ID` sai de
-`gh api graphql -f query='query{organization(login:"LCV-Ideas-Software"){projectV2(number:11){id}}}'`.
+**G1 — mudanca material de estado.** Atualize o registro canonico existente com o
+que foi feito, o que ficou pendente e o contexto necessario a proxima execucao.
+Evite comentarios repetitivos. Uma atualizacao de projeto deve refletir seu
+estado real, sem marcar `ON_TRACK` automaticamente por causa de uma tarefa.
 
 **G2 — achado nao corrigido.** Todo bug, falha, limitacao de plataforma ou comportamento
 inesperado que voce encontrar e **nao** resolver na hora vira issue imediatamente, com
@@ -90,8 +142,10 @@ mudar de escopo, vale o texto de la.
 ### Valvula de escape
 
 Bump de dependencia, correcao de typo, lockfile e ajuste de formatacao **dispensam issue**.
-O PR basta — ele entra no quadro sozinho quando o gatilho o alcanca; PR do Dependabot
-e uma lacuna declarada do gatilho e pode depender do backfill/reconciliacao da ativacao.
+O PR basta. Use os recursos Auto-add nativos dos Projects #11 e #17 e confira
+os itens reais; regularize um item ausente diretamente no Project, sem criar
+um controlador paralelo. A dispensa de issue nao dispensa o relatorio e a
+aprovacao do operador para os envios realizados por agentes nesta reforma.
 
 ### Campos
 
@@ -112,13 +166,12 @@ com desvios `Bloqueado` e `Descartado`.
 > proprios em cada quadro. Atualize os DOIS quadros — o deste repositorio e o portfolio
 > #17 — a cada transicao; ID de opcao de um quadro nunca vale no outro (Discussion org#176).
 
-### Segredos e identificador D1 autorizado
+### Configuration metadata and secrets
 
-Tokens, credenciais, chaves e demais segredos nunca entram no repositorio. Para este
-repositorio somente, o `database_name` e o `database_id` do binding D1 em
-`astrologo-frontend/wrangler.json` sao identificadores nao secretos, exigidos pela
-configuracao oficial do Wrangler e autorizados explicitamente pelo operador. Esta excecao
-nao autoriza nenhum outro identificador real: cada novo caso exige pedido fundamentado e
-nova aprovacao explicita. Issues, PRs, Discussions e exemplos documentais continuam usando
-placeholders (`proj-x`, `exemplo-projeto-000`, `exemplo.com`) quando o valor real nao for
-parte necessaria da configuracao versionada autorizada.
+Nonsecret identifiers required by official configuration may be versioned under
+the current fleet-wide operator directive. The existing D1 `database_name` and
+`database_id` in `astrologo-frontend/wrangler.json` identify resources, not
+credentials; this is the standard, not a repository-only exception. Tokens,
+credentials, secret values and sensitive operational evidence remain private.
+Do not rename resources, replace domain metadata, move bindings or change
+GitHub settings as incidental cleanup.

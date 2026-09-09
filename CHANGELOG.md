@@ -2,24 +2,32 @@
 
 ## [Unreleased]
 
+### Adicionado
+
+- CI local ao repositório para PRs e auto-merge nativo do Dependabot, sem controlador central ou revisão manual obrigatória de bots; os checks efetivos continuam condicionando a admissão (ASTROLO-18 / #372).
+- `INBOUND.md` define a verificação de titularidade e do instrumento escrito aplicável antes da admissão de contribuições, conforme o padrão aprovado da frota.
+
 ### Alterado
 
 - O inventário acompanha as quatro atualizações de ferramentas do frontend; a referência jurídica do Wrangler 4.127.1 usa seu tag oficial, com textos MIT e Apache-2.0 idênticos aos já preservados (#364).
 - As cópias canônicas do inventário acompanham o `typescript-eslint` 8.69.0 do frontend, sem alterar as obrigações de licença (#370).
 - As cópias canônicas do inventário acompanham o `typescript-eslint` 8.69.0 do pacote raiz, sem alterar as obrigações de licença (#369).
-- A expectativa do teste do inventário acompanha o `lucide-react` 1.38.0 já fixado no lockfile, preservando as verificações de licença e proveniência (#365).
-- O inventário `THIRDPARTY` passa a refletir integralmente as 42 relações diretas dos manifestos raiz e frontend. A arquitetura official-first combina o License Compliance e o Dependency Review nativos do GitHub, o `build.license` do Vite e o `--metafile` do Wrangler com validação local fail-closed de proveniência, lockfile, licenças e Swiss/WASM; os bundles do navegador e das Cloudflare Pages Functions publicam, respectivamente, `legal/BUNDLED-LICENSES.md` e `legal/FUNCTIONS-BUNDLED-LICENSES.md` (#346).
-- A criação de Linear Releases após deploy bem-sucedido passa a usar a action oficial `linear/linear-release-action` v0.16.0, pinada por SHA completo; o gatilho pós-Deploy, o SHA publicado, o histórico Git completo, o environment dedicado e as permissões mínimas permanecem inalterados.
-- CodeQL, Dependency Review, OpenSSF Scorecard e Zizmor passam a usar diretamente as implementacoes oficiais, sem gate SARIF, reusable workflow, manifesto, scanner ou validador proprio.
+- O inventário preserva a atualização do `lucide-react` 1.38.0 já fixado no lockfile (#365); o teste customizado de inventário é aposentado nesta reforma.
+- A reforma substitui os validadores customizados do inventário e do relatório de Functions. O `build.license` nativo do Vite continua gerando `legal/BUNDLED-LICENSES.md` para o navegador; os textos completos de `legal/FUNCTIONS-BUNDLED-LICENSES.md`, entregues anteriormente em #346, permanecem como snapshot mantido e distribuído com o aplicativo. O snapshot exige revisão quando as dependências de servidor mudarem e não comprova automaticamente a cobertura de versões futuras.
+- Linear Release usa a action e o CLI oficiais `v0.17.2`, com gatilho após Deploy de push bem-sucedido no mesmo repositório, SHA publicado exato, histórico Git completo, environment dedicado e permissões mínimas.
+- CodeQL usa Default setup; Dependency Review, OpenSSF Scorecard e Zizmor usam diretamente as implementações oficiais. Pages mantém seu artefato documental separado; CI e Deploy preservam lint raiz/frontend, Prettier HTML, Biome, testes e builds do navegador e de Functions.
 - O deploy passa a usar `cloudflare/wrangler-action` oficial; o identificador da D1 compartilhada fica versionado no `wrangler.json`, enquanto tokens e credenciais permanecem secretos.
 - O Auto-add nativo dos Projects #11 e #17 substitui o workflow com GitHub App e seu verificador.
-- `eslint-plugin-react-refresh` sobe de 0.5.3 para 0.5.4 e `typescript-eslint` de 8.66.0 para 8.67.0 nos dois pacotes; CodeQL sobe para v4.37.7.
-- O cooldown nativo do Dependabot passa a sete dias para atualizacoes de versao npm; atualizacoes de seguranca continuam imediatas e Actions permanecem excluidas do atraso.
+- As atualizações anteriores de ferramentas permanecem nos lockfiles; a gestão do CodeQL passa a ser feita pelo Default setup nativo, sem pin de workflow avançado no repositório.
+- Dependabot acompanha Actions e os dois pacotes npm semanalmente às segundas-feiras, 06:00 em `America/Sao_Paulo`, com cooldown de sete dias para atualizações de versão, exceto `actions/*` e `github/*`. Minor/patch são agrupados e majors permanecem separados; a elegibilidade ao auto-merge não fica limitada aos grupos. Os dois ignores de TypeScript `>=6.1.0` permanecem até compatibilidade upstream.
+- O override npm já existente de `sharp` no frontend é atualizado para `0.35.4` neste lote, com lockfile regenerado pela ferramenta oficial, sem alterar a versão interna `2.25.5` nem o comportamento do aplicativo.
+- As instruções ativas passam a refletir um único operador, autonomia dos repositórios, configurações oficiais com identificadores não secretos e aprovação prévia do relatório antes de commit/push/PR ou de mudanças de configuração GitHub. O preparo do Swiss WASM e os bindings D1 permanecem preservados.
 
 ### Removido
 
 - O `actions.lock` inválido que impedia o início dos workflows e seus comentários de gerenciamento; as actions continuam fixadas por SHA completo, com jobs e permissões inalterados (#362).
-- Native Auto-merge, Auto-release, Releases/tags do web app, validadores customizados de Dependency Review/Scorecard/Projects e o verificador proprio de binarios rastreados.
+- Os antigos controladores Native Auto-merge/Auto-release, Releases/tags do web app, validadores customizados de Dependency Review/Scorecard/Projects e o verificador próprio de binários rastreados. O auto-merge nativo do GitHub para Dependabot não é removido.
+- Workflow avançado CodeQL já substituído pelo Default setup e os cinco executáveis/testes customizados de inventário e geração de notices de Functions, junto apenas de seus consumidores exclusivos. Os lockfiles npm, a preparação do Swiss WASM e os textos jurídicos completos permanecem.
 - O versionamento GitHub externo deixa de ser produzido; a versao interna `APP v02.25.05`, exibida no rodape e validada pelos testes normais do aplicativo, permanece inalterada.
 
 ## [v02.25.05] - 10/08/2026

@@ -7,7 +7,7 @@
 [![status: stable](https://img.shields.io/badge/status-stable-brightgreen.svg)](#status)
 [![Deploy](https://github.com/LCV-Ideas-Software/astrologo-app/actions/workflows/deploy.yml/badge.svg)](https://github.com/LCV-Ideas-Software/astrologo-app/actions/workflows/deploy.yml)
 [![Pages](https://github.com/LCV-Ideas-Software/astrologo-app/actions/workflows/pages.yml/badge.svg)](https://github.com/LCV-Ideas-Software/astrologo-app/actions/workflows/pages.yml)
-[![CodeQL](https://github.com/LCV-Ideas-Software/astrologo-app/actions/workflows/codeql.yml/badge.svg)](https://github.com/LCV-Ideas-Software/astrologo-app/actions/workflows/codeql.yml)
+[![CodeQL: Default setup](https://img.shields.io/badge/CodeQL-Default%20setup-2ea44f)](https://github.com/LCV-Ideas-Software/astrologo-app/security/code-scanning)
 [![runtime: Cloudflare Pages](https://img.shields.io/badge/runtime-Cloudflare%20Pages-orange.svg)](https://pages.cloudflare.com/)
 [![framework: React 19 + Vite 8](https://img.shields.io/badge/framework-React%2019%20%2B%20Vite%208-61dafb.svg)](https://react.dev/)
 [![license: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
@@ -105,7 +105,9 @@ You will need:
 
 ```bash
 git clone https://github.com/LCV-Ideas-Software/astrologo-app.git
-cd astrologo-app/astrologo-frontend
+cd astrologo-app
+npm ci
+cd astrologo-frontend
 npm ci
 ```
 
@@ -150,11 +152,16 @@ By default the client targets the LCV Ideas & Software project (`lcv-ideas-and-s
 
 ### 6. Build + deploy
 
+From `astrologo-frontend/`, for your own fork:
+
 ```bash
-cd astrologo-frontend
 npm run build
+npm run build:functions
 npx wrangler pages deploy dist --project-name=astrologo-frontend
 ```
+
+The maintained LCV deployment uses GitHub Actions from `main`, not a local
+production deployment.
 
 ## Repository layout
 
@@ -162,12 +169,51 @@ This repo uses a sub-project structure:
 
 - `astrologo-frontend/` — React + Vite app + Pages Functions (the actual deployable surface; contains its own `wrangler.json` with D1 binding).
 - `migrations/` — historical SQL migrations. The authoritative shared `bigdata_db` migrations are governed by `admin-app/db/migrations` and must be applied before deployment.
-- `LICENSE`, `NOTICE`, `THIRDPARTY.md`, `SECURITY.md`, `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md` — repo conventions at root.
-- `.github/workflows/deploy.yml` — CI: install + validate + deploy with the official Cloudflare Wrangler Action.
+- `LICENSE`, `NOTICE`, `THIRDPARTY.md`, `INBOUND.md`, `SECURITY.md`, `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md` — repo conventions at root.
+- `.github/workflows/ci.yml` — root and frontend validation for PRs to `main`.
+- `.github/workflows/deploy.yml` — repeat validation and deploy with the official Cloudflare Wrangler Action.
 
-## CI deploy (this repo)
+## CI and native governance
 
-Triggers on push to `main`. Steps: setup-node 24 → npm install + application validation (in `astrologo-frontend/`) → the official Cloudflare Wrangler Action runs `pages deploy dist`. The D1 `database_id` is a versioned identifier in `wrangler.json`; only Cloudflare API tokens and application credentials remain in GitHub Secrets or Cloudflare Secrets Store.
+CI runs on PRs to `main` and manual dispatches with Node.js 24. It installs both
+npm roots with `npm ci`, then checks root ESLint/public HTML formatting and
+frontend ESLint, Biome, tests, Vite build and Wrangler Pages Functions build.
+Deploy repeats these checks on a push to `main` and publishes the application
+with the official Cloudflare Wrangler Action and Wrangler 4.127.1. The existing
+D1 binding, Swiss WASM preparation and application behavior remain unchanged.
+
+GitHub Pages serves the separate `site/` artifact, with a PR build and deployment
+only from `main`. [CodeQL Default setup](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/configure-code-scanning/configure-code-scanning)
+replaces the repository's advanced workflow; Dependency Review, Zizmor and
+Scorecard use their official implementations. There is no central controller,
+merge queue, `actions.lock` or custom legal-inventory gate.
+
+Dependabot checks Actions and both npm roots weekly on Monday at 06:00 in
+`America/Sao_Paulo`, with a seven-day version-update cooldown except for
+`actions/*` and `github/*`. Minor/patch updates are grouped and majors are
+separate. Native auto-merge applies to same-repository Dependabot PRs, including
+majors, subject to the effective required checks; it does not require manual AI
+review. The TypeScript `>=6.1.0` ignores stay until upstream peer compatibility
+allows their removal.
+
+Linear Release uses the official action and CLI after a successful
+push-triggered production Deploy, checking out its exact published SHA with
+full history. This is a web deployment record, not npm or Windows publication;
+the internal version remains `2.25.5` / `APP v02.25.05`.
+
+The native [Vite license report](https://vite.dev/config/build-options.html#build-license)
+continues to generate `legal/BUNDLED-LICENSES.md` for the browser build. Complete
+Functions license texts remain in `public/legal/FUNCTIONS-BUNDLED-LICENSES.md`
+inside the frontend package as a maintained snapshot. Update that snapshot and
+the canonical notices when server dependencies or distribution change: Vite
+does not cover Functions, and a preserved snapshot does not prove future bundle
+coverage. See [THIRDPARTY.md](./THIRDPARTY.md) for provenance and scope.
+
+New fleet governance supersedes obsolete repository-specific controls. Agents
+prepare changes locally and present the full report for operator approval before
+commit, push or PR; GitHub settings changes require separate explicit approval.
+Nonsecret identifiers needed by official configuration may be versioned; tokens
+and credentials remain secret. Preserve resource and domain identities.
 
 ## Repository conventions
 
@@ -177,6 +223,7 @@ Triggers on push to `main`. Steps: setup-node 24 → npm install + application v
 - **Code of conduct**: see [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
 - **Changelog**: [CHANGELOG.md](./CHANGELOG.md).
 - **Contributing**: see [CONTRIBUTING.md](./CONTRIBUTING.md).
+- **Inbound rights**: see [INBOUND.md](./INBOUND.md).
 - **Sponsorship**: see the repo's `Sponsor` button or [central sponsor page](https://www.lcv.dev/sponsor).
 - **Action pinning**: all GitHub Actions are pinned by full SHA per supply-chain hardening baseline.
 - **Code owners**: [.github/CODEOWNERS](.github/CODEOWNERS).
