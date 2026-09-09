@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Corrigido
+
+- Os dois arquivos de configuração ESLint definem `parserOptions.tsconfigRootDir` como `import.meta.dirname`, conforme a opção oficial do typescript-eslint. Isso elimina a ambiguidade entre raiz e frontend quando a CI executa o lint antes de instalar o segundo pacote npm, sem ignorar arquivos nem desativar regras (ASTROLO-18 / #373).
+
 ### Adicionado
 
 - CI local ao repositório para PRs e auto-merge nativo do Dependabot, sem controlador central ou revisão manual obrigatória de bots; os checks efetivos continuam condicionando a admissão (ASTROLO-18 / #372).
