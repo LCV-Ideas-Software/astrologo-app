@@ -48,7 +48,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | typescript-eslint | devDependencies | ^8.69.0 | 8.69.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.69.0.tgz |
 | astrologo-frontend/package.json | vite | devDependencies | ^8.2.2 | 8.2.2 | MIT | https://registry.npmjs.org/vite/-/vite-8.2.2.tgz |
 | astrologo-frontend/package.json | vitest | devDependencies | ^4.1.11 | 4.1.11 | MIT | https://registry.npmjs.org/vitest/-/vitest-4.1.11.tgz |
-| astrologo-frontend/package.json | wrangler | devDependencies | 4.127.1 | 4.127.1 | MIT OR Apache-2.0 | https://registry.npmjs.org/wrangler/-/wrangler-4.127.1.tgz |
+| astrologo-frontend/package.json | wrangler | devDependencies | 4.128.0 | 4.128.0 | MIT OR Apache-2.0 | https://registry.npmjs.org/wrangler/-/wrangler-4.128.0.tgz |
 
 ## Textos das licenças dos bundles publicados
 
