@@ -4,10 +4,9 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "America/Sao_Paulo"
+      interval: "cron"
+      cronjob: "0 5 * * *"
+      timezone: "Etc/GMT+3"
     cooldown:
       default-days: 7
       exclude:
@@ -16,12 +15,16 @@ updates:
     rebase-strategy: auto
     labels:
       - "dependencies"
-      - "github-actions"
+      - "GitHub Actions"
     commit-message:
       prefix: "deps"
       include: "scope"
     open-pull-requests-limit: 10
     groups:
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
       minor-e-patch:
         applies-to: version-updates
         patterns:
@@ -33,10 +36,9 @@ updates:
   - package-ecosystem: "npm"
     directory: "/astrologo-frontend"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "America/Sao_Paulo"
+      interval: "cron"
+      cronjob: "0 5 * * *"
+      timezone: "Etc/GMT+3"
     cooldown:
       default-days: 7
     rebase-strategy: auto
@@ -55,6 +57,10 @@ updates:
       include: "scope"
     versioning-strategy: increase
     groups:
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
       minor-e-patch:
         applies-to: version-updates
         patterns:
@@ -67,10 +73,9 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "America/Sao_Paulo"
+      interval: "cron"
+      cronjob: "0 5 * * *"
+      timezone: "Etc/GMT+3"
     cooldown:
       default-days: 7
     rebase-strategy: auto
@@ -89,6 +94,10 @@ updates:
     open-pull-requests-limit: 10
     versioning-strategy: increase
     groups:
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
       minor-e-patch:
         applies-to: version-updates
         patterns:
