@@ -4,6 +4,8 @@
 
 ### Corrigido
 
+- Sincronizadas as duas cópias do inventário de dependências diretas com os manifestos e lockfiles: `globals` 17.12.0 nos dois pacotes, `lucide-react` 1.39.0 e `@types/node` 26.4.1 no frontend. Os textos integrais das licenças permanecem inalterados.
+
 - Os dois arquivos de configuração ESLint definem `parserOptions.tsconfigRootDir` como `import.meta.dirname`, conforme a opção oficial do typescript-eslint. Isso elimina a ambiguidade entre raiz e frontend quando a CI executa o lint antes de instalar o segundo pacote npm, sem ignorar arquivos nem desativar regras (ASTROLO-18 / #373).
 
 ### Adicionado
@@ -18,7 +20,7 @@
 - O inventário acompanha as quatro atualizações de ferramentas do frontend (#364). A entrada do Wrangler acompanha a versão 4.128.0 fixada no lockfile; os textos MIT e Apache-2.0 do tag oficial são idênticos aos já preservados.
 - As cópias canônicas do inventário acompanham o `typescript-eslint` 8.69.0 do frontend, sem alterar as obrigações de licença (#370).
 - As cópias canônicas do inventário acompanham o `typescript-eslint` 8.69.0 do pacote raiz, sem alterar as obrigações de licença (#369).
-- O inventário preserva a atualização do `lucide-react` 1.38.0 já fixado no lockfile (#365); o teste customizado de inventário é aposentado nesta reforma.
+- O inventário preserva a atualização anterior do `lucide-react` (#365); o teste customizado de inventário é aposentado nesta reforma.
 - A reforma substitui os validadores customizados do inventário e do relatório de Functions. O `build.license` nativo do Vite continua gerando `legal/BUNDLED-LICENSES.md` para o navegador; os textos completos de `legal/FUNCTIONS-BUNDLED-LICENSES.md`, entregues anteriormente em #346, permanecem como snapshot mantido e distribuído com o aplicativo. O snapshot exige revisão quando as dependências de servidor mudarem e não comprova automaticamente a cobertura de versões futuras.
 - Linear Release usa a action e o CLI oficiais `v0.17.2`, com gatilho após Deploy de push bem-sucedido no mesmo repositório, SHA publicado exato, histórico Git completo, environment dedicado e permissões mínimas.
 - CodeQL usa Default setup; Dependency Review, OpenSSF Scorecard e Zizmor usam diretamente as implementações oficiais. Pages mantém seu artefato documental separado; CI e Deploy preservam lint raiz/frontend, Prettier HTML, Biome, testes e builds do navegador e de Functions.
