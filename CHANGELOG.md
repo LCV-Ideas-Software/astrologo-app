@@ -4,7 +4,7 @@
 
 ### Corrigido
 
-- Sincronizadas as duas cópias do inventário de dependências diretas com os manifestos e lockfiles: `globals` 17.12.0 nos dois pacotes, `lucide-react` 1.39.0 e `@types/node` 26.4.1 no frontend. Os textos integrais das licenças permanecem inalterados.
+- Sincronizadas as duas cópias do inventário de dependências diretas com os manifestos e lockfiles: `globals` 17.12.0 e `eslint-plugin-react-refresh` 0.5.6 nos dois pacotes; `lucide-react` 1.40.0, `@biomejs/biome` 2.5.12, `@types/react-dom` 19.2.7, `vitest` 5.0.0 e `@types/node` 26.4.1 no frontend. Os textos integrais das licenças permanecem inalterados.
 
 - Os dois arquivos de configuração ESLint definem `parserOptions.tsconfigRootDir` como `import.meta.dirname`, conforme a opção oficial do typescript-eslint. Isso elimina a ambiguidade entre raiz e frontend quando a CI executa o lint antes de instalar o segundo pacote npm, sem ignorar arquivos nem desativar regras (ASTROLO-18 / #373).
 
@@ -15,9 +15,9 @@
 
 ### Alterado
 
-- Atualizados os pins oficiais de CodeQL para 4.38.0 e zizmor-action para 0.6.4; o input do deploy usa o Wrangler 4.128.0 já fixado no lockfile.
+- Atualizados os pins oficiais de CodeQL para 4.38.0 e zizmor-action para 0.6.4; o input do deploy e sua documentação passam a acompanhar o Wrangler 4.129.0 já fixado no lockfile do frontend.
 
-- O inventário acompanha as quatro atualizações de ferramentas do frontend (#364). A entrada do Wrangler acompanha a versão 4.128.0 fixada no lockfile; os textos MIT e Apache-2.0 do tag oficial são idênticos aos já preservados.
+- O inventário acompanha as quatro atualizações de ferramentas do frontend (#364). A entrada do Wrangler nas duas cópias do inventário acompanha a versão 4.129.0 fixada no lockfile, sob MIT OR Apache-2.0 conforme o artefato oficial.
 - As cópias canônicas do inventário acompanham o `typescript-eslint` 8.69.0 do frontend, sem alterar as obrigações de licença (#370).
 - As cópias canônicas do inventário acompanham o `typescript-eslint` 8.69.0 do pacote raiz, sem alterar as obrigações de licença (#369).
 - O inventário preserva a atualização anterior do `lucide-react` (#365); o teste customizado de inventário é aposentado nesta reforma.
