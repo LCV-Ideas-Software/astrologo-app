@@ -4,7 +4,7 @@
 
 ### Corrigido
 
-- Sincronizadas as duas cópias do inventário de dependências diretas com os manifestos e lockfiles: `globals` 17.12.0 e `eslint-plugin-react-refresh` 0.5.6 nos dois pacotes; `lucide-react` 1.40.0, `@biomejs/biome` 2.5.12, `@types/react-dom` 19.2.7, `vitest` 5.0.0 e `@types/node` 26.4.1 no frontend. Os textos integrais das licenças permanecem inalterados.
+- Sincronizadas as duas cópias do inventário de dependências diretas com os manifestos e lockfiles: `eslint` 10.10.0, `globals` 17.12.0 e `eslint-plugin-react-refresh` 0.5.6 nos dois pacotes; `lucide-react` 1.41.0, `@biomejs/biome` 2.5.12, `@types/react-dom` 19.2.7, `vitest` 5.0.0 e `@types/node` 26.4.1 no frontend. As versões resolvidas e URLs dos artefatos acompanham o inventário; os textos integrais das licenças permanecem inalterados.
 
 - Os dois arquivos de configuração ESLint definem `parserOptions.tsconfigRootDir` como `import.meta.dirname`, conforme a opção oficial do typescript-eslint. Isso elimina a ambiguidade entre raiz e frontend quando a CI executa o lint antes de instalar o segundo pacote npm, sem ignorar arquivos nem desativar regras (ASTROLO-18 / #373).
 
