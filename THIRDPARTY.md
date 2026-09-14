@@ -20,7 +20,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | @tailwindcss/vite | dependencies | ^4.3.3 | 4.3.3 | MIT | https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.3.tgz |
 | astrologo-frontend/package.json | astronomy-engine | dependencies | 2.1.19 | 2.1.19 | MIT | https://registry.npmjs.org/astronomy-engine/-/astronomy-engine-2.1.19.tgz |
 | astrologo-frontend/package.json | d3-geo | dependencies | 3.1.1 | 3.1.1 | ISC | https://registry.npmjs.org/d3-geo/-/d3-geo-3.1.1.tgz |
-| astrologo-frontend/package.json | dompurify | dependencies | ^3.4.14 | 3.4.14 | (MPL-2.0 OR Apache-2.0) | https://registry.npmjs.org/dompurify/-/dompurify-3.4.14.tgz |
+| astrologo-frontend/package.json | dompurify | dependencies | ^3.4.15 | 3.4.15 | (MPL-2.0 OR Apache-2.0) | https://registry.npmjs.org/dompurify/-/dompurify-3.4.15.tgz |
 | astrologo-frontend/package.json | lucide-react | dependencies | ^1.41.0 | 1.41.0 | ISC | https://registry.npmjs.org/lucide-react/-/lucide-react-1.41.0.tgz |
 | astrologo-frontend/package.json | react | dependencies | ^19.2.8 | 19.2.8 | MIT | https://registry.npmjs.org/react/-/react-19.2.8.tgz |
 | astrologo-frontend/package.json | react-dom | dependencies | ^19.2.8 | 19.2.8 | MIT | https://registry.npmjs.org/react-dom/-/react-dom-19.2.8.tgz |
