@@ -9,7 +9,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | Manifesto | Componente | Relação | Versão declarada | Versão resolvida | Licença do artefato | Origem |
 | --- | --- | --- | --- | --- | --- | --- |
 | package.json | @eslint/js | devDependencies | ^10.0.1 | 10.0.1 | MIT | https://registry.npmjs.org/@eslint/js/-/js-10.0.1.tgz |
-| package.json | eslint | devDependencies | ^10.9.1 | 10.9.1 | MIT | https://registry.npmjs.org/eslint/-/eslint-10.9.1.tgz |
+| package.json | eslint | devDependencies | ^10.10.0 | 10.10.0 | MIT | https://registry.npmjs.org/eslint/-/eslint-10.10.0.tgz |
 | package.json | eslint-config-prettier | devDependencies | ^10.1.8 | 10.1.8 | MIT | https://registry.npmjs.org/eslint-config-prettier/-/eslint-config-prettier-10.1.8.tgz |
 | package.json | eslint-plugin-react-hooks | devDependencies | ^7.1.1 | 7.1.1 | MIT | https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-7.1.1.tgz |
 | package.json | eslint-plugin-react-refresh | devDependencies | ^0.5.6 | 0.5.6 | MIT | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.6.tgz |
@@ -21,7 +21,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | astronomy-engine | dependencies | 2.1.19 | 2.1.19 | MIT | https://registry.npmjs.org/astronomy-engine/-/astronomy-engine-2.1.19.tgz |
 | astrologo-frontend/package.json | d3-geo | dependencies | 3.1.1 | 3.1.1 | ISC | https://registry.npmjs.org/d3-geo/-/d3-geo-3.1.1.tgz |
 | astrologo-frontend/package.json | dompurify | dependencies | ^3.4.14 | 3.4.14 | (MPL-2.0 OR Apache-2.0) | https://registry.npmjs.org/dompurify/-/dompurify-3.4.14.tgz |
-| astrologo-frontend/package.json | lucide-react | dependencies | ^1.40.0 | 1.40.0 | ISC | https://registry.npmjs.org/lucide-react/-/lucide-react-1.40.0.tgz |
+| astrologo-frontend/package.json | lucide-react | dependencies | ^1.41.0 | 1.41.0 | ISC | https://registry.npmjs.org/lucide-react/-/lucide-react-1.41.0.tgz |
 | astrologo-frontend/package.json | react | dependencies | ^19.2.8 | 19.2.8 | MIT | https://registry.npmjs.org/react/-/react-19.2.8.tgz |
 | astrologo-frontend/package.json | react-dom | dependencies | ^19.2.8 | 19.2.8 | MIT | https://registry.npmjs.org/react-dom/-/react-dom-19.2.8.tgz |
 | astrologo-frontend/package.json | sanitize-html | dependencies | ^2.17.7 | 2.17.7 | MIT | https://registry.npmjs.org/sanitize-html/-/sanitize-html-2.17.7.tgz |
@@ -38,7 +38,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | @types/sanitize-html | devDependencies | ^2.16.1 | 2.16.1 | MIT | https://registry.npmjs.org/@types/sanitize-html/-/sanitize-html-2.16.1.tgz |
 | astrologo-frontend/package.json | @types/topojson-client | devDependencies | 3.1.5 | 3.1.5 | MIT | https://registry.npmjs.org/@types/topojson-client/-/topojson-client-3.1.5.tgz |
 | astrologo-frontend/package.json | @vitejs/plugin-react | devDependencies | ^6.1.1 | 6.1.1 | MIT | https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-6.1.1.tgz |
-| astrologo-frontend/package.json | eslint | devDependencies | ^10.9.1 | 10.9.1 | MIT | https://registry.npmjs.org/eslint/-/eslint-10.9.1.tgz |
+| astrologo-frontend/package.json | eslint | devDependencies | ^10.10.0 | 10.10.0 | MIT | https://registry.npmjs.org/eslint/-/eslint-10.10.0.tgz |
 | astrologo-frontend/package.json | eslint-config-prettier | devDependencies | ^10.1.8 | 10.1.8 | MIT | https://registry.npmjs.org/eslint-config-prettier/-/eslint-config-prettier-10.1.8.tgz |
 | astrologo-frontend/package.json | eslint-plugin-react-hooks | devDependencies | ^7.1.1 | 7.1.1 | MIT | https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-7.1.1.tgz |
 | astrologo-frontend/package.json | eslint-plugin-react-refresh | devDependencies | ^0.5.6 | 0.5.6 | MIT | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.6.tgz |
