@@ -4,6 +4,8 @@
 
 ### Corrigido
 
+- Acrescentados créditos e links de Open-Meteo/GeoNames e CC BY 4.0 junto às sugestões de localização, nos relatórios compartilhados por cópia, WhatsApp e e-mail e nas duas cópias de `NOTICE`.
+
 - Preservadas em `NOTICE` e na cópia pública a atribuição e a licença MIT integral dos assets do template oficial do Vite, com fontes e hashes exatos de `icons.svg` e `hero.png`.
 
 - As duas cópias de `THIRDPARTY.md` acompanham o DOMPurify 3.4.15 já registrado no manifesto e no lockfile do frontend, incluindo a URL do artefato oficial.

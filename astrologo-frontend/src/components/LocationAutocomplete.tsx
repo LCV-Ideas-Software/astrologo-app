@@ -77,23 +77,42 @@ export function LocationAutocomplete({
 
   return (
     <div className="relative w-full" ref={wrapperRef}>
-      <input
-        id={inputId}
-        name="birthLocation"
-        required
-        type="text"
-        aria-label={ariaLabel}
-        placeholder="Ex.: Rio de Janeiro, RJ"
-        autoComplete="off"
-        className="w-full rounded-xl border border-slate-200 bg-white/80 p-4 pl-12 text-base font-medium text-slate-800 shadow-sm outline-none backdrop-blur-sm transition placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-400"
-        value={query || value}
-        onChange={handleInputChange}
-        onFocus={() => suggestions.length > 0 && setIsOpen(true)}
-      />
-      <MapPin className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-      {loading && <Sparkles className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-blue-500" />}
+      <div className="relative">
+        <input
+          id={inputId}
+          name="birthLocation"
+          required
+          type="text"
+          aria-label={ariaLabel}
+          placeholder="Ex.: Rio de Janeiro, RJ"
+          autoComplete="off"
+          className="w-full rounded-xl border border-slate-200 bg-white/80 p-4 pl-12 text-base font-medium text-slate-800 shadow-sm outline-none backdrop-blur-sm transition placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-400"
+          value={query || value}
+          onChange={handleInputChange}
+          onFocus={() => suggestions.length > 0 && setIsOpen(true)}
+        />
+        <MapPin className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+        {loading && (
+          <Sparkles className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-blue-500" />
+        )}
+      </div>
+      <p className="mt-2 text-xs leading-relaxed text-slate-500">
+        Geocodificação:{' '}
+        <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" className="underline">
+          Open-Meteo
+        </a>{' '}
+        /{' '}
+        <a href="https://www.geonames.org/" target="_blank" rel="noreferrer" className="underline">
+          GeoNames
+        </a>{' '}
+        ·{' '}
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" className="underline">
+          CC BY 4.0
+        </a>
+        . Nomes formatados.
+      </p>
       {isOpen && suggestions.length > 0 && (
-        <ul className="absolute z-100 mt-2 max-h-60 w-full divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl">
+        <ul className="absolute left-0 top-full z-100 mt-2 max-h-60 w-full divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl">
           {suggestions.map((suggestion, index) => (
             <li key={suggestion.id ?? index}>
               <button

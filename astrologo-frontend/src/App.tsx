@@ -629,24 +629,41 @@ const LocationAutocomplete: React.FC<AutocompleteProps> = ({ value, onChange }) 
 
   return (
     <div className="relative w-full" ref={wrapperRef}>
-      <input
-        id="localNascimentoInput"
-        name="birthLocation"
-        required
-        type="text"
-        placeholder="Ex: Rio de Janeiro, RJ"
-        autoComplete="off"
-        className="w-full p-4 pl-12 bg-white/80 text-slate-800 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:bg-white outline-none transition shadow-sm backdrop-blur-sm text-base font-medium placeholder-slate-400"
-        value={query || value}
-        onChange={handleInputChange}
-        onFocus={() => suggestions.length > 0 && setIsOpen(true)}
-      />
-      <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-      {loading && (
-        <Sparkles className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 animate-spin text-blue-500" />
-      )}
+      <div className="relative">
+        <input
+          id="localNascimentoInput"
+          name="birthLocation"
+          required
+          type="text"
+          placeholder="Ex: Rio de Janeiro, RJ"
+          autoComplete="off"
+          className="w-full p-4 pl-12 bg-white/80 text-slate-800 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:bg-white outline-none transition shadow-sm backdrop-blur-sm text-base font-medium placeholder-slate-400"
+          value={query || value}
+          onChange={handleInputChange}
+          onFocus={() => suggestions.length > 0 && setIsOpen(true)}
+        />
+        <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+        {loading && (
+          <Sparkles className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 animate-spin text-blue-500" />
+        )}
+      </div>
+      <p className="mt-2 text-xs leading-relaxed text-slate-500">
+        Geocodificação:{' '}
+        <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" className="underline">
+          Open-Meteo
+        </a>{' '}
+        /{' '}
+        <a href="https://www.geonames.org/" target="_blank" rel="noreferrer" className="underline">
+          GeoNames
+        </a>{' '}
+        ·{' '}
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" className="underline">
+          CC BY 4.0
+        </a>
+        . Nomes formatados.
+      </p>
       {isOpen && suggestions.length > 0 && (
-        <ul className="absolute z-100 w-full bg-white/95 backdrop-blur-xl border border-slate-200 mt-2 rounded-xl shadow-2xl overflow-hidden divide-y divide-slate-100 max-h-60 overflow-y-auto">
+        <ul className="absolute left-0 top-full z-100 w-full bg-white/95 backdrop-blur-xl border border-slate-200 mt-2 rounded-xl shadow-2xl overflow-hidden divide-y divide-slate-100 max-h-60 overflow-y-auto">
           {suggestions.map((s, i) => (
             <li
               key={s.id ?? i}
@@ -1243,6 +1260,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
     let t = `*🌌 MAPEAMENTO ASTROLÓGICO E ESOTÉRICO 🌌*\n\n`;
     t += `*Consulente:* ${result.query.nome}\n`;
     t += `*Local:* ${result.query.localNascimento}\n`;
+    t += `Geocodificação: Open-Meteo (https://open-meteo.com/) / GeoNames (https://www.geonames.org/) · CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Nomes formatados.\n`;
     t += `*Nascimento:* ${formatBirthForDisplay(result)}\n`;
 
     t += divider;
@@ -1423,6 +1441,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
             <div style="background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 32px; border-radius: 24px; border: 1px solid #ffffff; ${boxShadow} text-align: center; margin-bottom: 40px;">
                 <h2 style="font-size: 24px; font-weight: 800; color: #1e293b; margin: 0 0 8px 0;">${result.query.nome}</h2>
                 <p style="font-size: 16px; color: #475569; margin: 0;">${result.query.localNascimento}</p>
+                <p style="font-size: 12px; color: #64748b; margin: 8px 0;">Geocodificação: <a href="https://open-meteo.com/">Open-Meteo</a> / <a href="https://www.geonames.org/">GeoNames</a> · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Nomes formatados.</p>
                 <p style="font-size: 16px; color: #475569; margin: 0;">${formatBirthForDisplay(result)}</p>
             </div>
 
