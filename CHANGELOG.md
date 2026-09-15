@@ -6,7 +6,7 @@
 
 - As duas cópias de `THIRDPARTY.md` acompanham o DOMPurify 3.4.15 já registrado no manifesto e no lockfile do frontend, incluindo a URL do artefato oficial.
 
-- Sincronizadas as duas cópias do inventário de dependências diretas com os manifestos e lockfiles: `eslint` 10.10.0, `globals` 17.12.0 e `eslint-plugin-react-refresh` 0.5.6 nos dois pacotes; `lucide-react` 1.41.0, `@biomejs/biome` 2.5.12, `@types/react-dom` 19.2.7, `vitest` 5.0.0 e `@types/node` 26.4.1 no frontend. As versões resolvidas e URLs dos artefatos acompanham o inventário; os textos integrais das licenças permanecem inalterados.
+- Sincronizadas as duas cópias do inventário de dependências diretas com os manifestos e lockfiles: `eslint` 10.10.0, `globals` 17.12.0 e `eslint-plugin-react-refresh` 0.5.6 nos dois pacotes; `lucide-react` 1.42.0, `@biomejs/biome` 2.5.12, `@types/react-dom` 19.2.7, `vitest` 5.0.0 e `@types/node` 26.5.0 no frontend. As versões resolvidas e URLs dos artefatos acompanham o inventário; a entrada de `lucide-react` registra ISC AND MIT conforme o texto do artefato oficial, e os textos integrais das licenças permanecem inalterados.
 
 - Os dois arquivos de configuração ESLint definem `parserOptions.tsconfigRootDir` como `import.meta.dirname`, conforme a opção oficial do typescript-eslint. Isso elimina a ambiguidade entre raiz e frontend quando a CI executa o lint antes de instalar o segundo pacote npm, sem ignorar arquivos nem desativar regras (ASTROLO-18 / #373).
 
@@ -17,19 +17,18 @@
 
 ### Alterado
 
-- Atualizados os pins oficiais de CodeQL para 4.38.0 e zizmor-action para 0.6.4; o input do deploy e sua documentação passam a acompanhar o Wrangler 4.129.0 já fixado no lockfile do frontend.
+- Atualizados os pins oficiais de CodeQL para 4.38.0 e zizmor-action para 0.6.4; o input do deploy e sua documentação passam a acompanhar o Wrangler 4.129.1 já fixado no lockfile do frontend.
 
-- O inventário acompanha as quatro atualizações de ferramentas do frontend (#364). A entrada do Wrangler nas duas cópias do inventário acompanha a versão 4.129.0 fixada no lockfile, sob MIT OR Apache-2.0 conforme o artefato oficial.
-- As cópias canônicas do inventário acompanham o `typescript-eslint` 8.69.0 do frontend, sem alterar as obrigações de licença (#370).
-- As cópias canônicas do inventário acompanham o `typescript-eslint` 8.69.0 do pacote raiz, sem alterar as obrigações de licença (#369).
+- O inventário acompanha as quatro atualizações de ferramentas do frontend (#364). A entrada do Wrangler nas duas cópias do inventário acompanha a versão 4.129.1 fixada no lockfile, sob MIT OR Apache-2.0 conforme o artefato oficial.
+- As cópias canônicas do inventário acompanham o `typescript-eslint` 8.70.0 nos pacotes raiz e frontend, sem alterar as obrigações de licença.
 - O inventário preserva a atualização anterior do `lucide-react` (#365); o teste customizado de inventário é aposentado nesta reforma.
 - A reforma substitui os validadores customizados do inventário e do relatório de Functions. O `build.license` nativo do Vite continua gerando `legal/BUNDLED-LICENSES.md` para o navegador; os textos completos de `legal/FUNCTIONS-BUNDLED-LICENSES.md`, entregues anteriormente em #346, permanecem como snapshot mantido e distribuído com o aplicativo. O snapshot exige revisão quando as dependências de servidor mudarem e não comprova automaticamente a cobertura de versões futuras.
-- Linear Release usa a action e o CLI oficiais `v0.17.2`, com gatilho após Deploy de push bem-sucedido no mesmo repositório, SHA publicado exato, histórico Git completo, environment dedicado e permissões mínimas.
+- Linear Release usa a action e o CLI oficiais `v0.18.0`, com gatilho após Deploy de push bem-sucedido no mesmo repositório, SHA publicado exato, histórico Git completo, environment dedicado e permissões mínimas.
 - CodeQL usa Default setup; Dependency Review, OpenSSF Scorecard e Zizmor usam diretamente as implementações oficiais. Pages mantém seu artefato documental separado; CI e Deploy preservam lint raiz/frontend, Prettier HTML, Biome, testes e builds do navegador e de Functions.
 - O deploy passa a usar `cloudflare/wrangler-action` oficial; o identificador da D1 compartilhada fica versionado no `wrangler.json`, enquanto tokens e credenciais permanecem secretos.
 - O Auto-add nativo dos Projects #11 e #17 substitui o workflow com GitHub App e seu verificador.
 - As atualizações anteriores de ferramentas permanecem nos lockfiles; a gestão do CodeQL passa a ser feita pelo Default setup nativo, sem pin de workflow avançado no repositório.
-- Dependabot acompanha Actions e os dois pacotes npm semanalmente às segundas-feiras, 06:00 em `America/Sao_Paulo`, com cooldown de sete dias para atualizações de versão, exceto `actions/*` e `github/*`. Minor/patch são agrupados e majors permanecem separados; a elegibilidade ao auto-merge não fica limitada aos grupos. Os dois ignores de TypeScript `>=6.1.0` permanecem até compatibilidade upstream.
+- Dependabot acompanha Actions e os dois pacotes npm todos os dias, incluindo fins de semana, às 05:00 em `Etc/GMT+3`, com cron nativo `0 5 * * *` e cooldown de sete dias para atualizações de versão, exceto `actions/*` e `github/*`. Minor/patch são agrupados e majors permanecem separados; a elegibilidade ao auto-merge não fica limitada aos grupos. Os dois ignores de TypeScript `>=6.1.0` permanecem até compatibilidade upstream.
 - O override npm já existente de `sharp` no frontend é atualizado para `0.35.4` neste lote, com lockfile regenerado pela ferramenta oficial, sem alterar a versão interna `2.25.5` nem o comportamento do aplicativo.
 - As instruções ativas passam a refletir um único operador, autonomia dos repositórios, configurações oficiais com identificadores não secretos e aprovação prévia do relatório antes de commit/push/PR ou de mudanças de configuração GitHub. O preparo do Swiss WASM e os bindings D1 permanecem preservados.
 

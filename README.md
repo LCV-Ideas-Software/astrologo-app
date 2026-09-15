@@ -179,7 +179,7 @@ CI runs on PRs to `main` and manual dispatches with Node.js 24. It installs both
 npm roots with `npm ci`, then checks root ESLint/public HTML formatting and
 frontend ESLint, Biome, tests, Vite build and Wrangler Pages Functions build.
 Deploy repeats these checks on a push to `main` and publishes the application
-with the official Cloudflare Wrangler Action and Wrangler 4.129.0. The existing
+with the official Cloudflare Wrangler Action and Wrangler 4.129.1. The existing
 D1 binding, Swiss WASM preparation and application behavior remain unchanged.
 
 GitHub Pages serves the separate `site/` artifact, with a PR build and deployment
@@ -188,15 +188,15 @@ replaces the repository's advanced workflow; Dependency Review, Zizmor and
 Scorecard use their official implementations. There is no central controller,
 merge queue, `actions.lock` or custom legal-inventory gate.
 
-Dependabot checks Actions and both npm roots weekly on Monday at 06:00 in
-`America/Sao_Paulo`, with a seven-day version-update cooldown except for
+Dependabot checks Actions and both npm roots every day, including weekends,
+at 05:00 in `Etc/GMT+3` (`0 5 * * *`), with a seven-day version-update cooldown except for
 `actions/*` and `github/*`. Minor/patch updates are grouped and majors are
 separate. Native auto-merge applies to same-repository Dependabot PRs, including
 majors, subject to the effective required checks; it does not require manual AI
 review. The TypeScript `>=6.1.0` ignores stay until upstream peer compatibility
 allows their removal.
 
-Linear Release uses the official action and CLI after a successful
+Linear Release uses the official action and CLI `v0.18.0` after a successful
 push-triggered production Deploy, checking out its exact published SHA with
 full history. This is a web deployment record, not npm or Windows publication;
 the internal version remains `2.25.5` / `APP v02.25.05`.
