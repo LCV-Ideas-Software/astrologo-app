@@ -150,3 +150,22 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+GEOCODIFICAÇÃO — OPEN-METEO / GEONAMES — CC BY 4.0
+--------------------------------------------------
+Dados de localização fornecidos pela API de geocodificação Open-Meteo,
+baseada na base de dados GeoNames, sob Creative Commons Attribution 4.0
+International (CC BY 4.0).
+
+Open-Meteo: https://open-meteo.com/
+Documentação: https://open-meteo.com/en/docs/geocoding-api
+GeoNames: https://www.geonames.org/
+Licença dos dados: https://creativecommons.org/licenses/by/4.0/
+
+O aplicativo seleciona resultados, compõe e formata nomes de localidades e
+utiliza coordenadas, fuso horário e elevação retornados pelo serviço. Os
+créditos acompanham as sugestões de localização e os relatórios exportados.
+Esta atribuição identifica os dados de geocodificação; não aplica a licença
+CC BY 4.0 ao código do aplicativo nem a todas as suas interpretações.
+Os termos de acesso à API são separados da licença dos dados:
+https://open-meteo.com/en/terms
