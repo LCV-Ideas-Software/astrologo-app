@@ -4,6 +4,8 @@
 
 ### Corrigido
 
+- Preservadas em `NOTICE` e na cópia pública a atribuição e a licença MIT integral dos assets do template oficial do Vite, com fontes e hashes exatos de `icons.svg` e `hero.png`.
+
 - As duas cópias de `THIRDPARTY.md` acompanham o DOMPurify 3.4.15 já registrado no manifesto e no lockfile do frontend, incluindo a URL do artefato oficial.
 
 - Sincronizadas as duas cópias do inventário de dependências diretas com os manifestos e lockfiles: `eslint` 10.10.0, `globals` 17.12.0 e `eslint-plugin-react-refresh` 0.5.6 nos dois pacotes; `lucide-react` 1.42.0, `@biomejs/biome` 2.5.12, `@types/react-dom` 19.2.7, `vitest` 5.0.0 e `@types/node` 26.5.0 no frontend. As versões resolvidas e URLs dos artefatos acompanham o inventário; a entrada de `lucide-react` registra ISC AND MIT conforme o texto do artefato oficial, e os textos integrais das licenças permanecem inalterados.
