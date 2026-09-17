@@ -60,5 +60,4 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           packageManager: npm
           workingDirectory: astrologo-frontend
-          wranglerVersion: "4.129.1"
           command: pages deploy dist --project-name=astrologo-frontend --branch=main --commit-dirty=true

@@ -4,6 +4,8 @@
 
 ### Corrigido
 
+- O passo de deploy da Cloudflare Wrangler Action deixa de pinar `wranglerVersion` e passa a usar o Wrangler que `npm ci` instala a partir do lockfile do frontend, hoje 4.130.0; o pin manual ficava para trás a cada atualização do Dependabot. `README.md` e as duas cópias de `THIRDPARTY.md` acompanham a versão instalada (ASTROLO-29 / #405, GIT-230).
+
 - Acrescentados créditos e links de Open-Meteo/GeoNames e CC BY 4.0 junto às sugestões de localização, nos relatórios compartilhados por cópia, WhatsApp e e-mail e nas duas cópias de `NOTICE`.
 
 - Preservadas em `NOTICE` e na cópia pública a atribuição e a licença MIT integral dos assets do template oficial do Vite, com fontes e hashes exatos de `icons.svg` e `hero.png`.
