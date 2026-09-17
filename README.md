@@ -179,8 +179,9 @@ CI runs on PRs to `main` and manual dispatches with Node.js 24. It installs both
 npm roots with `npm ci`, then checks root ESLint/public HTML formatting and
 frontend ESLint, Biome, tests, Vite build and Wrangler Pages Functions build.
 Deploy repeats these checks on a push to `main` and publishes the application
-with the official Cloudflare Wrangler Action and Wrangler 4.129.1. The existing
-D1 binding, Swiss WASM preparation and application behavior remain unchanged.
+with the official Cloudflare Wrangler Action, using the Wrangler version that
+`npm ci` installs from the frontend lockfile. The existing D1 binding, Swiss
+WASM preparation and application behavior remain unchanged.
 
 GitHub Pages serves the separate `site/` artifact, with a PR build and deployment
 only from `main`. [CodeQL Default setup](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/configure-code-scanning/configure-code-scanning)
