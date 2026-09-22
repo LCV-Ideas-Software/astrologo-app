@@ -4,7 +4,7 @@
 
 ### Corrigido
 
-- O passo de deploy da Cloudflare Wrangler Action deixa de pinar `wranglerVersion` e passa a usar o Wrangler que `npm ci` instala a partir do lockfile do frontend, hoje 4.130.0; o pin manual ficava para trás a cada atualização do Dependabot. `README.md` e as duas cópias de `THIRDPARTY.md` acompanham a versão instalada (ASTROLO-29 / #405, GIT-230).
+- O passo de deploy da Cloudflare Wrangler Action deixa de pinar `wranglerVersion` e passa a usar o Wrangler que `npm ci` instala a partir do lockfile do frontend; o pin manual ficava para trás a cada atualização do Dependabot. `README.md` e as duas cópias de `THIRDPARTY.md` acompanham essa configuração (ASTROLO-29 / #405, GIT-230).
 
 - Acrescentados créditos e links de Open-Meteo/GeoNames e CC BY 4.0 junto às sugestões de localização, nos relatórios compartilhados por cópia, WhatsApp e e-mail e nas duas cópias de `NOTICE`.
 
@@ -23,9 +23,9 @@
 
 ### Alterado
 
-- Atualizados os pins oficiais de CodeQL para 4.38.0 e zizmor-action para 0.6.4; o input do deploy e sua documentação passam a acompanhar o Wrangler 4.129.1 já fixado no lockfile do frontend.
+- Atualizados os pins oficiais de CodeQL para 4.38.0 e zizmor-action para 0.6.4.
 
-- O inventário acompanha as quatro atualizações de ferramentas do frontend (#364). A entrada do Wrangler nas duas cópias do inventário acompanha a versão 4.129.1 fixada no lockfile, sob MIT OR Apache-2.0 conforme o artefato oficial.
+- O Wrangler passa a `4.136.2`, com pin exato, lockfile regenerado pelo npm e as duas cópias do inventário atualizadas. Removidos os overrides redundantes de Sharp e Undici do Miniflare, que agora exige diretamente as versões corrigidas. Os demais overrides permanecem inalterados.
 - As cópias canônicas do inventário acompanham o `typescript-eslint` 8.70.0 nos pacotes raiz e frontend, sem alterar as obrigações de licença.
 - O inventário preserva a atualização anterior do `lucide-react` (#365); o teste customizado de inventário é aposentado nesta reforma.
 - A reforma substitui os validadores customizados do inventário e do relatório de Functions. O `build.license` nativo do Vite continua gerando `legal/BUNDLED-LICENSES.md` para o navegador; os textos completos de `legal/FUNCTIONS-BUNDLED-LICENSES.md`, entregues anteriormente em #346, permanecem como snapshot mantido e distribuído com o aplicativo. O snapshot exige revisão quando as dependências de servidor mudarem e não comprova automaticamente a cobertura de versões futuras.

@@ -1,31 +1,23 @@
 # Cloudflare Pages Functions — snapshot de licenças mantido no repositório
 
-Documento integral preservado da publicação consultada em 08/09/2026. Este snapshot não é regenerado pelo build atual e não comprova a cobertura de versões futuras. Os mantenedores devem revisar os componentes e preservar os textos integrais quando o bundle das Functions mudar. O relatório nativo do Vite cobre somente o bundle do navegador.
+Snapshot revisado em 22/09/2026 (LCV-213), a partir do build local de validação com Wrangler 4.136.2. Não é regenerado automaticamente pelo build e não comprova a cobertura de versões futuras. O relatório nativo do Vite cobre somente o bundle do navegador.
 
-Origem: https://mapa-astral.lcv.app.br/legal/FUNCTIONS-BUNDLED-LICENSES.md
-
-SHA-256 UTF-8 do documento original reproduzido abaixo: `5a2a18480509a57e8c007c20a1e1157344cff6af47f036e270a6a545b7c5e427`.
-
-## Documento original — registro histórico
-
-# Cloudflare Pages Functions — Third-Party Licenses
-
-Este arquivo é gerado no build pelo Wrangler oficial com `pages functions build --metafile` e por uma camada mínima de validação Node.js. Não o edite manualmente.
+O registro anterior permanece no [histórico do arquivo](https://github.com/LCV-Ideas-Software/astrologo-app/blob/b2e43aafc0d5feab6c45ab15eca248aa0ceae4c4/astrologo-frontend/public/legal/FUNCTIONS-BUNDLED-LICENSES.md).
 
 ## Proveniência do bundle
 
-- Inputs efetivos inventariados: 117
-- Pacotes npm efetivamente incorporados: 22
-- Inputs de primeira parte: 46
-- Inputs gerados pelo Wrangler: 1
-- Builtins Node.js substituídos por stubs oficiais: `fs`, `path`, `url`
-- Artefato externo homologado: `595db39d8d39b41a16bc05a847e498bfb1f228fd-swiss_eph.wasm` (1275365 bytes; SHA-256 `31d3406560fd39b91bc9dbfdff6c9111f170fde2db62ebe92581ae14e878744c`)
-- Output(s) JavaScript: `index.js` (1394734 bytes; SHA-256 `cbeebc793b46a01ba48139269d1c97d9a4d704ae3b6e910da80e1a0f2344b656`)
-- Escopo do hash de output: build de validação imediatamente anterior ao deploy; `wrangler pages deploy` recompila as Functions e ainda não expõe `--metafile` para provar igualdade byte a byte do artefato publicado.
+- Comando oficial: `wrangler pages functions build --outdir=.wrangler/functions-license-audit --metafile=<arquivo de evidência>`.
+- Inputs efetivos (`bytesInOutput > 0`): 117.
+- Pacotes npm efetivamente incorporados: 22.
+- Metafile SHA-256: `de9181854d79b6ec1359df83e369362c02cfc23b990bdbbfa60351ecfd4c7442`.
+- Output JavaScript: `index.js` (1395088 bytes; SHA-256 `df798d8d362e86ad2a462f4eb219cb82d03430e0039cd48df34b505e1cc153bb`).
+- Artefato WASM externo homologado: `595db39d8d39b41a16bc05a847e498bfb1f228fd-swiss_eph.wasm`; SHA-256 `31d3406560fd39b91bc9dbfdff6c9111f170fde2db62ebe92581ae14e878744c`.
+- Escopo: build local de validação; `wrangler pages deploy` recompila as Functions. Este hash não comprova igualdade byte a byte com a produção.
+- Os textos previamente publicados dos pacotes sem mudança de versão foram preservados. Wrangler e PostCSS foram conferidos nas fontes da versão exata. A proveniência incompleta do texto de `launder@1.7.1` continua registrada em LCV-183; preservar o aviso existente não encerra essa pendência.
 
 ## Pacotes npm efetivamente incorporados
 
-| Pacote | Licença | Inputs efetivos | Tarball oficial | SRI do lock |
+| Pacote | Licença declarada | Inputs efetivos | Tarball oficial | SRI do lock |
 | --- | --- | ---: | --- | --- |
 | @js-temporal/polyfill@0.5.1 | ISC | 1 | https://registry.npmjs.org/@js-temporal/polyfill/-/polyfill-0.5.1.tgz | sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ== |
 | astronomy-engine@2.1.19 | MIT | 1 | https://registry.npmjs.org/astronomy-engine/-/astronomy-engine-2.1.19.tgz | sha512-8yWKNf7UeNbH458h3sAJ6ZgAjE5jTXp/mNNRFoC20j2SHwZIjAQeEsBB2Q3uCFRaTCCJRv33K2XhkhZQMXoX6w== |
@@ -45,132 +37,132 @@ Este arquivo é gerado no build pelo Wrangler oficial com `pages functions build
 | parse-srcset@1.0.2 | MIT | 1 | https://registry.npmjs.org/parse-srcset/-/parse-srcset-1.0.2.tgz | sha512-/2qh0lav6CmI15FzA3i/2Bzk2zCgQhGMkvhOhKNcBVQ1ldgpbfiNTVslmooUmWJcADi1f1kIeynbDRVzNlfR6Q== |
 | path-to-regexp@6.3.0 | MIT | 1 | https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-6.3.0.tgz | sha512-Yhpw4T9C6hPpgPeA28us07OJeqZ5EzQTkbfwuhsUg0c237RomFoETJgmp2sa3F/41gfLE6G5cqcYwznmeEeOlQ== |
 | picocolors@1.1.1 | ISC | 1 | https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz | sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA== |
-| postcss@8.5.26 | MIT | 28 | https://registry.npmjs.org/postcss/-/postcss-8.5.26.tgz | sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ== |
+| postcss@8.5.28 | MIT | 28 | https://registry.npmjs.org/postcss/-/postcss-8.5.28.tgz | sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A== |
 | sanitize-html@2.17.7 | MIT | 1 | https://registry.npmjs.org/sanitize-html/-/sanitize-html-2.17.7.tgz | sha512-PGtEkc9cbnedU3s9TmzDbpsZ8w086g/0Q8k8/oIO1NLNU3i5k9yn835CrjJSajp1KMmkisbO1qPXxNKO3welAg== |
 | source-map-js@1.2.1 | BSD-3-Clause | 1 | https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz | sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA== |
-| wrangler@4.127.1 | MIT OR Apache-2.0 | 1 | https://registry.npmjs.org/wrangler/-/wrangler-4.127.1.tgz | sha512-OzsiNgaI8i681L/+KnAKc+uEZ5D57xK5JuNvCOpRKICF4/5Q3Cu1oTGuUiT/f3GDUqQb3gzXNT0tfOHGMEtknw== |
+| wrangler@4.136.2 | MIT OR Apache-2.0 | 1 | https://registry.npmjs.org/wrangler/-/wrangler-4.136.2.tgz | sha512-BeWkkU7leFyalKi++LDHUaWSumwLVNeBeY2Ma+CqylT/hxs2sKT5e/q88MvXUl4Ng4iPS90H9H1qlb5oK3uhhQ== |
 
-## Inventário determinístico de inputs efetivos
+## Inventário de inputs efetivos
 
-| Output | Input efetivo (`bytesInOutput > 0`) | Classificação | Pacote |
-| --- | --- | --- | --- |
-| index.js | .wrangler/tmp/[wrangler-generated]/functionsRoutes.mjs | Wrangler gerado | — |
-| index.js | (disabled):node_modules/postcss/lib/terminal-highlight | npm (stub oficial) | postcss |
-| index.js | (disabled):node_modules/source-map-js/source-map.js | npm (stub oficial) | source-map-js |
-| index.js | (disabled):node:fs | Node.js builtin (stub oficial) | — |
-| index.js | (disabled):node:path | Node.js builtin (stub oficial) | — |
-| index.js | (disabled):node:url | Node.js builtin (stub oficial) | — |
-| index.js | functions/_middleware.ts | primeira parte | — |
-| index.js | functions/api/_shared/advancedAnalysisPrompt.ts | primeira parte | — |
-| index.js | functions/api/_shared/analysisEditorial.ts | primeira parte | — |
-| index.js | functions/api/_shared/analysisJobRepository.ts | primeira parte | — |
-| index.js | functions/api/_shared/analysisPrompt.ts | primeira parte | — |
-| index.js | functions/api/_shared/angelCatalog.ts | primeira parte | — |
-| index.js | functions/api/_shared/artifactPersistence.ts | primeira parte | — |
-| index.js | functions/api/_shared/astroCore.ts | primeira parte | — |
-| index.js | functions/api/_shared/astronomyTransitProvider.ts | primeira parte | — |
-| index.js | functions/api/_shared/birthTime.ts | primeira parte | — |
-| index.js | functions/api/_shared/canonicalArtifactBundle.ts | primeira parte | — |
-| index.js | functions/api/_shared/externalFetch.ts | primeira parte | — |
-| index.js | functions/api/_shared/localityMapV1.ts | primeira parte | — |
-| index.js | functions/api/_shared/localityMapV1Schema.ts | primeira parte | — |
-| index.js | functions/api/_shared/location.ts | primeira parte | — |
-| index.js | functions/api/_shared/longAnalysisContracts.ts | primeira parte | — |
-| index.js | functions/api/_shared/longAnalysisPlanner.ts | primeira parte | — |
-| index.js | functions/api/_shared/mapOwnershipClaim.ts | primeira parte | — |
-| index.js | functions/api/_shared/modelAvailability.ts | primeira parte | — |
-| index.js | functions/api/_shared/modelConfig.ts | primeira parte | — |
-| index.js | functions/api/_shared/natalChartAnalysisV1.ts | primeira parte | — |
-| index.js | functions/api/_shared/natalChartAnalysisV1Schema.ts | primeira parte | — |
-| index.js | functions/api/_shared/positionV2.ts | primeira parte | — |
-| index.js | functions/api/_shared/positionV2Schema.ts | primeira parte | — |
-| index.js | functions/api/_shared/requestSecurity.ts | primeira parte | — |
-| index.js | functions/api/_shared/solarTimes.ts | primeira parte | — |
-| index.js | functions/api/_shared/swissRuntime.ts | primeira parte | — |
-| index.js | functions/api/_shared/synastryRunV1.ts | primeira parte | — |
-| index.js | functions/api/_shared/synastryRunV1Schema.ts | primeira parte | — |
-| index.js | functions/api/_shared/tatwa.ts | primeira parte | — |
-| index.js | functions/api/_shared/tatwaBirth.ts | primeira parte | — |
-| index.js | functions/api/_shared/tatwaPrompt.ts | primeira parte | — |
-| index.js | functions/api/_shared/tatwaSchema.ts | primeira parte | — |
-| index.js | functions/api/_shared/transitRunV1.ts | primeira parte | — |
-| index.js | functions/api/_shared/transitRunV1Schema.ts | primeira parte | — |
-| index.js | functions/api/_shared/vertex.ts | primeira parte | — |
-| index.js | functions/api/_shared/vertexModelCapabilities.ts | primeira parte | — |
-| index.js | functions/api/analisar.ts | primeira parte | — |
-| index.js | functions/api/astrologo-auth.ts | primeira parte | — |
-| index.js | functions/api/calcular.ts | primeira parte | — |
-| index.js | functions/api/contato.ts | primeira parte | — |
-| index.js | functions/api/enviar-email.ts | primeira parte | — |
-| index.js | functions/api/localidade.ts | primeira parte | — |
-| index.js | functions/api/sinastria.ts | primeira parte | — |
-| index.js | functions/api/transitos.ts | primeira parte | — |
-| index.js | node_modules/@js-temporal/polyfill/dist/index.esm.js | npm | @js-temporal/polyfill |
-| index.js | node_modules/astronomy-engine/esm/astronomy.js | npm | astronomy-engine |
-| index.js | node_modules/dayjs/dayjs.min.js | npm | dayjs |
-| index.js | node_modules/deepmerge/dist/cjs.js | npm | deepmerge |
-| index.js | node_modules/escape-string-regexp/index.js | npm | escape-string-regexp |
-| index.js | node_modules/is-plain-object/dist/is-plain-object.js | npm | is-plain-object |
-| index.js | node_modules/jsbi/dist/jsbi-umd.js | npm | jsbi |
-| index.js | node_modules/launder/index.js | npm | launder |
-| index.js | node_modules/nanoid/non-secure/index.cjs | npm | nanoid |
-| index.js | node_modules/parse-srcset/src/parse-srcset.js | npm | parse-srcset |
-| index.js | node_modules/path-to-regexp/dist.es2015/index.js | npm | path-to-regexp |
-| index.js | node_modules/picocolors/picocolors.browser.js | npm | picocolors |
-| index.js | node_modules/postcss/lib/at-rule.js | npm | postcss |
-| index.js | node_modules/postcss/lib/comment.js | npm | postcss |
-| index.js | node_modules/postcss/lib/container.js | npm | postcss |
-| index.js | node_modules/postcss/lib/css-syntax-error.js | npm | postcss |
-| index.js | node_modules/postcss/lib/declaration.js | npm | postcss |
-| index.js | node_modules/postcss/lib/document.js | npm | postcss |
-| index.js | node_modules/postcss/lib/fromJSON.js | npm | postcss |
-| index.js | node_modules/postcss/lib/input.js | npm | postcss |
-| index.js | node_modules/postcss/lib/lazy-result.js | npm | postcss |
-| index.js | node_modules/postcss/lib/list.js | npm | postcss |
-| index.js | node_modules/postcss/lib/map-generator.js | npm | postcss |
-| index.js | node_modules/postcss/lib/no-work-result.js | npm | postcss |
-| index.js | node_modules/postcss/lib/node.js | npm | postcss |
-| index.js | node_modules/postcss/lib/parse.js | npm | postcss |
-| index.js | node_modules/postcss/lib/parser.js | npm | postcss |
-| index.js | node_modules/postcss/lib/postcss.js | npm | postcss |
-| index.js | node_modules/postcss/lib/previous-map.js | npm | postcss |
-| index.js | node_modules/postcss/lib/processor.js | npm | postcss |
-| index.js | node_modules/postcss/lib/result.js | npm | postcss |
-| index.js | node_modules/postcss/lib/root.js | npm | postcss |
-| index.js | node_modules/postcss/lib/rule.js | npm | postcss |
-| index.js | node_modules/postcss/lib/stringifier.js | npm | postcss |
-| index.js | node_modules/postcss/lib/stringify.js | npm | postcss |
-| index.js | node_modules/postcss/lib/symbols.js | npm | postcss |
-| index.js | node_modules/postcss/lib/tokenize.js | npm | postcss |
-| index.js | node_modules/postcss/lib/warn-once.js | npm | postcss |
-| index.js | node_modules/postcss/lib/warning.js | npm | postcss |
-| index.js | node_modules/sanitize-html/index.js | npm | sanitize-html |
-| index.js | node_modules/sanitize-html/node_modules/dom-serializer/dist/foreign-names.js | npm | dom-serializer |
-| index.js | node_modules/sanitize-html/node_modules/dom-serializer/dist/index.js | npm | dom-serializer |
-| index.js | node_modules/sanitize-html/node_modules/domelementtype/dist/index.js | npm | domelementtype |
-| index.js | node_modules/sanitize-html/node_modules/domhandler/dist/index.js | npm | domhandler |
-| index.js | node_modules/sanitize-html/node_modules/domhandler/dist/node.js | npm | domhandler |
-| index.js | node_modules/sanitize-html/node_modules/domutils/dist/feeds.js | npm | domutils |
-| index.js | node_modules/sanitize-html/node_modules/domutils/dist/helpers.js | npm | domutils |
-| index.js | node_modules/sanitize-html/node_modules/domutils/dist/index.js | npm | domutils |
-| index.js | node_modules/sanitize-html/node_modules/domutils/dist/legacy.js | npm | domutils |
-| index.js | node_modules/sanitize-html/node_modules/domutils/dist/manipulation.js | npm | domutils |
-| index.js | node_modules/sanitize-html/node_modules/domutils/dist/querying.js | npm | domutils |
-| index.js | node_modules/sanitize-html/node_modules/domutils/dist/stringify.js | npm | domutils |
-| index.js | node_modules/sanitize-html/node_modules/domutils/dist/traversal.js | npm | domutils |
-| index.js | node_modules/sanitize-html/node_modules/entities/dist/decode-codepoint.js | npm | entities |
-| index.js | node_modules/sanitize-html/node_modules/entities/dist/decode.js | npm | entities |
-| index.js | node_modules/sanitize-html/node_modules/entities/dist/escape.js | npm | entities |
-| index.js | node_modules/sanitize-html/node_modules/entities/dist/generated/decode-data-html.js | npm | entities |
-| index.js | node_modules/sanitize-html/node_modules/entities/dist/generated/decode-data-xml.js | npm | entities |
-| index.js | node_modules/sanitize-html/node_modules/entities/dist/index.js | npm | entities |
-| index.js | node_modules/sanitize-html/node_modules/entities/dist/internal/bin-trie-flags.js | npm | entities |
-| index.js | node_modules/sanitize-html/node_modules/entities/dist/internal/decode-shared.js | npm | entities |
-| index.js | node_modules/sanitize-html/node_modules/htmlparser2/dist/index.js | npm | htmlparser2 |
-| index.js | node_modules/sanitize-html/node_modules/htmlparser2/dist/Parser.js | npm | htmlparser2 |
-| index.js | node_modules/sanitize-html/node_modules/htmlparser2/dist/Tokenizer.js | npm | htmlparser2 |
-| index.js | node_modules/wrangler/templates/pages-template-worker.ts | npm | wrangler |
-| index.js | src/analysisOutput.ts | primeira parte | — |
+| Input efetivo | Bytes no output | Pacote |
+| --- | ---: | --- |
+| `../node_modules/sanitize-html/node_modules/entities/dist/decode-codepoint.js` | 1056 | entities@8.0.0 |
+| `../node_modules/sanitize-html/node_modules/entities/dist/internal/decode-shared.js` | 586 | entities@8.0.0 |
+| `../node_modules/sanitize-html/node_modules/entities/dist/generated/decode-data-html.js` | 32487 | entities@8.0.0 |
+| `../node_modules/sanitize-html/node_modules/entities/dist/generated/decode-data-xml.js` | 347 | entities@8.0.0 |
+| `../node_modules/sanitize-html/node_modules/entities/dist/internal/bin-trie-flags.js` | 565 | entities@8.0.0 |
+| `../node_modules/sanitize-html/node_modules/entities/dist/decode.js` | 16382 | entities@8.0.0 |
+| `../node_modules/sanitize-html/node_modules/htmlparser2/dist/Tokenizer.js` | 36802 | htmlparser2@12.0.0 |
+| `../node_modules/sanitize-html/node_modules/htmlparser2/dist/Parser.js` | 19974 | htmlparser2@12.0.0 |
+| `../node_modules/sanitize-html/node_modules/domelementtype/dist/index.js` | 1458 | domelementtype@3.0.0 |
+| `../node_modules/sanitize-html/node_modules/domhandler/dist/node.js` | 8986 | domhandler@6.0.1 |
+| `../node_modules/sanitize-html/node_modules/domhandler/dist/index.js` | 4788 | domhandler@6.0.1 |
+| `../node_modules/sanitize-html/node_modules/domutils/dist/querying.js` | 2363 | domutils@4.0.2 |
+| `../node_modules/sanitize-html/node_modules/domutils/dist/legacy.js` | 2923 | domutils@4.0.2 |
+| `../node_modules/sanitize-html/node_modules/entities/dist/escape.js` | 2441 | entities@8.0.0 |
+| `../node_modules/sanitize-html/node_modules/entities/dist/index.js` | 768 | entities@8.0.0 |
+| `../node_modules/sanitize-html/node_modules/dom-serializer/dist/foreign-names.js` | 1591 | dom-serializer@3.1.1 |
+| `../node_modules/sanitize-html/node_modules/dom-serializer/dist/index.js` | 4021 | dom-serializer@3.1.1 |
+| `../node_modules/sanitize-html/node_modules/domutils/dist/stringify.js` | 1435 | domutils@4.0.2 |
+| `../node_modules/sanitize-html/node_modules/domutils/dist/feeds.js` | 4482 | domutils@4.0.2 |
+| `../node_modules/sanitize-html/node_modules/domutils/dist/helpers.js` | 2796 | domutils@4.0.2 |
+| `../node_modules/sanitize-html/node_modules/domutils/dist/manipulation.js` | 2809 | domutils@4.0.2 |
+| `../node_modules/sanitize-html/node_modules/domutils/dist/traversal.js` | 1641 | domutils@4.0.2 |
+| `../node_modules/sanitize-html/node_modules/domutils/dist/index.js` | 1602 | domutils@4.0.2 |
+| `../node_modules/sanitize-html/node_modules/htmlparser2/dist/index.js` | 1449 | htmlparser2@12.0.0 |
+| `../node_modules/escape-string-regexp/index.js` | 413 | escape-string-regexp@4.0.0 |
+| `../node_modules/is-plain-object/dist/is-plain-object.js` | 846 | is-plain-object@5.0.0 |
+| `../node_modules/deepmerge/dist/cjs.js` | 4854 | deepmerge@4.3.1 |
+| `../node_modules/parse-srcset/src/parse-srcset.js` | 5793 | parse-srcset@1.0.2 |
+| `../node_modules/picocolors/picocolors.browser.js` | 967 | picocolors@1.1.1 |
+| `(disabled):../node_modules/postcss/lib/terminal-highlight` | 167 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/css-syntax-error.js` | 3947 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/stringifier.js` | 12977 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/stringify.js` | 437 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/symbols.js` | 288 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/node.js` | 13777 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/comment.js` | 464 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/declaration.js` | 765 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/container.js` | 14010 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/at-rule.js` | 763 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/document.js` | 890 | postcss@8.5.28 |
+| `../node_modules/nanoid/non-secure/index.cjs` | 842 | nanoid@3.3.18 |
+| `(disabled):path` | 111 | primeira parte, gerado ou stub Node.js |
+| `(disabled):../node_modules/source-map-js/source-map.js` | 156 | source-map-js@1.2.1 |
+| `(disabled):url` | 109 | primeira parte, gerado ou stub Node.js |
+| `(disabled):fs` | 107 | primeira parte, gerado ou stub Node.js |
+| `../node_modules/postcss/lib/previous-map.js` | 5483 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/input.js` | 7997 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/root.js` | 2026 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/list.js` | 1712 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/rule.js` | 863 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/fromJSON.js` | 3093 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/map-generator.js` | 11693 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/tokenize.js` | 7744 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/parser.js` | 17519 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/parse.js` | 1280 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/warning.js` | 1244 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/result.js` | 1088 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/warn-once.js` | 455 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/lazy-result.js` | 17445 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/no-work-result.js` | 3228 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/processor.js` | 2095 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/postcss.js` | 3304 | postcss@8.5.28 |
+| `../node_modules/dayjs/dayjs.min.js` | 13255 | dayjs@1.11.20 |
+| `../node_modules/launder/index.js` | 11686 | launder@1.7.1 |
+| `../node_modules/sanitize-html/index.js` | 35892 | sanitize-html@2.17.7 |
+| `../src/analysisOutput.ts` | 1149 | primeira parte, gerado ou stub Node.js |
+| `../node_modules/astronomy-engine/esm/astronomy.js` | 120142 | astronomy-engine@2.1.19 |
+| `api/_shared/angelCatalog.ts` | 18711 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/positionV2.ts` | 18554 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/positionV2Schema.ts` | 27738 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/localityMapV1.ts` | 20343 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/localityMapV1Schema.ts` | 31792 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/natalChartAnalysisV1.ts` | 18861 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/natalChartAnalysisV1Schema.ts` | 31743 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/synastryRunV1.ts` | 10686 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/synastryRunV1Schema.ts` | 14540 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/transitRunV1.ts` | 29444 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/transitRunV1Schema.ts` | 36432 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/advancedAnalysisPrompt.ts` | 15414 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/analysisEditorial.ts` | 3755 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/requestSecurity.ts` | 4944 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/analysisJobRepository.ts` | 18221 | primeira parte, gerado ou stub Node.js |
+| `../node_modules/jsbi/dist/jsbi-umd.js` | 62020 | jsbi@4.3.2 |
+| `../node_modules/@js-temporal/polyfill/dist/index.esm.js` | 194807 | @js-temporal/polyfill@0.5.1 |
+| `api/_shared/birthTime.ts` | 2739 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/solarTimes.ts` | 1962 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/tatwa.ts` | 4016 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/tatwaSchema.ts` | 9725 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/tatwaPrompt.ts` | 7317 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/analysisPrompt.ts` | 29558 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/longAnalysisContracts.ts` | 12637 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/longAnalysisPlanner.ts` | 35973 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/vertex.ts` | 10317 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/vertexModelCapabilities.ts` | 2299 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/modelAvailability.ts` | 1308 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/modelConfig.ts` | 1570 | primeira parte, gerado ou stub Node.js |
+| `api/analisar.ts` | 81277 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/canonicalArtifactBundle.ts` | 8969 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/mapOwnershipClaim.ts` | 4929 | primeira parte, gerado ou stub Node.js |
+| `api/astrologo-auth.ts` | 19255 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/artifactPersistence.ts` | 1290 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/astroCore.ts` | 2435 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/externalFetch.ts` | 618 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/location.ts` | 2632 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/swissRuntime.ts` | 10285 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/tatwaBirth.ts` | 3292 | primeira parte, gerado ou stub Node.js |
+| `api/calcular.ts` | 21375 | primeira parte, gerado ou stub Node.js |
+| `api/contato.ts` | 4737 | primeira parte, gerado ou stub Node.js |
+| `api/enviar-email.ts` | 5000 | primeira parte, gerado ou stub Node.js |
+| `api/localidade.ts` | 6609 | primeira parte, gerado ou stub Node.js |
+| `api/sinastria.ts` | 12313 | primeira parte, gerado ou stub Node.js |
+| `api/_shared/astronomyTransitProvider.ts` | 11852 | primeira parte, gerado ou stub Node.js |
+| `api/transitos.ts` | 6367 | primeira parte, gerado ou stub Node.js |
+| `_middleware.ts` | 414 | primeira parte, gerado ou stub Node.js |
+| `../.wrangler/tmp/[wrangler-generated]/functionsRoutes.mjs` | 3394 | primeira parte, gerado ou stub Node.js |
+| `../node_modules/wrangler/templates/pages-template-worker.ts` | 3809 | wrangler@4.136.2 |
+| `../node_modules/path-to-regexp/dist.es2015/index.js` | 10706 | path-to-regexp@6.3.0 |
 
 ## Textos integrais das licenças
 
@@ -803,12 +795,14 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ```
 
-### postcss@8.5.26
+### postcss@8.5.28
 
-- Licença declarada: `MIT`
-- Origem do texto: tarball npm oficial (LICENSE)
+- Licença declarada: `MIT`.
 
-#### LICENSE
+- Origem do texto: https://registry.npmjs.org/postcss/-/postcss-8.5.28.tgz (arquivo package/LICENSE)
+- SHA-256 do texto: `5be1f3465bba68a626777f984878814aaf35e7ef8e9fd314d469bcf887050fb8`.
+
+#### 4c9655af81-package_LICENSE
 
 ```text
 The MIT License (MIT)
@@ -888,43 +882,14 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### wrangler@4.127.1
+### wrangler@4.136.2
 
-- Licença declarada: `MIT OR Apache-2.0`
-- Origem do texto: https://github.com/cloudflare/workers-sdk/tree/wrangler%404.127.1
-- Justificativa do fallback pinado: O tarball npm não inclui os textos; cópias pinadas de LICENSE-MIT e LICENSE-APACHE do tag oficial.
+- Licença declarada: `MIT OR Apache-2.0`.
 
-#### wrangler-mit.txt
+- Origem do texto: https://github.com/cloudflare/workers-sdk/blob/51ad2b8db39e26d09204a7a6d39282b01cb9e98e/LICENSE-APACHE
+- SHA-256 do texto: `62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a`.
 
-```text
-Copyright (c) 2020 Cloudflare, Inc. <wrangler@cloudflare.com>
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-#### wrangler-apache-2.0.txt
+#### 1b5ec8b78e237b5c3b3d812a7c0a6589d0f7161d-LICENSE-APACHE
 
 ```text
                               Apache License
@@ -1103,4 +1068,37 @@ TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
    of your accepting any such warranty or additional liability.
 
 END OF TERMS AND CONDITIONS
+```
+
+- Origem do texto: https://github.com/cloudflare/workers-sdk/blob/51ad2b8db39e26d09204a7a6d39282b01cb9e98e/LICENSE-MIT
+- SHA-256 do texto: `9bb3b077cc8628334bab25961223dd8207252c8a56aa054195be38f1c042aaf4`.
+
+#### a0e7ebf133868d6c1759cfb09f3c05d4cce430c8-LICENSE-MIT
+
+```text
+Copyright (c) 2020 Cloudflare, Inc. <wrangler@cloudflare.com>
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
 ```
