@@ -23,6 +23,9 @@
 
 ### Alterado
 
+- O Wrangler passa a `4.142.0`, com pin exato, lockfile regenerado pelo npm
+  e as duas cópias do inventário atualizadas (ASTROLO-30, LCV-239).
+
 - Atualizados os pins oficiais de CodeQL para 4.38.0 e zizmor-action para 0.6.4.
 
 - O Wrangler passa a `4.137.0`, com pin exato, lockfile regenerado pelo npm e as duas cópias do inventário atualizadas (LCV-214). O build das Functions mantém os mesmos 117 inputs e 22 pacotes; a comparação dos bundles com Wrangler 4.136.2 e 4.137.0 ficou idêntica após normalizar somente caminhos temporários e identificadores gerados. O relatório integral de licenças permanece identificado como snapshot histórico. Removidos os overrides redundantes de Sharp e Undici do Miniflare, que agora exige diretamente as versões corrigidas. Os demais overrides permanecem inalterados.
