@@ -26,6 +26,9 @@
 
 ### Alterado
 
+- Atualizado o pin exato do Wrangler de `4.142.0` para `4.143.0` no frontend,
+  com lockfile npm regenerado e inventário jurídico sincronizado (LCV-241).
+
 - O Wrangler passa a `4.142.0`, com pin exato, lockfile regenerado pelo npm
   e as duas cópias do inventário atualizadas (ASTROLO-30, LCV-239).
 
