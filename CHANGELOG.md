@@ -26,8 +26,11 @@
 
 ### Alterado
 
-- O Wrangler passa a `4.143.0`, com pin exato, lockfile regenerado pelo npm
-  e as duas cópias do inventário atualizadas (ASTROLO-30, LCV-239, LCV-241).
+- Atualizado o pin exato do Wrangler de `4.142.0` para `4.143.0` no frontend,
+  com lockfile npm regenerado e inventário jurídico sincronizado (LCV-241).
+
+- O Wrangler passa a `4.142.0`, com pin exato, lockfile regenerado pelo npm
+  e as duas cópias do inventário atualizadas (ASTROLO-30, LCV-239).
 
 - Atualizados os pins oficiais de CodeQL para 4.38.0 e zizmor-action para 0.6.4.
 
