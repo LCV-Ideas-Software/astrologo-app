@@ -4,6 +4,9 @@
 
 ### Corrigido
 
+- Corrigido o Deploy após a publicação defeituosa da Cloudflare Wrangler Action
+  v4.1.1: o passo usa o commit compilado de v4.1.2, fixado por SHA completo.
+
 - O passo de deploy da Cloudflare Wrangler Action deixa de pinar `wranglerVersion` e passa a usar o Wrangler que `npm ci` instala a partir do lockfile do frontend; o pin manual ficava para trás a cada atualização do Dependabot. `README.md` e as duas cópias de `THIRDPARTY.md` acompanham essa configuração (ASTROLO-29 / #405, GIT-230).
 
 - Acrescentados créditos e links de Open-Meteo/GeoNames e CC BY 4.0 junto às sugestões de localização, nos relatórios compartilhados por cópia, WhatsApp e e-mail e nas duas cópias de `NOTICE`.
