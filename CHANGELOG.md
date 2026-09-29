@@ -4,9 +4,10 @@
 
 ### Corrigido
 
-- Corrigido GHSA-3wwx-pv8p-q78v no frontend: os overrides npm locais usam
-  `undici` `7.29.1` sob Miniflare e `6.28.1` sob
-  `@fusionstrings/swiss-eph` até a atualização das dependências upstream.
+- Corrigido GHSA-3wwx-pv8p-q78v no frontend: overrides npm locais resolvem
+  `undici@7.29.0` sob Miniflare para `7.29.1` e `undici@6.28.0` sob
+  `@fusionstrings/swiss-eph` para `6.28.1`, sem fixar versões futuras
+  das dependências upstream.
 
 - Corrigido o Deploy após a publicação defeituosa da Cloudflare Wrangler Action
   v4.1.1: o passo usa o commit compilado de v4.1.2, fixado por SHA completo.
