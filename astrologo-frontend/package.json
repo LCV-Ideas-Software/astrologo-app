@@ -69,7 +69,10 @@
   "overrides": {
     "picomatch": "4.0.5",
     "@fusionstrings/swiss-eph": {
-      "undici": "6.28.0"
+      "undici": "6.28.1"
+    },
+    "miniflare": {
+      "undici": "7.29.1"
     },
     "vite": "$vite",
     "protobufjs": "7.6.5",
