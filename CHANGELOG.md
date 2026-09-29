@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Alterado
+
+- Atualizado o pin exato do Wrangler de `4.142.0` para `4.143.0` no frontend,
+  com lockfile npm regenerado e inventário jurídico sincronizado.
+
 ### Corrigido
 
 - Corrigido o Deploy após a publicação defeituosa da Cloudflare Wrangler Action
