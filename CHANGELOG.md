@@ -4,6 +4,9 @@
 
 ### Corrigido
 
+- Atualizado `brace-expansion` transitivo para 5.0.12 no lockfile raiz,
+  resolvendo os alertas Dependabot e Scorecard (LCV-244).
+
 - Corrigido GHSA-3wwx-pv8p-q78v no frontend: overrides npm locais resolvem
   `undici@7.29.0` sob Miniflare para `7.29.1` e `undici@6.28.0` sob
   `@fusionstrings/swiss-eph` para `6.28.1`, sem fixar versões futuras
