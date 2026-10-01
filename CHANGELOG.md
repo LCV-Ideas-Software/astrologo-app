@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Update the pinned Cloudflare Wrangler CLI to 4.145.0 and regenerate npm dependency locks.
+
 ### Corrigido
 
 - Atualizado `brace-expansion` transitivo para 5.0.12 no lockfile raiz,
