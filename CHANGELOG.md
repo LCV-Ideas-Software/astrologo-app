@@ -9,10 +9,11 @@
 - Atualizado `brace-expansion` transitivo para 5.0.12 no lockfile raiz,
   resolvendo os alertas Dependabot e Scorecard (LCV-244).
 
-- Corrigido GHSA-3wwx-pv8p-q78v no frontend: overrides npm locais resolvem
-  `undici@7.29.0` sob Miniflare para `7.29.1` e `undici@6.28.0` sob
-  `@fusionstrings/swiss-eph` para `6.28.1`, sem fixar versões futuras
-  das dependências upstream.
+- Removido o override temporário de `undici@7.29.0` sob Miniflare: o
+  Wrangler 4.145.0 agora seleciona o Miniflare oficial que exige diretamente
+  Undici 7.29.1. O override de `undici@6.28.0` sob `@fusionstrings/swiss-eph`
+  permanece em `6.28.1`, sem fixar versões futuras do upstream, preservando
+  a correção anterior de GHSA-3wwx-pv8p-q78v (LCV-256).
 
 - Corrigido o Deploy após a publicação defeituosa da Cloudflare Wrangler Action
   v4.1.1: o passo usa o commit compilado de v4.1.2, fixado por SHA completo.
