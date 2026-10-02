@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- Update the pinned Cloudflare Wrangler CLI to 4.145.0 and regenerate npm dependency locks.
+- Update the pinned Cloudflare Wrangler CLI to 4.147.0 and regenerate npm dependency locks.
 
 ### Corrigido
 
@@ -10,7 +10,7 @@
   resolvendo os alertas Dependabot e Scorecard (LCV-244).
 
 - Removido o override temporário de `undici@7.29.0` sob Miniflare: o
-  Wrangler 4.145.0 agora seleciona o Miniflare oficial que exige diretamente
+  Wrangler 4.147.0 agora seleciona o Miniflare oficial que exige diretamente
   Undici 7.29.1. O override de `undici@6.28.0` sob `@fusionstrings/swiss-eph`
   permanece em `6.28.1`, sem fixar versões futuras do upstream, preservando
   a correção anterior de GHSA-3wwx-pv8p-q78v (LCV-256).
