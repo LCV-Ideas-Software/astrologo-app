@@ -17,7 +17,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | package.json | prettier | devDependencies | ^3.9.9 | 3.9.9 | MIT | https://registry.npmjs.org/prettier/-/prettier-3.9.9.tgz |
 | package.json | typescript-eslint | devDependencies | ^8.70.1 | 8.70.1 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.70.1.tgz |
 | astrologo-frontend/package.json | @js-temporal/polyfill | dependencies | 0.5.1 | 0.5.1 | ISC | https://registry.npmjs.org/@js-temporal/polyfill/-/polyfill-0.5.1.tgz |
-| astrologo-frontend/package.json | @tailwindcss/vite | dependencies | ^4.3.3 | 4.3.3 | MIT | https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.3.3.tgz |
+| astrologo-frontend/package.json | @tailwindcss/vite | dependencies | 0.0.0-insiders.fa81d69 | 0.0.0-insiders.fa81d69 | MIT | https://registry.npmjs.org/@tailwindcss/vite/-/vite-0.0.0-insiders.fa81d69.tgz |
 | astrologo-frontend/package.json | astronomy-engine | dependencies | 2.1.19 | 2.1.19 | MIT | https://registry.npmjs.org/astronomy-engine/-/astronomy-engine-2.1.19.tgz |
 | astrologo-frontend/package.json | d3-geo | dependencies | 3.1.1 | 3.1.1 | ISC | https://registry.npmjs.org/d3-geo/-/d3-geo-3.1.1.tgz |
 | astrologo-frontend/package.json | dompurify | dependencies | ^3.4.16 | 3.4.16 | (MPL-2.0 OR Apache-2.0) | https://registry.npmjs.org/dompurify/-/dompurify-3.4.16.tgz |
@@ -25,7 +25,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | react | dependencies | ^19.3.0 | 19.3.0 | MIT | https://registry.npmjs.org/react/-/react-19.3.0.tgz |
 | astrologo-frontend/package.json | react-dom | dependencies | ^19.3.0 | 19.3.0 | MIT | https://registry.npmjs.org/react-dom/-/react-dom-19.3.0.tgz |
 | astrologo-frontend/package.json | sanitize-html | dependencies | ^2.17.7 | 2.17.7 | MIT | https://registry.npmjs.org/sanitize-html/-/sanitize-html-2.17.7.tgz |
-| astrologo-frontend/package.json | tailwindcss | dependencies | ^4.3.3 | 4.3.3 | MIT | https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.3.tgz |
+| astrologo-frontend/package.json | tailwindcss | dependencies | 0.0.0-insiders.fa81d69 | 0.0.0-insiders.fa81d69 | MIT | https://registry.npmjs.org/tailwindcss/-/tailwindcss-0.0.0-insiders.fa81d69.tgz |
 | astrologo-frontend/package.json | topojson-client | dependencies | 3.1.0 | 3.1.0 | ISC | https://registry.npmjs.org/topojson-client/-/topojson-client-3.1.0.tgz |
 | astrologo-frontend/package.json | world-atlas | dependencies | 2.0.2 | 2.0.2 | ISC | https://registry.npmjs.org/world-atlas/-/world-atlas-2.0.2.tgz |
 | astrologo-frontend/package.json | @biomejs/biome | devDependencies | ^2.5.14 | 2.5.14 | MIT OR Apache-2.0 | https://registry.npmjs.org/@biomejs/biome/-/biome-2.5.14.tgz |
@@ -71,3 +71,15 @@ O WASM exportado por `@fusionstrings/swiss-eph/wasm-wasi` incorpora Swiss Epheme
 ## Atualização documental — 02/10/2026 (LCV-183 / LCV-211)
 
 O Vitest 5.0.3 seleciona `why-is-node-running` 3.2.1, cuja publicação oficial não depende de `stackback`. A árvore exata permanece nos lockfiles regenerados pelo npm. Fonte: https://github.com/vitest-dev/vitest/pull/11316 e https://github.com/vitest-dev/vitest/releases/tag/v5.0.3. Esta atualização de ferramenta de teste não afirma incorporação no produto distribuído.
+
+## Tailwind CSS — preview oficial e WASI (03/10/2026 UTC)
+
+Os manifestos fixam `tailwindcss` e `@tailwindcss/vite` em `0.0.0-insiders.fa81d69`. O npm seleciona `@tailwindcss/node`, `@tailwindcss/oxide` e todas as variantes oficiais de plataforma na mesma revisão, segundo os contratos publicados pelo mantenedor. Trata-se do canal oficial **insiders**, publicado em 25/09/2026, e não de uma versão estável. A atualização é conjunta: nenhum filho de plataforma foi substituído contra o pin exato do pacote pai, e nenhum override adicional foi introduzido.
+
+Fontes oficiais dos artefatos diretos: https://registry.npmjs.org/tailwindcss/-/tailwindcss-0.0.0-insiders.fa81d69.tgz e https://registry.npmjs.org/@tailwindcss/vite/-/vite-0.0.0-insiders.fa81d69.tgz. O pai WASI é https://registry.npmjs.org/@tailwindcss/oxide-wasm32-wasi/-/oxide-wasm32-wasi-0.0.0-insiders.fa81d69.tgz, SRI `sha512-CIJ8KPNg0sPva5lq/J93GTir00fdTyH2tJ9c6pJCXcmc6AhVDIY1NJyZ7ScsQqF8Asw4QVLFTgx5BRTsZU+7CA==`.
+
+O artefato WASI incorpora `@tybys/wasm-util@0.10.3`. Os 39 arquivos publicados desse componente coincidem byte a byte com o tarball oficial https://registry.npmjs.org/@tybys/wasm-util/-/wasm-util-0.10.3.tgz, SRI `sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==`. Seus 15 arquivos de código-fonte no commit `efb17cc128a30fb16b58127738f09c8871a3f7d1` coincidem com a revisão `a16b188d44ae43cc91edb71996ba2b43ff0996d9`, que acrescentou o texto MIT completo com `Copyright (c) 2022-present Toyobayashi`. Fonte imutável: https://raw.githubusercontent.com/toyobayashi/wasm-util/a16b188d44ae43cc91edb71996ba2b43ff0996d9/LICENSE; SHA-256 `09e436100bf926e78df875ec80cf3d0c643dfec779b52cfe2aa96afa0de714cb`.
+
+O tarball 0.10.3 e a cópia incorporada não contêm LICENSE próprio: o texto é obtido da fonte relacionada exata e reproduzido integralmente no NOTICE canônico e público. Essa prova refere-se à versão 0.10.3 selecionada; não declara concessão retroativa para 0.10.2, nem transforma este aviso em prova de conformidade de todos os produtos distribuídos. A seleção dessa ferramenta não afirma incorporação de seu código nos bundles do navegador ou das Functions. Os relatórios de runtime preservam sua finalidade e proveniência próprias.
+
+A fonte `src/wasi/path.ts` reconhece uma adaptação de `lib/path.js` do Node.js sob MIT; a PR upstream https://github.com/toyobayashi/wasm-util/pull/6 preserva essa atribuição. O NOTICE canônico/público reproduz separadamente o cabeçalho integral oficial de permissão e copyright `Joyent, Inc. and other Node contributors`. A concessão de Toyobayashi não substitui direitos ou avisos de terceiros. A PR não identifica a revisão exata do Node adaptada; o cabeçalho de licença foi observado idêntico em Node v22.20.0 e v24.21.0, o que não afirma igualdade byte a byte de toda a implementação nem certifica todas as obrigações de derivados. Nenhuma nova eleição de licença é introduzida.
