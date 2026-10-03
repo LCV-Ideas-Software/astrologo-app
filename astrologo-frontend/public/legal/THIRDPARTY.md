@@ -52,7 +52,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 
 ## Textos das licenças dos bundles publicados
 
-O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos módulos efetivamente incluídos no bundle do navegador. `legal/FUNCTIONS-BUNDLED-LICENSES.md` preserva integralmente o relatório das Functions consultado em 08/09/2026, com sua origem e hash, mas não é regenerado pelo Wrangler. Alterações no bundle das Functions exigem revisão desse snapshot. O relatório do Vite não cobre dependências do servidor. Ambos complementam — e não substituem — este inventário, o NOTICE, a GNU AGPL e a oferta de Corresponding Source.
+O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos módulos efetivamente incluídos no bundle do navegador. `legal/FUNCTIONS-BUNDLED-LICENSES.md` é o snapshot manual atualizado em 02/10/2026 a partir dos inputs efetivos do metafile nativo do Wrangler, com textos, versões e origem conferidos; ele não é regenerado pelo Wrangler. Alterações no bundle das Functions exigem revisão desse snapshot. O relatório do Vite não cobre dependências do servidor. Ambos complementam — e não substituem — este inventário, o NOTICE, a GNU AGPL e a oferta de Corresponding Source.
 
 ## Cartografia e Natural Earth
 
