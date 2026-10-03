@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Fixada a família oficial Tailwind CSS no preview `0.0.0-insiders.fa81d69`, com lockfile regenerado pelo npm e sem overrides novos. O pacote WASI passa a incorporar `@tybys/wasm-util@0.10.3`, cujo código coincide integralmente com a revisão que recebeu MIT; os inventários e o NOTICE canônico/público reproduzem a proveniência e o texto integral. A versão selecionada pertence ao canal insiders, não é release estável e não prova autorização retroativa para 0.10.2.
+
 - O pacote do web app passa a ser explicitamente privado, preserva `APP v02.25.05` como versao interna exibida no rodape e deixa de depender de GitHub Releases/tags.
 - `eslint-plugin-react-refresh` sobe de 0.5.3 para 0.5.4 e `typescript-eslint` de 8.66.0 para 8.67.0.
 - O deploy passa a usar o Wrangler Action oficial com o binding D1 versionado no `wrangler.json`.
