@@ -52,7 +52,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 
 ## Textos das licenças dos bundles publicados
 
-O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos módulos efetivamente incluídos no bundle do navegador. `legal/FUNCTIONS-BUNDLED-LICENSES.md` é o snapshot manual atualizado em 02/10/2026 a partir dos inputs efetivos do metafile nativo do Wrangler, com textos, versões e origem conferidos; ele não é regenerado pelo Wrangler. Alterações no bundle das Functions exigem revisão desse snapshot. O relatório do Vite não cobre dependências do servidor. Ambos complementam — e não substituem — este inventário, o NOTICE, a GNU AGPL e a oferta de Corresponding Source.
+O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos módulos efetivamente incluídos no bundle do navegador. `legal/FUNCTIONS-BUNDLED-LICENSES.md` é o snapshot manual atualizado em 03/10/2026 a partir dos inputs efetivos do metafile nativo do Wrangler, com textos, versões e origem conferidos; ele não é regenerado pelo Wrangler. Alterações no bundle das Functions exigem revisão desse snapshot. O relatório do Vite não cobre dependências do servidor. Ambos complementam — e não substituem — este inventário, o NOTICE, a GNU AGPL e a oferta de Corresponding Source.
 
 ## Cartografia e Natural Earth
 
@@ -83,3 +83,14 @@ O artefato WASI incorpora `@tybys/wasm-util@0.10.3`. Os 39 arquivos publicados d
 O tarball 0.10.3 e a cópia incorporada não contêm LICENSE próprio: o texto é obtido da fonte relacionada exata e reproduzido integralmente no NOTICE canônico e público. Essa prova refere-se à versão 0.10.3 selecionada; não declara concessão retroativa para 0.10.2, nem transforma este aviso em prova de conformidade de todos os produtos distribuídos. A seleção dessa ferramenta não afirma incorporação de seu código nos bundles do navegador ou das Functions. Os relatórios de runtime preservam sua finalidade e proveniência próprias.
 
 A fonte `src/wasi/path.ts` reconhece uma adaptação de `lib/path.js` do Node.js sob MIT; a PR upstream https://github.com/toyobayashi/wasm-util/pull/6 preserva essa atribuição. O NOTICE canônico/público reproduz separadamente o cabeçalho integral oficial de permissão e copyright `Joyent, Inc. and other Node contributors`. A concessão de Toyobayashi não substitui direitos ou avisos de terceiros. A PR não identifica a revisão exata do Node adaptada; o cabeçalho de licença foi observado idêntico em Node v22.20.0 e v24.21.0, o que não afirma igualdade byte a byte de toda a implementação nem certifica todas as obrigações de derivados. Nenhuma nova eleição de licença é introduzida.
+
+## Componentes de runtime das Functions — atualização de 03/10/2026
+
+O artefato nativo de [Deploy 37139402029](https://github.com/LCV-Ideas-Software/astrologo-app/actions/runs/37139402029), fonte `82c5880742183394d5f1e6e5032eec141c908480`, seleciona 23 identidades reais de pacotes em 144 inputs do metafile, além de placeholders e fontes da aplicação. O snapshot público `/legal/FUNCTIONS-BUNDLED-LICENSES.md` identifica as versões efetivamente resolvidas, os inputs e seus bytes no output, os tarballs e os textos integrais. A resolução mantém as versões dos pacotes aninhados de `sanitize-html`; o nome de um placeholder desabilitado não prova incorporação desse pacote.
+
+| Componente incorporado pelo empacotador oficial | Licença declarada | Origem do texto integral |
+| --- | --- | --- |
+| `unenv` 2.0.0-rc.24 | MIT | `LICENSE` do tarball npm exato; aviso de Pooya Parsa |
+| `@cloudflare/unenv-preset` 2.16.2 | MIT OR Apache-2.0 | `LICENSE-MIT` e `LICENSE-APACHE` de cloudflare/workers-sdk no commit `6e7712725698df46db9ec25ac738dd155ff8d39e`, relacionado pela proveniência publicada ao digest exato do tarball |
+
+Esses polyfills contêm código no worker capturado. Seus textos completos e a origem estão no snapshot das Functions, junto aos avisos dos demais componentes já selecionados. Esta atualização documental preserva as expressões de licença e não modifica dependências, configuração, Access ou código de runtime.
