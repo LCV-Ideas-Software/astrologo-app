@@ -48,7 +48,7 @@
     "@eslint/js": "^10.0.1",
     "@fusionstrings/swiss-eph": "0.1.1",
     "@types/d3-geo": "3.1.1",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/sanitize-html": "^2.16.1",
