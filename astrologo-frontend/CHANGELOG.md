@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- Fixada a família oficial Tailwind CSS no preview `0.0.0-insiders.fa81d69`, com lockfile regenerado pelo npm e sem overrides novos. O pacote WASI passa a incorporar `@tybys/wasm-util@0.10.3`, cujo código coincide integralmente com a revisão que recebeu MIT; os inventários e o NOTICE canônico/público reproduzem a proveniência e o texto integral. A versão selecionada pertence ao canal insiders, não é release estável e não prova autorização retroativa para 0.10.2.
+- Restaurada a seleção conjunta da família oficial Tailwind CSS no preview `0.0.0-insiders.fa81d69`, com lockfile regenerado pelo npm e sem overrides novos (ASTROLO-34 / #453). O WASI deixa de incorporar `@tybys/wasm-util@0.10.2` e seleciona 0.10.3: os 39 arquivos publicados coincidem com o tarball oficial e os 15 arquivos de fonte coincidem com a revisão que recebeu o texto MIT integral, conferidos novamente em 04/10/2026. Os inventários e o NOTICE canônico/público preservam essa proveniência, o grant completo e o aviso separado do Node.js. A versão selecionada pertence ao canal insiders, não é release estável e não prova autorização retroativa para 0.10.2. O inventário acompanha ainda `@types/node` 26.6.3 já selecionado pelo manifesto e lockfile.
 
 - O pacote do web app passa a ser explicitamente privado, preserva `APP v02.25.05` como versao interna exibida no rodape e deixa de depender de GitHub Releases/tags.
 - `eslint-plugin-react-refresh` sobe de 0.5.3 para 0.5.4 e `typescript-eslint` de 8.66.0 para 8.67.0.

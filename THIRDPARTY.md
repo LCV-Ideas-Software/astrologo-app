@@ -32,7 +32,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | @eslint/js | devDependencies | ^10.0.1 | 10.0.1 | MIT | https://registry.npmjs.org/@eslint/js/-/js-10.0.1.tgz |
 | astrologo-frontend/package.json | @fusionstrings/swiss-eph | devDependencies | 0.1.1 | 0.1.1 | AGPL-3.0 | https://registry.npmjs.org/@fusionstrings/swiss-eph/-/swiss-eph-0.1.1.tgz |
 | astrologo-frontend/package.json | @types/d3-geo | devDependencies | 3.1.1 | 3.1.1 | MIT | https://registry.npmjs.org/@types/d3-geo/-/d3-geo-3.1.1.tgz |
-| astrologo-frontend/package.json | @types/node | devDependencies | ^26.6.2 | 26.6.2 | MIT | https://registry.npmjs.org/@types/node/-/node-26.6.2.tgz |
+| astrologo-frontend/package.json | @types/node | devDependencies | ^26.6.3 | 26.6.3 | MIT | https://registry.npmjs.org/@types/node/-/node-26.6.3.tgz |
 | astrologo-frontend/package.json | @types/react | devDependencies | ^19.3.0 | 19.3.0 | MIT | https://registry.npmjs.org/@types/react/-/react-19.3.0.tgz |
 | astrologo-frontend/package.json | @types/react-dom | devDependencies | ^19.3.0 | 19.3.0 | MIT | https://registry.npmjs.org/@types/react-dom/-/react-dom-19.3.0.tgz |
 | astrologo-frontend/package.json | @types/sanitize-html | devDependencies | ^2.16.1 | 2.16.1 | MIT | https://registry.npmjs.org/@types/sanitize-html/-/sanitize-html-2.16.1.tgz |
@@ -72,9 +72,9 @@ O WASM exportado por `@fusionstrings/swiss-eph/wasm-wasi` incorpora Swiss Epheme
 
 O Vitest 5.0.3 seleciona `why-is-node-running` 3.2.1, cuja publicação oficial não depende de `stackback`. A árvore exata permanece nos lockfiles regenerados pelo npm. Fonte: https://github.com/vitest-dev/vitest/pull/11316 e https://github.com/vitest-dev/vitest/releases/tag/v5.0.3. Esta atualização de ferramenta de teste não afirma incorporação no produto distribuído.
 
-## Tailwind CSS — preview oficial e WASI (03/10/2026 UTC)
+## Tailwind CSS — preview oficial e WASI (04/10/2026 UTC)
 
-Os manifestos fixam `tailwindcss` e `@tailwindcss/vite` em `0.0.0-insiders.fa81d69`. O npm seleciona `@tailwindcss/node`, `@tailwindcss/oxide` e todas as variantes oficiais de plataforma na mesma revisão, segundo os contratos publicados pelo mantenedor. Trata-se do canal oficial **insiders**, publicado em 25/09/2026, e não de uma versão estável. A atualização é conjunta: nenhum filho de plataforma foi substituído contra o pin exato do pacote pai, e nenhum override adicional foi introduzido.
+Os manifestos voltam a fixar `tailwindcss` e `@tailwindcss/vite` em `0.0.0-insiders.fa81d69` (ASTROLO-34 / #453). A seleção estável 4.3.3 incorporava `@tybys/wasm-util@0.10.2`, cuja fonte exata não coincide integralmente com a revisão licenciada abaixo; a seleção conjunta deste preview oficial retira essa identidade da árvore, sem presumir autorização retroativa. O npm seleciona `@tailwindcss/node`, `@tailwindcss/oxide` e todas as variantes oficiais de plataforma na mesma revisão, segundo os contratos publicados pelo mantenedor. Trata-se do canal oficial **insiders**, publicado em 25/09/2026, e não de uma versão estável. A atualização é conjunta: nenhum filho de plataforma foi substituído contra o pin exato do pacote pai, e nenhum override adicional foi introduzido.
 
 Fontes oficiais dos artefatos diretos: https://registry.npmjs.org/tailwindcss/-/tailwindcss-0.0.0-insiders.fa81d69.tgz e https://registry.npmjs.org/@tailwindcss/vite/-/vite-0.0.0-insiders.fa81d69.tgz. O pai WASI é https://registry.npmjs.org/@tailwindcss/oxide-wasm32-wasi/-/oxide-wasm32-wasi-0.0.0-insiders.fa81d69.tgz, SRI `sha512-CIJ8KPNg0sPva5lq/J93GTir00fdTyH2tJ9c6pJCXcmc6AhVDIY1NJyZ7ScsQqF8Asw4QVLFTgx5BRTsZU+7CA==`.
 
