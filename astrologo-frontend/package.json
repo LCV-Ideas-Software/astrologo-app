@@ -73,6 +73,9 @@
     },
     "vite": "$vite",
     "protobufjs": "7.6.5",
-    "@babel/core": "7.29.6"
+    "@babel/core": "7.29.6",
+    "miniflare": {
+      "sharp": "0.35.5"
+    }
   }
 }
