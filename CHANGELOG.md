@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Corrigido o Sharp transitivo do Miniflare para 0.35.5 com a exceção npm aprovada para GHSA-wq5f-xc86-pv6w e lockfile regenerado; atualizada a Action oficial Linear Release para 0.18.1 com pin de SHA completo, selecionando a versão oficial 0.18.0 do CLI.
+
+- Atualizadas as três relações diretas de `typescript-eslint` 8.71.0 e `@types/sanitize-html` 2.16.2 nos inventários canônico e público, conforme os manifestos e lockfiles atuais.
+
 - Alinhada a data de compatibilidade das Pages Functions para `2026-10-03`, preservando bindings e demais configurações Cloudflare.
 
 - Fixada a família oficial Tailwind CSS na revisão exata `0.0.0-insiders.fa81d69` preservada no lockfile regenerado pelo npm e sem overrides novos (ASTROLO-34 / #453). O WASI deixa de incorporar `@tybys/wasm-util@0.10.2` e seleciona 0.10.3: os 39 arquivos publicados coincidem com o tarball oficial e os 15 arquivos de fonte coincidem com a revisão que recebeu o texto MIT integral, conferidos novamente em 04/10/2026. Os inventários e o NOTICE canônico/público preservam essa proveniência, o grant completo e o aviso separado do Node.js. A versão selecionada pertence ao canal insiders, não é release estável e não prova autorização retroativa para 0.10.2. O inventário acompanha ainda `@types/node` 26.6.3 já selecionado pelo manifesto e lockfile. As duas regras nativas desses pacotes ignoram transições major, minor e patch nas atualizações ordinárias de versão do Dependabot. Novas seleções exatas exigem revisão manual da família e dos grants, inclusive previews0.x, sem presumir permissão a partir da versão anterior. Atualizações de segurança continuam elegíveis; futuros previews exigem revisão de grants. npm ci usa a revisão exata do lockfile.

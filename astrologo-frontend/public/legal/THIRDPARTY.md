@@ -15,7 +15,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | package.json | eslint-plugin-react-refresh | devDependencies | ^0.5.7 | 0.5.7 | MIT | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.7.tgz |
 | package.json | globals | devDependencies | ^17.12.0 | 17.12.0 | MIT | https://registry.npmjs.org/globals/-/globals-17.12.0.tgz |
 | package.json | prettier | devDependencies | ^3.9.9 | 3.9.9 | MIT | https://registry.npmjs.org/prettier/-/prettier-3.9.9.tgz |
-| package.json | typescript-eslint | devDependencies | ^8.70.1 | 8.70.1 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.70.1.tgz |
+| package.json | typescript-eslint | devDependencies | ^8.71.0 | 8.71.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.71.0.tgz |
 | astrologo-frontend/package.json | @js-temporal/polyfill | dependencies | 0.5.1 | 0.5.1 | ISC | https://registry.npmjs.org/@js-temporal/polyfill/-/polyfill-0.5.1.tgz |
 | astrologo-frontend/package.json | @tailwindcss/vite | dependencies | 0.0.0-insiders.fa81d69 | 0.0.0-insiders.fa81d69 | MIT | https://registry.npmjs.org/@tailwindcss/vite/-/vite-0.0.0-insiders.fa81d69.tgz |
 | astrologo-frontend/package.json | astronomy-engine | dependencies | 2.1.19 | 2.1.19 | MIT | https://registry.npmjs.org/astronomy-engine/-/astronomy-engine-2.1.19.tgz |
@@ -35,7 +35,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | @types/node | devDependencies | ^26.6.3 | 26.6.3 | MIT | https://registry.npmjs.org/@types/node/-/node-26.6.3.tgz |
 | astrologo-frontend/package.json | @types/react | devDependencies | ^19.3.0 | 19.3.0 | MIT | https://registry.npmjs.org/@types/react/-/react-19.3.0.tgz |
 | astrologo-frontend/package.json | @types/react-dom | devDependencies | ^19.3.0 | 19.3.0 | MIT | https://registry.npmjs.org/@types/react-dom/-/react-dom-19.3.0.tgz |
-| astrologo-frontend/package.json | @types/sanitize-html | devDependencies | ^2.16.1 | 2.16.1 | MIT | https://registry.npmjs.org/@types/sanitize-html/-/sanitize-html-2.16.1.tgz |
+| astrologo-frontend/package.json | @types/sanitize-html | devDependencies | ^2.16.2 | 2.16.2 | MIT | https://registry.npmjs.org/@types/sanitize-html/-/sanitize-html-2.16.2.tgz |
 | astrologo-frontend/package.json | @types/topojson-client | devDependencies | 3.1.5 | 3.1.5 | MIT | https://registry.npmjs.org/@types/topojson-client/-/topojson-client-3.1.5.tgz |
 | astrologo-frontend/package.json | @vitejs/plugin-react | devDependencies | ^6.1.1 | 6.1.1 | MIT | https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-6.1.1.tgz |
 | astrologo-frontend/package.json | eslint | devDependencies | ^10.11.0 | 10.11.0 | MIT | https://registry.npmjs.org/eslint/-/eslint-10.11.0.tgz |
@@ -45,7 +45,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | fast-check | devDependencies | 4.10.2 | 4.10.2 | MIT | https://registry.npmjs.org/fast-check/-/fast-check-4.10.2.tgz |
 | astrologo-frontend/package.json | globals | devDependencies | ^17.12.0 | 17.12.0 | MIT | https://registry.npmjs.org/globals/-/globals-17.12.0.tgz |
 | astrologo-frontend/package.json | typescript | devDependencies | ~6.0.3 | 6.0.3 | Apache-2.0 | https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz |
-| astrologo-frontend/package.json | typescript-eslint | devDependencies | ^8.70.1 | 8.70.1 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.70.1.tgz |
+| astrologo-frontend/package.json | typescript-eslint | devDependencies | ^8.71.0 | 8.71.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.71.0.tgz |
 | astrologo-frontend/package.json | vite | devDependencies | ^8.3.1 | 8.3.1 | MIT | https://registry.npmjs.org/vite/-/vite-8.3.1.tgz |
 | astrologo-frontend/package.json | vitest | devDependencies | ^5.0.3 | 5.0.3 | MIT | https://registry.npmjs.org/vitest/-/vitest-5.0.3.tgz |
 | astrologo-frontend/package.json | wrangler | devDependencies | 4.147.0 | 4.147.0 | MIT OR Apache-2.0 | https://registry.npmjs.org/wrangler/-/wrangler-4.147.0.tgz |
@@ -96,3 +96,14 @@ O artefato nativo de [Deploy 37139402029](https://github.com/LCV-Ideas-Software/
 | `@cloudflare/unenv-preset` 2.16.2 | MIT OR Apache-2.0 | `LICENSE-MIT` e `LICENSE-APACHE` de cloudflare/workers-sdk no commit `6e7712725698df46db9ec25ac738dd155ff8d39e`, relacionado pela proveniência publicada ao digest exato do tarball |
 
 Esses polyfills contêm código no worker capturado. Seus textos completos e a origem estão no snapshot das Functions, junto aos avisos dos demais componentes já selecionados. Esta atualização documental preserva as expressões de licença e não modifica dependências, configuração, Access ou código de runtime.
+
+## Scoped Miniflare security correction
+
+The operator approved the temporary npm override `miniflare` → `sharp` 0.35.5 on
+06/10/2026 for GHSA-wq5f-xc86-pv6w. npm regenerates the affected lockfile; existing
+Wrangler and Miniflare selections remain unchanged. Remove this override after
+the official upstream selects a corrected Sharp version. Sharp retains its
+Apache-2.0 grant and the native libvips components retain their own LGPL notices;
+this build-tool correction does not certify complete distribution compliance.
+
+Source: <https://github.com/advisories/GHSA-wq5f-xc86-pv6w>.

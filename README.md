@@ -197,7 +197,7 @@ majors, subject to the effective required checks; it does not require manual AI
 review. The TypeScript `>=6.1.0` ignores stay until upstream peer compatibility
 allows their removal.
 
-Linear Release uses the official action and CLI `v0.18.0` after a successful
+Linear Release uses the official action `v0.18.1` and CLI `v0.18.0` after a successful
 push-triggered production Deploy, checking out its exact published SHA with
 full history. This is a web deployment record, not npm or Windows publication;
 the internal version remains `2.25.5` / `APP v02.25.05`.
