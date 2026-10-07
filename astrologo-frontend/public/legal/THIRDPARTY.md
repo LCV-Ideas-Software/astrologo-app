@@ -48,11 +48,11 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | typescript-eslint | devDependencies | ^8.71.0 | 8.71.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.71.0.tgz |
 | astrologo-frontend/package.json | vite | devDependencies | ^8.3.1 | 8.3.1 | MIT | https://registry.npmjs.org/vite/-/vite-8.3.1.tgz |
 | astrologo-frontend/package.json | vitest | devDependencies | ^5.0.3 | 5.0.3 | MIT | https://registry.npmjs.org/vitest/-/vitest-5.0.3.tgz |
-| astrologo-frontend/package.json | wrangler | devDependencies | 4.147.0 | 4.147.0 | MIT OR Apache-2.0 | https://registry.npmjs.org/wrangler/-/wrangler-4.147.0.tgz |
+| astrologo-frontend/package.json | wrangler | devDependencies | 4.148.0 | 4.148.0 | MIT OR Apache-2.0 | https://registry.npmjs.org/wrangler/-/wrangler-4.148.0.tgz |
 
 ## Textos das licenças dos bundles publicados
 
-O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos módulos efetivamente incluídos no bundle do navegador. `legal/FUNCTIONS-BUNDLED-LICENSES.md` é o snapshot manual atualizado em 03/10/2026 a partir dos inputs efetivos do metafile nativo do Wrangler, com textos, versões e origem conferidos; ele não é regenerado pelo Wrangler. Alterações no bundle das Functions exigem revisão desse snapshot. O relatório do Vite não cobre dependências do servidor. Ambos complementam — e não substituem — este inventário, o NOTICE, a GNU AGPL e a oferta de Corresponding Source.
+O build oficial do Vite publica `legal/BUNDLED-LICENSES.md`, gerado a partir dos módulos efetivamente incluídos no bundle do navegador. `legal/FUNCTIONS-BUNDLED-LICENSES.md` é o snapshot manual atualizado em 07/10/2026 a partir dos inputs efetivos do metafile nativo do Wrangler, com textos, versões e origem conferidos; ele não é regenerado pelo Wrangler. Alterações no bundle das Functions exigem revisão desse snapshot. O relatório do Vite não cobre dependências do servidor. Ambos complementam — e não substituem — este inventário, o NOTICE, a GNU AGPL e a oferta de Corresponding Source.
 
 ## Cartografia e Natural Earth
 
@@ -86,9 +86,9 @@ O tarball 0.10.3 e a cópia incorporada não contêm LICENSE próprio: o texto �
 
 A fonte `src/wasi/path.ts` reconhece uma adaptação de `lib/path.js` do Node.js sob MIT; a PR upstream https://github.com/toyobayashi/wasm-util/pull/6 preserva essa atribuição. O NOTICE canônico/público reproduz separadamente o cabeçalho integral oficial de permissão e copyright `Joyent, Inc. and other Node contributors`. A concessão de Toyobayashi não substitui direitos ou avisos de terceiros. A PR não identifica a revisão exata do Node adaptada; o cabeçalho de licença foi observado idêntico em Node v22.20.0 e v24.21.0, o que não afirma igualdade byte a byte de toda a implementação nem certifica todas as obrigações de derivados. Nenhuma nova eleição de licença é introduzida.
 
-## Componentes de runtime das Functions — atualização de 03/10/2026
+## Componentes de runtime das Functions — atualização de 07/10/2026
 
-O artefato nativo de [Deploy 37139402029](https://github.com/LCV-Ideas-Software/astrologo-app/actions/runs/37139402029), fonte `82c5880742183394d5f1e6e5032eec141c908480`, seleciona 23 identidades reais de pacotes em 144 inputs do metafile, além de placeholders e fontes da aplicação. O snapshot público `/legal/FUNCTIONS-BUNDLED-LICENSES.md` identifica as versões efetivamente resolvidas, os inputs e seus bytes no output, os tarballs e os textos integrais. A resolução mantém as versões dos pacotes aninhados de `sanitize-html`; o nome de um placeholder desabilitado não prova incorporação desse pacote.
+A captura local do comando oficial de Pages Functions, na fonte `5418b06f20cab4d47dc0db80d74f6311de59a2fb` da PR #461 em 07/10/2026, seleciona 23 identidades reais de pacotes em 143 inputs do metafile, além de placeholders e fontes da aplicação. Ela usa Wrangler 4.148.0 e o lockfile desse head; é distinta da execução oficial de produção futura. O snapshot público `/legal/FUNCTIONS-BUNDLED-LICENSES.md` identifica as versões efetivamente resolvidas, os inputs e seus bytes no output, os tarballs e os textos integrais. A resolução mantém as versões dos pacotes aninhados de `sanitize-html`; o nome de um placeholder desabilitado não prova incorporação desse pacote.
 
 | Componente incorporado pelo empacotador oficial | Licença declarada | Origem do texto integral |
 | --- | --- | --- |

@@ -1,22 +1,23 @@
 # Cloudflare Pages Functions — snapshot de licenças mantido no repositório
 
-Snapshot revisado em 03/10/2026 (LCV-211), a partir do metafile e do artefato preservados pela mesma execução oficial de produção. Este documento estático identifica os componentes dessa execução; alterações futuras nas Functions, no lockfile ou no empacotador exigem nova revisão.
+Snapshot revisado em 07/10/2026 (LCV-334), a partir da captura local do empacotador oficial Wrangler 4.148.0 e do lockfile regenerado pelo npm. Este documento estático identifica os componentes dessa captura; alterações futuras nas Functions, no lockfile ou no empacotador exigem nova revisão.
 
 ## Proveniência do bundle
 
-- Fonte: commit `82c5880742183394d5f1e6e5032eec141c908480`, incorporado pela [PR #449](https://github.com/LCV-Ideas-Software/astrologo-app/pull/449).
-- Execução oficial: [Deploy 37139402029, tentativa 1](https://github.com/LCV-Ideas-Software/astrologo-app/actions/runs/37139402029), concluída com sucesso em 03/10/2026; artefato nativo `11279823159`.
+- Fonte da preparação: commit `5418b06f20cab4d47dc0db80d74f6311de59a2fb` da [PR #461](https://github.com/LCV-Ideas-Software/astrologo-app/pull/461), com fontes de Functions e lockfile desse head. A manutenção deste aviso não altera essas fontes nem o lockfile.
+- Captura local: 07/10/2026, Wrangler 4.148.0 instalado pelo npm a partir da URL/SRI do lock. O build oficial do navegador precedeu a captura. Nenhuma credencial ou chamada de deploy foi necessária.
 - Comando oficial de captura: `npm exec -- wrangler pages functions build functions --outdir=dist/_worker.js --metafile=.wrangler/pages-custody/metafile.json --output-config-path=.wrangler/pages-custody/functions-config.json --output-routes-path=dist/_routes.json --build-output-directory=dist --project-directory=. --build-metadata-path=.wrangler/pages-custody/build-metadata.json`.
-- O workflow envia o diretório capturado com `pages deploy . --cwd dist --no-bundle`; a mesma execução preserva worker, módulo WASM, rotas, metafile, configuração e lockfile.
-- Metafile SHA-256: `43a144113f22a92b052d83629465d4aaa8ce317b288b3782518df5dfc2d6b8a6`; 144 inputs, incluindo módulos removidos por tree shaking e placeholders gerados; 23 identidades reais de pacotes npm selecionados.
-- Output: `../dist/_worker.js/index.js`; 1468323 bytes; SHA-256 `1b5659c4342f6a4f1f8869ac0b07ed3f55f6f3846ed84139128b721352218fa2`.
+- O workflow de produção mantém esse comando e preserva worker, módulo WASM, rotas, metafile, configuração e lockfile antes de `pages deploy . --cwd dist --no-bundle`. Esta captura local não é alegação de execução de produção futura, igualdade binária entre ambientes ou download do worker pela hospedagem.
+- Lockfile SHA-256: `3644a7ad87fdc3940bc3debc0737a4ecd86bb4098a9571870b46d85e1019ba11`.
+- Metafile SHA-256: `94ed9518832f0ffd7377460b840d97248875cf423d61ee191f64dd37a2b9c1ef`; 143 inputs, incluindo módulos removidos por tree shaking e placeholders gerados; 23 identidades reais de pacotes npm selecionados.
+- Output local: `../dist/_worker.js/index.js`; 1461058 bytes; SHA-256 `6601d20255d08374e8d97d4cb81170dbf8e31216150461401f01342afb61bf50`.
 - O módulo externo Swiss Ephemeris tem 1275365 bytes e SHA-256 `31d3406560fd39b91bc9dbfdff6c9111f170fde2db62ebe92581ae14e878744c`; sua licença e a oferta de fonte permanecem no NOTICE.
-- A produção nativa `56914401-895a-4497-a62f-6c4bdb316bf6` informa esse commit e sucesso. A cadeia de custódia acima não representa um download do worker pela hospedagem opaca.
+- Wrangler 4.148.0: tarball `https://registry.npmjs.org/wrangler/-/wrangler-4.148.0.tgz`, SRI `sha512-wgbll8cA/7qOMJSoYQuJrw9M9lmedGzYtg6wvUK2p/7G1KaE88jFmQ/CvtQzVUF9C8PQtC4Y5p9vbpAsJGAlpA==`; a proveniência publicada vincula a origem [`540f0844667abacb36dee94c078d403192bab1bd`](https://github.com/cloudflare/workers-sdk/tree/540f0844667abacb36dee94c078d403192bab1bd) e a [execução upstream 37510364980](https://github.com/cloudflare/workers-sdk/actions/runs/37510364980). O template publicado corresponde integralmente à fonte exata; os dois polyfills virtuais são gerados pelo empacotador, distintos de arquivos físicos do tarball.
 - `launder` 1.7.2 publica MIT integral no próprio tarball. O texto do titular abaixo não afirma concessão retroativa para 1.7.1.
 
 ## Pacotes npm selecionados pelo build
 
-A resolução usa o diretório de pacote mais específico de cada caminho do metafile e o lockfile da mesma execução. Os descendentes de `sanitize-html/node_modules` conservam suas próprias versões. “Inputs selecionados” inclui entradas examinadas pelo empacotador; a coluna “Com código no output” conta apenas entradas com `bytesInOutput` positivo. Um input com zero bytes foi removido do output. Placeholders `(disabled)` não são tratados como código do pacote cujo nome aparece no caminho.
+A resolução usa o diretório de pacote mais específico de cada caminho do metafile e o lockfile da mesma captura. Os descendentes de `sanitize-html/node_modules` conservam suas próprias versões. “Inputs selecionados” inclui entradas examinadas pelo empacotador; a coluna “Com código no output” conta apenas entradas com `bytesInOutput` positivo. Um input com zero bytes foi removido do output. Placeholders `(disabled)` não são tratados como código do pacote cujo nome aparece no caminho.
 
 | Pacote | Licença declarada | Inputs selecionados | Com código no output | Tarball oficial | SRI do lock |
 | --- | --- | ---: | ---: | --- | --- |
@@ -29,7 +30,7 @@ A resolução usa o diretório de pacote mais específico de cada caminho do met
 | domelementtype@3.0.0 | BSD-2-Clause | 1 | 1 | https://registry.npmjs.org/domelementtype/-/domelementtype-3.0.0.tgz | sha512-umCQid3jKbDmVjx8jGaW7uUykm4DEUeyV21hPxNMo2nV955DhUThwqyOIDtreepP31hl84X7G5U9ZfsWvIB3Pg== |
 | domhandler@6.0.1 | BSD-2-Clause | 2 | 2 | https://registry.npmjs.org/domhandler/-/domhandler-6.0.1.tgz | sha512-gYzvtM72ZtxQO0T048kd6HWSbbGCNOUwcnfQ01cqIJ4X2IYKFFHZ5mKvrQETcFXxsRObZulDaKmy//R7TPtsBg== |
 | domutils@4.0.2 | BSD-2-Clause | 8 | 8 | https://registry.npmjs.org/domutils/-/domutils-4.0.2.tgz | sha512-qI4JLRKnSzqFqr7hAlS5xQDusBCjKSEG4t4+7aNrIQMHBcsC2TGEhuyABJdYkgSewL57PNLYEiibY2iPKhKpaA== |
-| entities@8.0.0 | BSD-2-Clause | 11 | 8 | https://registry.npmjs.org/entities/-/entities-8.0.0.tgz | sha512-zwfzJecQ/Uej6tusMqwAqU/6KL2XaB2VZ2Jg54Je6ahNBGNH6Ek6g3jjNCF0fG9EWQKGZNddNjU5F1ZQn/sBnA== |
+| entities@8.1.0 | BSD-2-Clause | 10 | 8 | https://registry.npmjs.org/entities/-/entities-8.1.0.tgz | sha512-kxL7msIffSuh9aaFAMD7rxAIuTRMAHMeBtgHW2yUdWw732ZNh4MehkF2gdjvtdmikkaIP9bFDDJOPlsvm7avrA== |
 | escape-string-regexp@4.0.0 | MIT | 1 | 1 | https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-4.0.0.tgz | sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA== |
 | htmlparser2@12.0.0 | MIT | 3 | 3 | https://registry.npmjs.org/htmlparser2/-/htmlparser2-12.0.0.tgz | sha512-Tz7u1i95/g2x2jz81+x0FBVhBhY5aRTvD3tXXdFaljuNdzDLJ8UGNRrTcj2cgQvAg3iW/h77Fz15nLW0L0CrZw== |
 | is-plain-object@5.0.0 | MIT | 1 | 1 | https://registry.npmjs.org/is-plain-object/-/is-plain-object-5.0.0.tgz | sha512-VRSzKkbMm5jMDoKLbltAkFQ5Qr7VDiTFGXxYFXXowVj387GeGNOCsOH6Msy00SGZ3Fp84b1Naa1psqgcCIEP5Q== |
@@ -42,156 +43,155 @@ A resolução usa o diretório de pacote mais específico de cada caminho do met
 | postcss@8.5.28 | MIT | 27 | 27 | https://registry.npmjs.org/postcss/-/postcss-8.5.28.tgz | sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A== |
 | sanitize-html@2.17.7 | MIT | 1 | 1 | https://registry.npmjs.org/sanitize-html/-/sanitize-html-2.17.7.tgz | sha512-PGtEkc9cbnedU3s9TmzDbpsZ8w086g/0Q8k8/oIO1NLNU3i5k9yn835CrjJSajp1KMmkisbO1qPXxNKO3welAg== |
 | unenv@2.0.0-rc.24 | MIT | 19 | 17 | https://registry.npmjs.org/unenv/-/unenv-2.0.0-rc.24.tgz | sha512-i7qRCmY42zmCwnYlh9H2SvLEypEFGye5iRmEMKjcGi7zk9UquigRjFtTLz0TYqr0ZGLZhaMHl/foy1bZR+Cwlw== |
-| wrangler@4.147.0 | MIT OR Apache-2.0 | 3 | 3 | https://registry.npmjs.org/wrangler/-/wrangler-4.147.0.tgz | sha512-pQYRoiq8PTAxphaG69z8+GC1DkSGd19EDZehQ8zxjo/Ko3mRB6Qs1mTrd8ZuKAarLklIjTqr1lUdCK9r4q2hUg== |
+| wrangler@4.148.0 | MIT OR Apache-2.0 | 3 | 3 | https://registry.npmjs.org/wrangler/-/wrangler-4.148.0.tgz | sha512-wgbll8cA/7qOMJSoYQuJrw9M9lmedGzYtg6wvUK2p/7G1KaE88jFmQ/CvtQzVUF9C8PQtC4Y5p9vbpAsJGAlpA== |
 
 ## Inputs do metafile
 
-| Caminho | Bytes da entrada | Bytes incorporados | Componente ou origem |
+| Input | Bytes da fonte | Bytes no output | Componente |
 | --- | ---: | ---: | --- |
-| `(disabled):../node_modules/postcss/lib/terminal-highlight` | 0 | 349 | Placeholder gerado pelo empacotador; não incorpora o pacote indicado |
-| `(disabled):../node_modules/source-map-js/source-map.js` | 0 | 338 | Placeholder gerado pelo empacotador; não incorpora o pacote indicado |
-| `../.wrangler/tmp/pages-PNGRRK/functionsRoutes-0.352187871194107.mjs` | 5687 | 3392 | Aplicação / rota gerada / referência externa WASM |
-| `../node_modules/@cloudflare/unenv-preset/dist/runtime/node/console.mjs` | 880 | 1617 | @cloudflare/unenv-preset@2.16.2 |
-| `../node_modules/@cloudflare/unenv-preset/dist/runtime/node/process.mjs` | 3689 | 6194 | @cloudflare/unenv-preset@2.16.2 |
+| `(disabled):../node_modules/postcss/lib/terminal-highlight` | 0 | 350 | placeholder desabilitado; pacote não incorporado |
+| `(disabled):../node_modules/source-map-js/source-map.js` | 0 | 339 | placeholder desabilitado; pacote não incorporado |
+| `../.wrangler/tmp/pages-3CUJVx/functionsRoutes-0.9643618229199373.mjs` | 6281 | 3394 | fonte da aplicação ou módulo gerado |
+| `../node_modules/@cloudflare/unenv-preset/dist/runtime/node/console.mjs` | 880 | 1618 | @cloudflare/unenv-preset@2.16.2 |
+| `../node_modules/@cloudflare/unenv-preset/dist/runtime/node/process.mjs` | 3689 | 6195 | @cloudflare/unenv-preset@2.16.2 |
 | `../node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs` | 971 | 988 | @cloudflare/unenv-preset@2.16.2 |
-| `../node_modules/@js-temporal/polyfill/dist/index.esm.js` | 128868 | 194996 | @js-temporal/polyfill@0.5.1 |
-| `../node_modules/astronomy-engine/esm/astronomy.js` | 412025 | 120502 | astronomy-engine@2.1.19 |
-| `../node_modules/dayjs/dayjs.min.js` | 7161 | 13438 | dayjs@1.11.23 |
-| `../node_modules/deepmerge/dist/cjs.js` | 4048 | 5036 | deepmerge@4.3.1 |
-| `../node_modules/escape-string-regexp/index.js` | 461 | 595 | escape-string-regexp@4.0.0 |
-| `../node_modules/is-plain-object/dist/is-plain-object.js` | 850 | 1028 | is-plain-object@5.0.0 |
-| `../node_modules/jsbi/dist/jsbi-umd.js` | 35301 | 62202 | jsbi@4.3.2 |
-| `../node_modules/launder/index.js` | 16649 | 11874 | launder@1.7.2 |
-| `../node_modules/nanoid/non-secure/index.cjs` | 518 | 1024 | nanoid@3.3.18 |
-| `../node_modules/parse-srcset/src/parse-srcset.js` | 10540 | 5975 | parse-srcset@1.0.2 |
-| `../node_modules/path-to-regexp/dist.es2015/index.js` | 15454 | 10883 | path-to-regexp@6.3.0 |
-| `../node_modules/picocolors/picocolors.browser.js` | 598 | 1149 | picocolors@1.1.1 |
-| `../node_modules/postcss/lib/at-rule.js` | 471 | 945 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/comment.js` | 203 | 646 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/container.js` | 12350 | 14192 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/css-syntax-error.js` | 3402 | 4129 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/declaration.js` | 495 | 947 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/document.js` | 654 | 1072 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/fromJSON.js` | 2810 | 3275 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/input.js` | 7274 | 8179 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/lazy-result.js` | 16273 | 17641 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/list.js` | 1325 | 1894 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/map-generator.js` | 10099 | 11875 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/no-work-result.js` | 2619 | 3412 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/node.js` | 12643 | 13966 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/parse.js` | 1147 | 1462 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/parser.js` | 15310 | 17704 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/postcss.js` | 2898 | 3486 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/previous-map.js` | 5130 | 5711 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/processor.js` | 1739 | 2277 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/result.js` | 738 | 1270 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/root.js` | 1606 | 2208 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/rule.js` | 569 | 1045 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/stringifier.js` | 12142 | 13162 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/stringify.js` | 213 | 619 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/symbols.js` | 91 | 470 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/tokenize.js` | 6700 | 7926 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/warn-once.js` | 256 | 637 | postcss@8.5.28 |
-| `../node_modules/postcss/lib/warning.js` | 1151 | 1426 | postcss@8.5.28 |
-| `../node_modules/sanitize-html/index.js` | 40672 | 36082 | sanitize-html@2.17.7 |
-| `../node_modules/sanitize-html/node_modules/dom-serializer/dist/foreign-names.js` | 1792 | 1773 | dom-serializer@3.1.1 |
-| `../node_modules/sanitize-html/node_modules/dom-serializer/dist/index.js` | 7202 | 4203 | dom-serializer@3.1.1 |
-| `../node_modules/sanitize-html/node_modules/domelementtype/dist/index.js` | 2222 | 1640 | domelementtype@3.0.0 |
-| `../node_modules/sanitize-html/node_modules/domhandler/dist/index.js` | 4800 | 4976 | domhandler@6.0.1 |
-| `../node_modules/sanitize-html/node_modules/domhandler/dist/node.js` | 9626 | 9168 | domhandler@6.0.1 |
-| `../node_modules/sanitize-html/node_modules/domutils/dist/feeds.js` | 5811 | 4664 | domutils@4.0.2 |
-| `../node_modules/sanitize-html/node_modules/domutils/dist/helpers.js` | 5024 | 2978 | domutils@4.0.2 |
-| `../node_modules/sanitize-html/node_modules/domutils/dist/index.js` | 250 | 1784 | domutils@4.0.2 |
-| `../node_modules/sanitize-html/node_modules/domutils/dist/legacy.js` | 5320 | 3105 | domutils@4.0.2 |
-| `../node_modules/sanitize-html/node_modules/domutils/dist/manipulation.js` | 3676 | 2991 | domutils@4.0.2 |
-| `../node_modules/sanitize-html/node_modules/domutils/dist/querying.js` | 4703 | 2545 | domutils@4.0.2 |
-| `../node_modules/sanitize-html/node_modules/domutils/dist/stringify.js` | 2562 | 1617 | domutils@4.0.2 |
-| `../node_modules/sanitize-html/node_modules/domutils/dist/traversal.js` | 3076 | 1823 | domutils@4.0.2 |
-| `../node_modules/sanitize-html/node_modules/entities/dist/decode-codepoint.js` | 1160 | 1238 | entities@8.0.0 |
-| `../node_modules/sanitize-html/node_modules/entities/dist/decode.js` | 22923 | 16564 | entities@8.0.0 |
-| `../node_modules/sanitize-html/node_modules/entities/dist/encode.js` | 3272 | 0 | entities@8.0.0 |
-| `../node_modules/sanitize-html/node_modules/entities/dist/escape.js` | 4740 | 2626 | entities@8.0.0 |
-| `../node_modules/sanitize-html/node_modules/entities/dist/generated/decode-data-html.js` | 32453 | 32669 | entities@8.0.0 |
-| `../node_modules/sanitize-html/node_modules/entities/dist/generated/decode-data-xml.js` | 314 | 529 | entities@8.0.0 |
-| `../node_modules/sanitize-html/node_modules/entities/dist/generated/encode-html.js` | 13401 | 0 | entities@8.0.0 |
-| `../node_modules/sanitize-html/node_modules/entities/dist/index.js` | 3604 | 950 | entities@8.0.0 |
-| `../node_modules/sanitize-html/node_modules/entities/dist/internal/bin-trie-flags.js` | 942 | 747 | entities@8.0.0 |
-| `../node_modules/sanitize-html/node_modules/entities/dist/internal/decode-shared.js` | 617 | 768 | entities@8.0.0 |
-| `../node_modules/sanitize-html/node_modules/entities/dist/internal/encode-shared.js` | 3618 | 0 | entities@8.0.0 |
-| `../node_modules/sanitize-html/node_modules/htmlparser2/dist/Parser.js` | 21036 | 20160 | htmlparser2@12.0.0 |
-| `../node_modules/sanitize-html/node_modules/htmlparser2/dist/Tokenizer.js` | 40603 | 36989 | htmlparser2@12.0.0 |
-| `../node_modules/sanitize-html/node_modules/htmlparser2/dist/index.js` | 1923 | 1633 | htmlparser2@12.0.0 |
-| `../node_modules/unenv/dist/runtime/_internal/utils.mjs` | 1181 | 1340 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/mock/noop.mjs` | 61 | 406 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/console.mjs` | 2273 | 2063 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/fs.mjs` | 2681 | 2554 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/fs/promises.mjs` | 730 | 917 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/internal/fs/classes.mjs` | 524 | 835 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/internal/fs/constants.mjs` | 1970 | 4365 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/internal/fs/fs.mjs` | 6525 | 6943 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/internal/fs/promises.mjs` | 2140 | 2406 | unenv@2.0.0-rc.24 |
+| `../node_modules/@js-temporal/polyfill/dist/index.esm.js` | 128868 | 194997 | @js-temporal/polyfill@0.5.1 |
+| `../node_modules/astronomy-engine/esm/astronomy.js` | 412025 | 120506 | astronomy-engine@2.1.19 |
+| `../node_modules/dayjs/dayjs.min.js` | 7161 | 13439 | dayjs@1.11.23 |
+| `../node_modules/deepmerge/dist/cjs.js` | 4048 | 5037 | deepmerge@4.3.1 |
+| `../node_modules/dom-serializer/dist/foreign-names.js` | 1792 | 1747 | dom-serializer@3.1.1 |
+| `../node_modules/dom-serializer/dist/index.js` | 7202 | 4177 | dom-serializer@3.1.1 |
+| `../node_modules/domelementtype/dist/index.js` | 2222 | 1614 | domelementtype@3.0.0 |
+| `../node_modules/domhandler/dist/index.js` | 4800 | 4950 | domhandler@6.0.1 |
+| `../node_modules/domhandler/dist/node.js` | 9626 | 9142 | domhandler@6.0.1 |
+| `../node_modules/domutils/dist/feeds.js` | 5811 | 4638 | domutils@4.0.2 |
+| `../node_modules/domutils/dist/helpers.js` | 5024 | 2952 | domutils@4.0.2 |
+| `../node_modules/domutils/dist/index.js` | 250 | 1758 | domutils@4.0.2 |
+| `../node_modules/domutils/dist/legacy.js` | 5320 | 3079 | domutils@4.0.2 |
+| `../node_modules/domutils/dist/manipulation.js` | 3676 | 2965 | domutils@4.0.2 |
+| `../node_modules/domutils/dist/querying.js` | 4703 | 2519 | domutils@4.0.2 |
+| `../node_modules/domutils/dist/stringify.js` | 2562 | 1591 | domutils@4.0.2 |
+| `../node_modules/domutils/dist/traversal.js` | 3076 | 1797 | domutils@4.0.2 |
+| `../node_modules/entities/dist/decode-codepoint.js` | 2413 | 1333 | entities@8.1.0 |
+| `../node_modules/entities/dist/decode.js` | 49384 | 19866 | entities@8.1.0 |
+| `../node_modules/entities/dist/encode.js` | 12366 | 0 | entities@8.1.0 |
+| `../node_modules/entities/dist/escape.js` | 6122 | 2798 | entities@8.1.0 |
+| `../node_modules/entities/dist/generated/decode-data-html.js` | 18811 | 18998 | entities@8.1.0 |
+| `../node_modules/entities/dist/generated/decode-data-xml.js` | 330 | 685 | entities@8.1.0 |
+| `../node_modules/entities/dist/generated/encode-html.js` | 11333 | 0 | entities@8.1.0 |
+| `../node_modules/entities/dist/index.js` | 3530 | 924 | entities@8.1.0 |
+| `../node_modules/entities/dist/internal/bin-trie-flags.js` | 2847 | 793 | entities@8.1.0 |
+| `../node_modules/entities/dist/internal/decode-shared.js` | 8252 | 4376 | entities@8.1.0 |
+| `../node_modules/escape-string-regexp/index.js` | 461 | 596 | escape-string-regexp@4.0.0 |
+| `../node_modules/htmlparser2/dist/Parser.js` | 21036 | 20134 | htmlparser2@12.0.0 |
+| `../node_modules/htmlparser2/dist/Tokenizer.js` | 40603 | 36963 | htmlparser2@12.0.0 |
+| `../node_modules/htmlparser2/dist/index.js` | 1923 | 1607 | htmlparser2@12.0.0 |
+| `../node_modules/is-plain-object/dist/is-plain-object.js` | 850 | 1029 | is-plain-object@5.0.0 |
+| `../node_modules/jsbi/dist/jsbi-umd.js` | 35301 | 62203 | jsbi@4.3.2 |
+| `../node_modules/launder/index.js` | 16649 | 11875 | launder@1.7.2 |
+| `../node_modules/nanoid/non-secure/index.cjs` | 518 | 1025 | nanoid@3.3.18 |
+| `../node_modules/parse-srcset/src/parse-srcset.js` | 10540 | 5976 | parse-srcset@1.0.2 |
+| `../node_modules/path-to-regexp/dist.es2015/index.js` | 15454 | 10884 | path-to-regexp@6.3.0 |
+| `../node_modules/picocolors/picocolors.browser.js` | 598 | 1150 | picocolors@1.1.1 |
+| `../node_modules/postcss/lib/at-rule.js` | 471 | 946 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/comment.js` | 203 | 647 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/container.js` | 12350 | 14193 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/css-syntax-error.js` | 3402 | 4130 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/declaration.js` | 495 | 948 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/document.js` | 654 | 1073 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/fromJSON.js` | 2810 | 3276 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/input.js` | 7274 | 8180 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/lazy-result.js` | 16273 | 17642 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/list.js` | 1325 | 1895 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/map-generator.js` | 10099 | 11876 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/no-work-result.js` | 2619 | 3413 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/node.js` | 12643 | 13967 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/parse.js` | 1147 | 1463 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/parser.js` | 15310 | 17705 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/postcss.js` | 2898 | 3487 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/previous-map.js` | 5130 | 5712 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/processor.js` | 1739 | 2278 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/result.js` | 738 | 1271 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/root.js` | 1606 | 2209 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/rule.js` | 569 | 1046 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/stringifier.js` | 12142 | 13163 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/stringify.js` | 213 | 620 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/symbols.js` | 91 | 471 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/tokenize.js` | 6700 | 7927 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/warn-once.js` | 256 | 638 | postcss@8.5.28 |
+| `../node_modules/postcss/lib/warning.js` | 1151 | 1427 | postcss@8.5.28 |
+| `../node_modules/sanitize-html/index.js` | 40672 | 36083 | sanitize-html@2.17.7 |
+| `../node_modules/unenv/dist/runtime/_internal/utils.mjs` | 1181 | 1341 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/mock/noop.mjs` | 61 | 407 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/console.mjs` | 2273 | 2064 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/fs.mjs` | 2681 | 2555 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/fs/promises.mjs` | 730 | 918 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/internal/fs/classes.mjs` | 524 | 836 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/internal/fs/constants.mjs` | 1970 | 4366 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/internal/fs/fs.mjs` | 6525 | 6944 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/internal/fs/promises.mjs` | 2140 | 2407 | unenv@2.0.0-rc.24 |
 | `../node_modules/unenv/dist/runtime/node/internal/perf_hooks/constants.mjs` | 1544 | 0 | unenv@2.0.0-rc.24 |
 | `../node_modules/unenv/dist/runtime/node/internal/perf_hooks/histogram.mjs` | 1046 | 0 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/internal/perf_hooks/performance.mjs` | 6162 | 7346 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/internal/process/hrtime.mjs` | 653 | 1008 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/internal/process/node-version.mjs` | 64 | 399 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/internal/process/process.mjs` | 5494 | 6854 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/internal/tty/read-stream.mjs` | 162 | 639 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/internal/tty/write-stream.mjs` | 795 | 1470 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/perf_hooks.mjs` | 2767 | 354 | unenv@2.0.0-rc.24 |
-| `../node_modules/unenv/dist/runtime/node/tty.mjs` | 356 | 365 | unenv@2.0.0-rc.24 |
-| `../node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console` | 117 | 259 | wrangler@4.147.0 |
-| `../node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process` | 117 | 259 | wrangler@4.147.0 |
-| `../node_modules/wrangler/templates/pages-template-worker.ts` | 5788 | 3992 | wrangler@4.147.0 |
-| `../src/analysisOutput.ts` | 1058 | 1331 | Aplicação / rota gerada / referência externa WASM |
-| `_middleware.ts` | 379 | 599 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/advancedAnalysisPrompt.ts` | 15196 | 15596 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/analysisEditorial.ts` | 3154 | 3937 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/analysisJobRepository.ts` | 21238 | 18409 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/analysisPrompt.ts` | 30299 | 29740 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/angelCatalog.ts` | 18738 | 18893 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/artifactPersistence.ts` | 1668 | 1472 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/astroCore.ts` | 3187 | 2617 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/astronomyTransitProvider.ts` | 11049 | 12037 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/birthTime.ts` | 4640 | 2921 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/canonicalArtifactBundle.ts` | 11482 | 9151 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/externalFetch.ts` | 490 | 800 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/localityMapV1.ts` | 27024 | 20531 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/localityMapV1Schema.ts` | 30598 | 31974 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/location.ts` | 3811 | 2814 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/longAnalysisContracts.ts` | 13218 | 12830 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/longAnalysisPlanner.ts` | 42358 | 36213 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/mapOwnershipClaim.ts` | 4796 | 5115 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/modelAvailability.ts` | 2288 | 1518 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/modelConfig.ts` | 1700 | 1757 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/natalChartAnalysisV1.ts` | 24913 | 19050 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/natalChartAnalysisV1Schema.ts` | 30374 | 31928 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/positionV2.ts` | 25798 | 18736 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/positionV2Schema.ts` | 26215 | 27920 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/requestSecurity.ts` | 5260 | 5126 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/solarTimes.ts` | 2468 | 2144 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/swissRuntime.ts` | 9841 | 10467 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/synastryRunV1.ts` | 14158 | 10870 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/synastryRunV1Schema.ts` | 14815 | 14722 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/tatwa.ts` | 4944 | 4198 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/tatwaBirth.ts` | 5029 | 3474 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/tatwaPrompt.ts` | 8678 | 7499 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/tatwaSchema.ts` | 10415 | 9907 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/transitRunV1.ts` | 37018 | 29648 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/transitRunV1Schema.ts` | 35924 | 36614 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/vertex.ts` | 13118 | 10513 | Aplicação / rota gerada / referência externa WASM |
-| `api/_shared/vertexModelCapabilities.ts` | 3419 | 2481 | Aplicação / rota gerada / referência externa WASM |
-| `api/analisar.ts` | 107098 | 81588 | Aplicação / rota gerada / referência externa WASM |
-| `api/astrologo-auth.ts` | 20573 | 19457 | Aplicação / rota gerada / referência externa WASM |
-| `api/calcular.ts` | 21971 | 21576 | Aplicação / rota gerada / referência externa WASM |
-| `api/contato.ts` | 4932 | 4934 | Aplicação / rota gerada / referência externa WASM |
-| `api/enviar-email.ts` | 4969 | 5197 | Aplicação / rota gerada / referência externa WASM |
-| `api/localidade.ts` | 7190 | 6809 | Aplicação / rota gerada / referência externa WASM |
-| `api/sinastria.ts` | 13341 | 12515 | Aplicação / rota gerada / referência externa WASM |
-| `api/transitos.ts` | 7017 | 6567 | Aplicação / rota gerada / referência externa WASM |
-| `node-built-in-modules:fs` | 57 | 364 | Aplicação / rota gerada / referência externa WASM |
-| `node-built-in-modules:path` | 59 | 383 | Aplicação / rota gerada / referência externa WASM |
-| `node-built-in-modules:url` | 58 | 382 | Aplicação / rota gerada / referência externa WASM |
+| `../node_modules/unenv/dist/runtime/node/internal/perf_hooks/performance.mjs` | 6162 | 7347 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/internal/process/hrtime.mjs` | 653 | 1009 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/internal/process/node-version.mjs` | 64 | 400 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/internal/process/process.mjs` | 5494 | 6855 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/internal/tty/read-stream.mjs` | 162 | 640 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/internal/tty/write-stream.mjs` | 795 | 1471 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/perf_hooks.mjs` | 2767 | 355 | unenv@2.0.0-rc.24 |
+| `../node_modules/unenv/dist/runtime/node/tty.mjs` | 356 | 366 | unenv@2.0.0-rc.24 |
+| `../node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console` | 117 | 259 | wrangler@4.148.0 |
+| `../node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process` | 117 | 259 | wrangler@4.148.0 |
+| `../node_modules/wrangler/templates/pages-template-worker.ts` | 5788 | 3993 | wrangler@4.148.0 |
+| `../src/analysisOutput.ts` | 1058 | 1332 | fonte da aplicação ou módulo gerado |
+| `_middleware.ts` | 379 | 600 | fonte da aplicação ou módulo gerado |
+| `api/_shared/advancedAnalysisPrompt.ts` | 15196 | 15597 | fonte da aplicação ou módulo gerado |
+| `api/_shared/analysisEditorial.ts` | 3154 | 3938 | fonte da aplicação ou módulo gerado |
+| `api/_shared/analysisJobRepository.ts` | 21238 | 18410 | fonte da aplicação ou módulo gerado |
+| `api/_shared/analysisPrompt.ts` | 30299 | 29741 | fonte da aplicação ou módulo gerado |
+| `api/_shared/angelCatalog.ts` | 18738 | 18894 | fonte da aplicação ou módulo gerado |
+| `api/_shared/artifactPersistence.ts` | 1668 | 1473 | fonte da aplicação ou módulo gerado |
+| `api/_shared/astroCore.ts` | 3187 | 2618 | fonte da aplicação ou módulo gerado |
+| `api/_shared/astronomyTransitProvider.ts` | 11049 | 12038 | fonte da aplicação ou módulo gerado |
+| `api/_shared/birthTime.ts` | 4640 | 2922 | fonte da aplicação ou módulo gerado |
+| `api/_shared/canonicalArtifactBundle.ts` | 11482 | 9152 | fonte da aplicação ou módulo gerado |
+| `api/_shared/externalFetch.ts` | 490 | 801 | fonte da aplicação ou módulo gerado |
+| `api/_shared/localityMapV1.ts` | 27024 | 20532 | fonte da aplicação ou módulo gerado |
+| `api/_shared/localityMapV1Schema.ts` | 30598 | 31975 | fonte da aplicação ou módulo gerado |
+| `api/_shared/location.ts` | 3811 | 2815 | fonte da aplicação ou módulo gerado |
+| `api/_shared/longAnalysisContracts.ts` | 13218 | 12831 | fonte da aplicação ou módulo gerado |
+| `api/_shared/longAnalysisPlanner.ts` | 42358 | 36214 | fonte da aplicação ou módulo gerado |
+| `api/_shared/mapOwnershipClaim.ts` | 4796 | 5116 | fonte da aplicação ou módulo gerado |
+| `api/_shared/modelAvailability.ts` | 2288 | 1519 | fonte da aplicação ou módulo gerado |
+| `api/_shared/modelConfig.ts` | 1700 | 1758 | fonte da aplicação ou módulo gerado |
+| `api/_shared/natalChartAnalysisV1.ts` | 24913 | 19051 | fonte da aplicação ou módulo gerado |
+| `api/_shared/natalChartAnalysisV1Schema.ts` | 30374 | 31929 | fonte da aplicação ou módulo gerado |
+| `api/_shared/positionV2.ts` | 25798 | 18737 | fonte da aplicação ou módulo gerado |
+| `api/_shared/positionV2Schema.ts` | 26215 | 27921 | fonte da aplicação ou módulo gerado |
+| `api/_shared/requestSecurity.ts` | 5260 | 5127 | fonte da aplicação ou módulo gerado |
+| `api/_shared/solarTimes.ts` | 2468 | 2145 | fonte da aplicação ou módulo gerado |
+| `api/_shared/swissRuntime.ts` | 9841 | 10468 | fonte da aplicação ou módulo gerado |
+| `api/_shared/synastryRunV1.ts` | 14158 | 10871 | fonte da aplicação ou módulo gerado |
+| `api/_shared/synastryRunV1Schema.ts` | 14815 | 14723 | fonte da aplicação ou módulo gerado |
+| `api/_shared/tatwa.ts` | 4944 | 4199 | fonte da aplicação ou módulo gerado |
+| `api/_shared/tatwaBirth.ts` | 5029 | 3475 | fonte da aplicação ou módulo gerado |
+| `api/_shared/tatwaPrompt.ts` | 8678 | 7500 | fonte da aplicação ou módulo gerado |
+| `api/_shared/tatwaSchema.ts` | 10415 | 9908 | fonte da aplicação ou módulo gerado |
+| `api/_shared/transitRunV1.ts` | 37018 | 29649 | fonte da aplicação ou módulo gerado |
+| `api/_shared/transitRunV1Schema.ts` | 35924 | 36615 | fonte da aplicação ou módulo gerado |
+| `api/_shared/vertex.ts` | 13118 | 10514 | fonte da aplicação ou módulo gerado |
+| `api/_shared/vertexModelCapabilities.ts` | 3419 | 2482 | fonte da aplicação ou módulo gerado |
+| `api/analisar.ts` | 107098 | 81589 | fonte da aplicação ou módulo gerado |
+| `api/astrologo-auth.ts` | 20573 | 19458 | fonte da aplicação ou módulo gerado |
+| `api/calcular.ts` | 21971 | 21577 | fonte da aplicação ou módulo gerado |
+| `api/contato.ts` | 4932 | 4935 | fonte da aplicação ou módulo gerado |
+| `api/enviar-email.ts` | 4969 | 5198 | fonte da aplicação ou módulo gerado |
+| `api/localidade.ts` | 7190 | 6810 | fonte da aplicação ou módulo gerado |
+| `api/sinastria.ts` | 13341 | 12516 | fonte da aplicação ou módulo gerado |
+| `api/transitos.ts` | 7017 | 6568 | fonte da aplicação ou módulo gerado |
+| `node-built-in-modules:fs` | 57 | 365 | módulo nativo externo da plataforma |
+| `node-built-in-modules:path` | 59 | 384 | módulo nativo externo da plataforma |
+| `node-built-in-modules:url` | 58 | 383 | módulo nativo externo da plataforma |
 
 ## Textos integrais
 
@@ -391,10 +391,10 @@ THIS IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRE
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### entities@8.0.0
+### entities@8.1.0
 
-- Licença declarada: `BSD-2-Clause`
-- Origem do texto: tarball npm oficial (LICENSE)
+- Fonte: https://registry.npmjs.org/entities/-/entities-8.1.0.tgz
+- Integridade: `sha512-kxL7msIffSuh9aaFAMD7rxAIuTRMAHMeBtgHW2yUdWw732ZNh4MehkF2gdjvtdmikkaIP9bFDDJOPlsvm7avrA==`
 
 #### LICENSE
 
@@ -860,10 +860,11 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### wrangler@4.147.0
+### wrangler@4.148.0
 
-- Fonte: https://registry.npmjs.org/wrangler/-/wrangler-4.147.0.tgz
-- Integridade: `sha512-pQYRoiq8PTAxphaG69z8+GC1DkSGd19EDZehQ8zxjo/Ko3mRB6Qs1mTrd8ZuKAarLklIjTqr1lUdCK9r4q2hUg==`
+- Fonte: https://registry.npmjs.org/wrangler/-/wrangler-4.148.0.tgz
+- Integridade: `sha512-wgbll8cA/7qOMJSoYQuJrw9M9lmedGzYtg6wvUK2p/7G1KaE88jFmQ/CvtQzVUF9C8PQtC4Y5p9vbpAsJGAlpA==`
+- Fonte exata dos grants MIT/Apache: [workers-sdk 540f0844667abacb36dee94c078d403192bab1bd](https://github.com/cloudflare/workers-sdk/tree/540f0844667abacb36dee94c078d403192bab1bd), preservados integralmente abaixo; os arquivos de licença não constam do tarball do Wrangler.
 
 #### LICENSE-APACHE
 

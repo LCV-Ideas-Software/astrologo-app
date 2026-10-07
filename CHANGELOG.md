@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- Revisado o snapshot integral de licenças das Pages Functions com o metafile, output, lockfile e proveniência da captura oficial local de Wrangler 4.148.0, preservando todos os grants e sincronizando NOTICE/inventários canônico e público (LCV-334 / #461).
+
+- Atualizada a CLI oficial Cloudflare Wrangler para 4.148.0, com lockfiles regenerados pelo npm; preservado o override autorizado de Sharp 0.35.5 enquanto o Miniflare oficial 5.20261006.0-alpha ainda exige 0.35.4 (LCV-334).
+
+- Update the official `actions/upload-artifact` to v7.0.2 at complete commit SHAs (LCV-334).
+
 - Corrigido o Sharp transitivo do Miniflare para 0.35.5 com a exceção npm aprovada para GHSA-wq5f-xc86-pv6w e lockfile regenerado; atualizada a Action oficial Linear Release para 0.18.1 com pin de SHA completo, selecionando a versão oficial 0.18.0 do CLI.
 
 - Atualizadas as três relações diretas de `typescript-eslint` 8.71.0 e `@types/sanitize-html` 2.16.2 nos inventários canônico e público, conforme os manifestos e lockfiles atuais.
