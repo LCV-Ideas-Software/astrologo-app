@@ -13,7 +13,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | package.json | eslint-config-prettier | devDependencies | ^10.1.8 | 10.1.8 | MIT | https://registry.npmjs.org/eslint-config-prettier/-/eslint-config-prettier-10.1.8.tgz |
 | package.json | eslint-plugin-react-hooks | devDependencies | ^7.1.1 | 7.1.1 | MIT | https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-7.1.1.tgz |
 | package.json | eslint-plugin-react-refresh | devDependencies | ^0.5.7 | 0.5.7 | MIT | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.7.tgz |
-| package.json | globals | devDependencies | ^17.12.0 | 17.12.0 | MIT | https://registry.npmjs.org/globals/-/globals-17.12.0.tgz |
+| package.json | globals | devDependencies | ^17.13.0 | 17.13.0 | MIT | https://registry.npmjs.org/globals/-/globals-17.13.0.tgz |
 | package.json | prettier | devDependencies | ^3.9.9 | 3.9.9 | MIT | https://registry.npmjs.org/prettier/-/prettier-3.9.9.tgz |
 | package.json | typescript-eslint | devDependencies | ^8.71.0 | 8.71.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.71.0.tgz |
 | astrologo-frontend/package.json | @js-temporal/polyfill | dependencies | 0.5.1 | 0.5.1 | ISC | https://registry.npmjs.org/@js-temporal/polyfill/-/polyfill-0.5.1.tgz |
@@ -21,14 +21,14 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | astronomy-engine | dependencies | 2.1.19 | 2.1.19 | MIT | https://registry.npmjs.org/astronomy-engine/-/astronomy-engine-2.1.19.tgz |
 | astrologo-frontend/package.json | d3-geo | dependencies | 3.1.1 | 3.1.1 | ISC | https://registry.npmjs.org/d3-geo/-/d3-geo-3.1.1.tgz |
 | astrologo-frontend/package.json | dompurify | dependencies | ^3.4.16 | 3.4.16 | (MPL-2.0 OR Apache-2.0) | https://registry.npmjs.org/dompurify/-/dompurify-3.4.16.tgz |
-| astrologo-frontend/package.json | lucide-react | dependencies | ^1.48.0 | 1.48.0 | ISC AND MIT | https://registry.npmjs.org/lucide-react/-/lucide-react-1.48.0.tgz |
+| astrologo-frontend/package.json | lucide-react | dependencies | ^1.49.0 | 1.49.0 | ISC AND MIT | https://registry.npmjs.org/lucide-react/-/lucide-react-1.49.0.tgz |
 | astrologo-frontend/package.json | react | dependencies | ^19.3.0 | 19.3.0 | MIT | https://registry.npmjs.org/react/-/react-19.3.0.tgz |
 | astrologo-frontend/package.json | react-dom | dependencies | ^19.3.0 | 19.3.0 | MIT | https://registry.npmjs.org/react-dom/-/react-dom-19.3.0.tgz |
-| astrologo-frontend/package.json | sanitize-html | dependencies | ^2.17.7 | 2.17.7 | MIT | https://registry.npmjs.org/sanitize-html/-/sanitize-html-2.17.7.tgz |
+| astrologo-frontend/package.json | sanitize-html | dependencies | ^2.18.0 | 2.18.0 | MIT | https://registry.npmjs.org/sanitize-html/-/sanitize-html-2.18.0.tgz |
 | astrologo-frontend/package.json | tailwindcss | dependencies | 0.0.0-insiders.fa81d69 | 0.0.0-insiders.fa81d69 | MIT | https://registry.npmjs.org/tailwindcss/-/tailwindcss-0.0.0-insiders.fa81d69.tgz |
 | astrologo-frontend/package.json | topojson-client | dependencies | 3.1.0 | 3.1.0 | ISC | https://registry.npmjs.org/topojson-client/-/topojson-client-3.1.0.tgz |
 | astrologo-frontend/package.json | world-atlas | dependencies | 2.0.2 | 2.0.2 | ISC | https://registry.npmjs.org/world-atlas/-/world-atlas-2.0.2.tgz |
-| astrologo-frontend/package.json | @biomejs/biome | devDependencies | ^2.5.14 | 2.5.14 | MIT OR Apache-2.0 | https://registry.npmjs.org/@biomejs/biome/-/biome-2.5.14.tgz |
+| astrologo-frontend/package.json | @biomejs/biome | devDependencies | ^2.5.15 | 2.5.15 | MIT OR Apache-2.0 | https://registry.npmjs.org/@biomejs/biome/-/biome-2.5.15.tgz |
 | astrologo-frontend/package.json | @eslint/js | devDependencies | ^10.0.1 | 10.0.1 | MIT | https://registry.npmjs.org/@eslint/js/-/js-10.0.1.tgz |
 | astrologo-frontend/package.json | @fusionstrings/swiss-eph | devDependencies | 0.1.1 | 0.1.1 | AGPL-3.0 | https://registry.npmjs.org/@fusionstrings/swiss-eph/-/swiss-eph-0.1.1.tgz |
 | astrologo-frontend/package.json | @types/d3-geo | devDependencies | 3.1.1 | 3.1.1 | MIT | https://registry.npmjs.org/@types/d3-geo/-/d3-geo-3.1.1.tgz |
@@ -43,7 +43,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | eslint-plugin-react-hooks | devDependencies | ^7.1.1 | 7.1.1 | MIT | https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-7.1.1.tgz |
 | astrologo-frontend/package.json | eslint-plugin-react-refresh | devDependencies | ^0.5.7 | 0.5.7 | MIT | https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.5.7.tgz |
 | astrologo-frontend/package.json | fast-check | devDependencies | 4.10.2 | 4.10.2 | MIT | https://registry.npmjs.org/fast-check/-/fast-check-4.10.2.tgz |
-| astrologo-frontend/package.json | globals | devDependencies | ^17.12.0 | 17.12.0 | MIT | https://registry.npmjs.org/globals/-/globals-17.12.0.tgz |
+| astrologo-frontend/package.json | globals | devDependencies | ^17.13.0 | 17.13.0 | MIT | https://registry.npmjs.org/globals/-/globals-17.13.0.tgz |
 | astrologo-frontend/package.json | typescript | devDependencies | ~6.0.3 | 6.0.3 | Apache-2.0 | https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz |
 | astrologo-frontend/package.json | typescript-eslint | devDependencies | ^8.71.0 | 8.71.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.71.0.tgz |
 | astrologo-frontend/package.json | vite | devDependencies | ^8.3.1 | 8.3.1 | MIT | https://registry.npmjs.org/vite/-/vite-8.3.1.tgz |

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Update the official CodeQL SARIF uploader to v4.38.3 at its complete commit SHA (LCV-336).
+
+- Atualizadas cinco relações do inventário direto e sua cópia pública conforme as versões, tarballs e licenças integrais dos lockfiles atuais (LCV-336).
+
 - Revisado o snapshot integral de licenças das Pages Functions com o metafile, output, lockfile e proveniência da captura oficial local de Wrangler 4.148.0, preservando todos os grants e sincronizando NOTICE/inventários canônico e público (LCV-334 / #461).
 
 - Atualizada a CLI oficial Cloudflare Wrangler para 4.148.0, com lockfiles regenerados pelo npm; preservado o override autorizado de Sharp 0.35.5 enquanto o Miniflare oficial 5.20261006.0-alpha ainda exige 0.35.4 (LCV-334).
