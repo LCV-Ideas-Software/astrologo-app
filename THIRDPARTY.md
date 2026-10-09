@@ -32,7 +32,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | @eslint/js | devDependencies | ^10.0.1 | 10.0.1 | MIT | https://registry.npmjs.org/@eslint/js/-/js-10.0.1.tgz |
 | astrologo-frontend/package.json | @fusionstrings/swiss-eph | devDependencies | 0.1.1 | 0.1.1 | AGPL-3.0 | https://registry.npmjs.org/@fusionstrings/swiss-eph/-/swiss-eph-0.1.1.tgz |
 | astrologo-frontend/package.json | @types/d3-geo | devDependencies | 3.1.1 | 3.1.1 | MIT | https://registry.npmjs.org/@types/d3-geo/-/d3-geo-3.1.1.tgz |
-| astrologo-frontend/package.json | @types/node | devDependencies | ^26.6.3 | 26.6.3 | MIT | https://registry.npmjs.org/@types/node/-/node-26.6.3.tgz |
+| astrologo-frontend/package.json | @types/node | devDependencies | ^26.6.4 | 26.6.4 | MIT | https://registry.npmjs.org/@types/node/-/node-26.6.4.tgz |
 | astrologo-frontend/package.json | @types/react | devDependencies | ^19.3.0 | 19.3.0 | MIT | https://registry.npmjs.org/@types/react/-/react-19.3.0.tgz |
 | astrologo-frontend/package.json | @types/react-dom | devDependencies | ^19.3.0 | 19.3.0 | MIT | https://registry.npmjs.org/@types/react-dom/-/react-dom-19.3.0.tgz |
 | astrologo-frontend/package.json | @types/sanitize-html | devDependencies | ^2.16.2 | 2.16.2 | MIT | https://registry.npmjs.org/@types/sanitize-html/-/sanitize-html-2.16.2.tgz |
@@ -46,7 +46,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | globals | devDependencies | ^17.13.0 | 17.13.0 | MIT | https://registry.npmjs.org/globals/-/globals-17.13.0.tgz |
 | astrologo-frontend/package.json | typescript | devDependencies | ~6.0.3 | 6.0.3 | Apache-2.0 | https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz |
 | astrologo-frontend/package.json | typescript-eslint | devDependencies | ^8.71.0 | 8.71.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.71.0.tgz |
-| astrologo-frontend/package.json | vite | devDependencies | ^8.3.1 | 8.3.1 | MIT | https://registry.npmjs.org/vite/-/vite-8.3.1.tgz |
+| astrologo-frontend/package.json | vite | devDependencies | ^8.3.2 | 8.3.2 | MIT | https://registry.npmjs.org/vite/-/vite-8.3.2.tgz |
 | astrologo-frontend/package.json | vitest | devDependencies | ^5.0.3 | 5.0.3 | MIT | https://registry.npmjs.org/vitest/-/vitest-5.0.3.tgz |
 | astrologo-frontend/package.json | wrangler | devDependencies | 4.149.0 | 4.149.0 | MIT OR Apache-2.0 | https://registry.npmjs.org/wrangler/-/wrangler-4.149.0.tgz |
 

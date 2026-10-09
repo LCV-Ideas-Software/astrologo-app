@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Atualizadas as duas linhas atuais de `@types/node` 26.6.4 e Vite 8.3.2 no inventário direto e na cópia pública, incluindo declaração, resolução e origem exata já presentes no lockfile; preservados os snapshots históricos e textos integrais de licenças (LCV-341).
+
 - Revalidado o snapshot das Pages Functions com o output e metafile oficiais de Wrangler 4.149.0: versões atuais, grants completos e inputs inteiros iguais aos artefatos publicados, preservando as capturas históricas datadas e as cópias públicas (LCV-341).
 
 - Update the official CodeQL SARIF uploader to v4.38.3 at its complete commit SHA (LCV-336).
