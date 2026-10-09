@@ -2,13 +2,15 @@
 
 ## [Unreleased]
 
+- Revalidado o snapshot das Pages Functions com o output e metafile oficiais de Wrangler 4.149.0: versões atuais, grants completos e inputs inteiros iguais aos artefatos publicados, preservando as capturas históricas datadas e as cópias públicas (LCV-341).
+
 - Update the official CodeQL SARIF uploader to v4.38.3 at its complete commit SHA (LCV-336).
 
 - Atualizadas cinco relações do inventário direto e sua cópia pública conforme as versões, tarballs e licenças integrais dos lockfiles atuais (LCV-336).
 
 - Revisado o snapshot integral de licenças das Pages Functions com o metafile, output, lockfile e proveniência da captura oficial local de Wrangler 4.148.0, preservando todos os grants e sincronizando NOTICE/inventários canônico e público (LCV-334 / #461).
 
-- Atualizada a CLI oficial Cloudflare Wrangler para 4.148.0, com lockfiles regenerados pelo npm; preservado o override autorizado de Sharp 0.35.5 enquanto o Miniflare oficial 5.20261006.0-alpha ainda exige 0.35.4 (LCV-334).
+- Atualizada a CLI oficial Cloudflare Wrangler para 4.149.0, com lockfiles regenerados pelo npm; removido o override temporário de Sharp porque o Miniflare oficial 5.20261006.1-alpha já exige 0.35.5 diretamente (LCV-341).
 
 - Update the official `actions/upload-artifact` to v7.0.2 at complete commit SHAs (LCV-334).
 
@@ -23,8 +25,6 @@
 - Corrigida a data do snapshot manual das Functions nos inventários canônico e público.
 
 - Atualizado o Vitest para 5.0.3, que seleciona o `why-is-node-running` oficial 3.2.1 sem `stackback`; manifestos e lockfiles regenerados pelo npm. Atualizado `launder` para 1.7.2, com licença MIT integral publicada pelo titular.
-
-- Update the pinned Cloudflare Wrangler CLI to 4.147.0 and regenerate npm dependency locks.
 
 ### Corrigido
 

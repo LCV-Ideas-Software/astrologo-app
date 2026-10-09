@@ -48,7 +48,7 @@ A tabela registra as dependências diretas dos manifestos npm e dos respectivos 
 | astrologo-frontend/package.json | typescript-eslint | devDependencies | ^8.71.0 | 8.71.0 | MIT | https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.71.0.tgz |
 | astrologo-frontend/package.json | vite | devDependencies | ^8.3.1 | 8.3.1 | MIT | https://registry.npmjs.org/vite/-/vite-8.3.1.tgz |
 | astrologo-frontend/package.json | vitest | devDependencies | ^5.0.3 | 5.0.3 | MIT | https://registry.npmjs.org/vitest/-/vitest-5.0.3.tgz |
-| astrologo-frontend/package.json | wrangler | devDependencies | 4.148.0 | 4.148.0 | MIT OR Apache-2.0 | https://registry.npmjs.org/wrangler/-/wrangler-4.148.0.tgz |
+| astrologo-frontend/package.json | wrangler | devDependencies | 4.149.0 | 4.149.0 | MIT OR Apache-2.0 | https://registry.npmjs.org/wrangler/-/wrangler-4.149.0.tgz |
 
 ## Textos das licenças dos bundles publicados
 
@@ -99,11 +99,19 @@ Esses polyfills contêm código no worker capturado. Seus textos completos e a o
 
 ## Scoped Miniflare security correction
 
-The operator approved the temporary npm override `miniflare` → `sharp` 0.35.5 on
-06/10/2026 for GHSA-wq5f-xc86-pv6w. npm regenerates the affected lockfile; existing
-Wrangler and Miniflare selections remain unchanged. Remove this override after
-the official upstream selects a corrected Sharp version. Sharp retains its
-Apache-2.0 grant and the native libvips components retain their own LGPL notices;
-this build-tool correction does not certify complete distribution compliance.
+Historical approval: on 06/10/2026, the operator authorized the temporary npm
+override `miniflare` → `sharp` 0.35.5 for GHSA-wq5f-xc86-pv6w.
 
-Source: <https://github.com/advisories/GHSA-wq5f-xc86-pv6w>.
+Current native selection, 09/10/2026 (LCV-341): Wrangler 4.149.0 selects the
+official Miniflare 5.20261006.1-alpha, which requests Sharp 0.35.5 directly.
+The expired scoped override was removed; npm regenerated the lockfile.
+Sharp retains its Apache-2.0 grant, and libvips components retain their own LGPL
+notices. These are build-tool selections; the Pages Functions snapshot records
+runtime inputs separately.
+
+Sources: <https://registry.npmjs.org/miniflare/5.20261006.1-alpha> and
+<https://github.com/advisories/GHSA-wq5f-xc86-pv6w>.
+
+## Revalidação do snapshot das Functions — 09/10/2026 (LCV-341)
+
+O documento público `legal/FUNCTIONS-BUNDLED-LICENSES.md` mantém integralmente a captura datada de 07/10/2026 e acrescenta a captura oficial local de Wrangler 4.149.0, com 143 inputs e 23 identidades reais. A revisão registra `is-plain-object` 5.1.0, `sanitize-html` 2.18.0 e o wrapper Pages de Wrangler 4.149.0, seus tarballs/SRIs, os corpos jurídicos completos e os hashes nativos. Os 89 inputs físicos dos pacotes coincidem integralmente com os membros publicados; placeholders e módulos virtuais são separados. O snapshot é mantido editorialmente; o Vite cobre o navegador, e a próxima publicação das Functions conserva prova própria de produção.
